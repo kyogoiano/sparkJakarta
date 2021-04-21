@@ -15,9 +15,9 @@
  */
 package spark.embeddedserver.jetty.websocket;
 
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
+import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
+import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
 
 import static java.util.Objects.requireNonNull;
 
@@ -48,13 +48,12 @@ public class WebSocketCreatorFactory {
             this.handler = requireNonNull(handler, "handler cannot be null");
         }
 
-        @Override
-        public Object createWebSocket(ServletUpgradeRequest request,
-                                      ServletUpgradeResponse response) {
+        Object getHandler() {
             return handler;
         }
 
-        Object getHandler() {
+        @Override
+        public Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp) {
             return handler;
         }
     }

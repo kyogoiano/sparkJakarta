@@ -16,14 +16,14 @@
  */
 package spark.utils;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collections;
 import java.util.function.Predicate;
 import java.util.zip.GZIPOutputStream;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * GZIP utility class.

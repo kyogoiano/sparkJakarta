@@ -16,16 +16,18 @@
  */
 package spark.embeddedserver.jetty.websocket;
 
-import java.util.Map;
-import java.util.Optional;
-
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.websocket.core.Configuration;
+import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
+import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
+import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Creates websocket servlet context handlers.
@@ -47,18 +49,20 @@ public class WebSocketServletContextHandlerFactory {
         if (webSocketHandlers != null) {
             try {
                 webSocketServletContextHandler = new ServletContextHandler(null, "/", true, false);
-                WebSocketUpgradeFilter webSocketUpgradeFilter = WebSocketUpgradeFilter.configureContext(webSocketServletContextHandler);
-                if (webSocketIdleTimeoutMillis.isPresent()) {
-                    webSocketUpgradeFilter.getFactory().getPolicy().setIdleTimeout(webSocketIdleTimeoutMillis.get());
-                }
+
                 // Since we are configuring WebSockets before the ServletContextHandler and WebSocketUpgradeFilter is
                 // even initialized / started, then we have to pre-populate the configuration that will eventually
                 // be used by Jetty's WebSocketUpgradeFilter.
-                NativeWebSocketConfiguration webSocketConfiguration = (NativeWebSocketConfiguration) webSocketServletContextHandler
-                    .getServletContext().getAttribute(NativeWebSocketConfiguration.class.getName());
+                WebSocketMappings webSocketMappings = (WebSocketMappings) webSocketServletContextHandler
+                    .getServletContext().getAttribute(WebSocketMappings.class.getName());
                 for (String path : webSocketHandlers.keySet()) {
                     WebSocketCreator webSocketCreator = WebSocketCreatorFactory.create(webSocketHandlers.get(path));
-                    webSocketConfiguration.addMapping(new ServletPathSpec(path), webSocketCreator);
+                    Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
+                    if (webSocketIdleTimeoutMillis.isPresent()) {
+                        customizer.setIdleTimeout(Duration.ofMillis(webSocketIdleTimeoutMillis.get()));
+                    }
+                    webSocketMappings.addMapping(new ServletPathSpec(path), webSocketCreator,
+                        JettyServerFrameHandlerFactory.getFactory(webSocketServletContextHandler.getServletContext()), customizer);
                 }
             } catch (Exception ex) {
                 logger.error("creation of websocket context handler failed.", ex);

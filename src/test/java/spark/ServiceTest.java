@@ -1,7 +1,7 @@
 package spark;
 
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.junit.Before;
 import org.junit.Rule;

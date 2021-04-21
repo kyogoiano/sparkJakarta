@@ -1,0 +1,43 @@
+group 'com.sparkjava'
+version System.properties.getProperty('version', '0.0.0') + "-SNAPSHOT"
+
+buildscript {
+    ext.jettyVersion = '11.0.0'
+    ext.powermockVersion = '2.0.9'
+    ext.mockitoVersion = '3.7.7'
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+}
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+    maven { url "https://jcenter.bintray.com"}
+}
+
+
+dependencies {
+    implementation "org.slf4j:slf4j-api:2.0.0-apha1"
+    testImplementation "org.slf4j:slf4j-api:2.0.0-apha1"
+
+    implementation "org.eclipse.jetty:jetty-server:$jettyVersion"
+    implementation "org.eclipse.jetty:jetty-webapp:$jettyVersion"
+
+    implementation "org.eclipse.jetty.websocket:websocket-jetty-server:$jettyVersion"
+
+    testImplementation "junit:junit:4.13.1"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.powermock:powermock-module-junit4:$powermockVersion"
+    testImplementation "org.powermock:powermock-api-mockito2:$powermockVersion"
+
+    testImplementation "org.apache.httpcomponents.client5:httpclient5:5.1-beta1"
+    testImplementation "org.freemarker:freemarker:2.3.30"
+    testImplementation "com.google.code.gson:gson:2.8.6"
+    testImplementation "org.eclipse.jetty.websocket:websocket-jetty-client:$jettyVersion"
+
+}

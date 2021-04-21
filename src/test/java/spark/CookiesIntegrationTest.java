@@ -4,10 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static spark.Spark.*;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.HttpResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -125,11 +125,9 @@ public class CookiesIntegrationTest {
         HttpPost request = new HttpPost(DEFAULT_HOST_URL + relativePath);
         try {
             HttpResponse response = httpClient.execute(request);
-            assertEquals(200, response.getStatusLine().getStatusCode());
+            assertEquals(200, response.getCode());
         } catch (Exception ex) {
             fail(ex.toString());
-        } finally {
-            request.releaseConnection();
         }
     }
 }

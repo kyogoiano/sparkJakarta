@@ -1,27 +1,22 @@
 package spark.embeddedserver.jetty.websocket;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import javax.servlet.ServletContext;
-
-import org.eclipse.jetty.http.pathmap.MappedResource;
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.server.NativeWebSocketConfiguration;
-import org.eclipse.jetty.websocket.server.WebSocketServerFactory;
-import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.servlet.ServletHandler;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.junit.Assert.*;
 
 @RunWith(PowerMockRunner.class)
 public class WebSocketServletContextHandlerFactoryTest {
@@ -53,12 +48,11 @@ public class WebSocketServletContextHandlerFactoryTest {
             (WebSocketUpgradeFilter) servletContext.getAttribute("org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter");
 
         assertNotNull("Should return a WebSocketUpgradeFilter because we configured it to have one", webSocketUpgradeFilter);
-    
-        NativeWebSocketConfiguration webSocketConfiguration =
-            (NativeWebSocketConfiguration) servletContext.getAttribute(NativeWebSocketConfiguration.class.getName());
-        
-        MappedResource<WebSocketCreator> mappedResource = webSocketConfiguration.getMatch("/websocket");
-        PathSpec pathSpec = mappedResource.getPathSpec();
+
+        ServletHandler.MappedServlet mappedServlet =
+            servletContextHandler.getServletHandler().getMappedServlet("/websocket");
+
+        PathSpec pathSpec = mappedServlet.getPathSpec();
 
         assertEquals("Should return the WebSocket path specified when context handler was created",
                 webSocketPath, pathSpec.getDeclaration());
@@ -89,16 +83,17 @@ public class WebSocketServletContextHandlerFactoryTest {
                 (WebSocketUpgradeFilter) servletContext.getAttribute("org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter");
 
         assertNotNull("Should return a WebSocketUpgradeFilter because we configured it to have one", webSocketUpgradeFilter);
-    
-        NativeWebSocketConfiguration webSocketConfiguration =
-            (NativeWebSocketConfiguration) servletContext.getAttribute(NativeWebSocketConfiguration.class.getName());
 
-        WebSocketServerFactory webSocketServerFactory = webSocketConfiguration.getFactory();
+        JettyWebSocketServletFactory factory =
+            (JettyWebSocketServletFactory) servletContextHandler.getServletContext().getAttribute(JettyWebSocketServletFactory.class.getName());
+
         assertEquals("Timeout value should be the same as the timeout specified when context handler was created",
-                timeout.longValue(), webSocketServerFactory.getPolicy().getIdleTimeout());
+                timeout.longValue(), factory.getIdleTimeout());
 
-        MappedResource<WebSocketCreator> mappedResource = webSocketConfiguration.getMatch("/websocket");
-        PathSpec pathSpec = mappedResource.getPathSpec();
+        ServletHandler.MappedServlet mappedServlet =
+            servletContextHandler.getServletHandler().getMappedServlet("/websocket");
+
+        PathSpec pathSpec = mappedServlet.getPathSpec();
 
         assertEquals("Should return the WebSocket path specified when context handler was created",
                 webSocketPath, pathSpec.getDeclaration());

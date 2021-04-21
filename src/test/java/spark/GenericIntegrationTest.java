@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.hc.core5.http.ParseException;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -425,7 +426,7 @@ public class GenericIntegrationTest {
     }
 
     @Test
-    public void testPostViaGetWithMethodOverrideHeader() throws IOException {
+    public void testPostViaGetWithMethodOverrideHeader() throws IOException, ParseException {
         Map<String, String> map = new HashMap<>();
         map.put("X-HTTP-Method-Override", "POST");
         UrlResponse response = testUtil.doMethod("GET", "/post_via_get", "Fo shizzy", false, "*/*", map);
