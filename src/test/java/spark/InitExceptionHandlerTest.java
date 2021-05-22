@@ -9,7 +9,7 @@ import static spark.Service.ignite;
 
 public class InitExceptionHandlerTest {
 
-    private static int NON_VALID_PORT = Integer.MAX_VALUE;
+    private static final int NON_VALID_PORT = Integer.MAX_VALUE;
     private static Service service;
     private static String errorMessage = "";
 

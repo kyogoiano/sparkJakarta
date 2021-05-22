@@ -35,7 +35,7 @@ public class Books {
     /**
      * Map holding the books
      */
-    public static Map<String, Book> books = new HashMap<>();
+    public static final Map<String, Book> books = new HashMap<>();
 
     public static void main(String[] args) {
 
@@ -99,11 +99,11 @@ public class Books {
 
         // Gets all available book resources (id's)
         get("/books", (request, response) -> {
-            String ids = "";
-            for (String id : books.keySet()) {
-                ids += id + " ";
+            final StringBuilder ids = new StringBuilder();
+            for (final String id : books.keySet()) {
+                ids.append(id).append(" ");
             }
-            return ids;
+            return ids.toString();
         });
 
     }

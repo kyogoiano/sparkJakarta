@@ -41,6 +41,7 @@ class BytesSerializer extends Serializer {
         } else if (element instanceof ByteBuffer){
             bytes = ((ByteBuffer) element).array();
         }
+        assert bytes != null;
         outputStream.write(bytes);
     }
 

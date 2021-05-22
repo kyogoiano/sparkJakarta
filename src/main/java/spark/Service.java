@@ -16,19 +16,8 @@
  */
 package spark;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import spark.embeddedserver.EmbeddedServer;
 import spark.embeddedserver.EmbeddedServers;
 import spark.embeddedserver.jetty.websocket.WebSocketHandlerClassWrapper;
@@ -41,6 +30,10 @@ import spark.routematch.RouteMatch;
 import spark.ssl.SslStores;
 import spark.staticfiles.MimeType;
 import spark.staticfiles.StaticFilesConfiguration;
+
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 import static spark.globalstate.ServletFlag.isRunningFromServlet;
@@ -75,7 +68,7 @@ public final class Service extends Routable {
     protected Optional<Long> webSocketIdleTimeoutMillis = Optional.empty();
 
     protected EmbeddedServer server;
-    protected Deque<String> pathDeque = new ArrayDeque<>();
+    protected final Deque<String> pathDeque = new ArrayDeque<>();
     protected Routes routes;
 
     private CountDownLatch initLatch = new CountDownLatch(1);
@@ -572,7 +565,7 @@ public final class Service extends Routable {
     }
 
     public String getPaths() {
-        return pathDeque.stream().collect(Collectors.joining(""));
+        return String.join("", pathDeque);
     }
     /**
      * @return all routes information from this service
@@ -683,7 +676,7 @@ public final class Service extends Routable {
      */
     public synchronized <T extends Exception> void exception(Class<T> exceptionClass, ExceptionHandler<? super T> handler) {
         // wrap
-        ExceptionHandlerImpl wrapper = new ExceptionHandlerImpl<T>(exceptionClass) {
+        final ExceptionHandlerImpl<T> wrapper = new ExceptionHandlerImpl<>(exceptionClass) {
             @Override
             public void handle(T exception, Request request, Response response) {
                 handler.handle(exception, request, response);

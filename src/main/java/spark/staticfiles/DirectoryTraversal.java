@@ -1,5 +1,6 @@
 package spark.staticfiles;
 
+import java.io.Serial;
 import java.nio.file.Paths;
 
 import static spark.utils.StringUtils.removeLeadingAndTrailingSlashesFrom;
@@ -10,7 +11,7 @@ import static spark.utils.StringUtils.removeLeadingAndTrailingSlashesFrom;
 public class DirectoryTraversal {
 
     public static void protectAgainstInClassPath(String path, String localFolder) {
-        if (!isPathWithinFolder(path, localFolder)) {
+        if (isPathNotWithinFolder(path, localFolder)) {
             throw new DirectoryTraversalDetection("classpath");
         }
     }
@@ -18,7 +19,7 @@ public class DirectoryTraversal {
     public static void protectAgainstForExternal(String path, String externalFolder) {
     	String unixLikeFolder = unixifyPath(externalFolder);
         String nixLikePath = unixifyPath(path);
-        if (!isPathWithinFolder(nixLikePath, unixLikeFolder)) {
+        if (isPathNotWithinFolder(nixLikePath, unixLikeFolder)) {
             throw new DirectoryTraversalDetection("external");
         }
     }
@@ -27,13 +28,14 @@ public class DirectoryTraversal {
     	return Paths.get(path).toAbsolutePath().toString().replace("\\", "/");
     }
     
-    private static boolean isPathWithinFolder(String path, String folder) {
+    private static boolean isPathNotWithinFolder(String path, String folder) {
     	String rlatsPath = removeLeadingAndTrailingSlashesFrom(path);
     	String rlatsFolder = removeLeadingAndTrailingSlashesFrom(folder);
-    	return rlatsPath.startsWith(rlatsFolder);
+    	return !rlatsPath.startsWith(rlatsFolder);
     }
 
     public static final class DirectoryTraversalDetection extends RuntimeException {
+        @Serial
         private static final long serialVersionUID = 1L;
 
         public DirectoryTraversalDetection(String msg) {

@@ -16,12 +16,14 @@
  */
 package spark.embeddedserver.jetty.websocket;
 
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import jakarta.servlet.Servlet;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.core.Configuration;
-import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
-import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
-import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,28 +43,36 @@ public class WebSocketServletContextHandlerFactory {
      *
      * @param webSocketHandlers          webSocketHandlers
      * @param webSocketIdleTimeoutMillis webSocketIdleTimeoutMillis
+     * @param server
+     * @param servletName
      * @return a new websocket servlet context handler or 'null' if creation failed.
      */
-    public static ServletContextHandler create(Map<String, WebSocketHandlerWrapper> webSocketHandlers,
-                                               Optional<Long> webSocketIdleTimeoutMillis) {
+    public static ServletContextHandler create(final Map<String, WebSocketHandlerWrapper> webSocketHandlers,
+                                               final Optional<Long> webSocketIdleTimeoutMillis, final Server server, final String servletName) {
         ServletContextHandler webSocketServletContextHandler = null;
         if (webSocketHandlers != null) {
             try {
                 webSocketServletContextHandler = new ServletContextHandler(null, "/", true, false);
-
-                // Since we are configuring WebSockets before the ServletContextHandler and WebSocketUpgradeFilter is
+                webSocketServletContextHandler.setServer(server);
+               // Since we are configuring WebSockets before the ServletContextHandler and WebSocketUpgradeFilter is
                 // even initialized / started, then we have to pre-populate the configuration that will eventually
                 // be used by Jetty's WebSocketUpgradeFilter.
-                WebSocketMappings webSocketMappings = (WebSocketMappings) webSocketServletContextHandler
-                    .getServletContext().getAttribute(WebSocketMappings.class.getName());
-                for (String path : webSocketHandlers.keySet()) {
-                    WebSocketCreator webSocketCreator = WebSocketCreatorFactory.create(webSocketHandlers.get(path));
-                    Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
-                    if (webSocketIdleTimeoutMillis.isPresent()) {
-                        customizer.setIdleTimeout(Duration.ofMillis(webSocketIdleTimeoutMillis.get()));
-                    }
-                    webSocketMappings.addMapping(new ServletPathSpec(path), webSocketCreator,
-                        JettyServerFrameHandlerFactory.getFactory(webSocketServletContextHandler.getServletContext()), customizer);
+                for (final String path : webSocketHandlers.keySet()) {
+                    final JettyWebSocketCreator webSocketCreator = WebSocketCreatorFactory.create(webSocketHandlers.get(path));
+
+                    final Servlet webSocketServlet = new JettyWebSocketServlet() {
+                        @Override
+                        protected void configure(final JettyWebSocketServletFactory factory) {
+                            factory.addMapping(path, (req, res) -> webSocketCreator);
+                        }
+                    };
+
+                    webSocketServletContextHandler.addServlet(new ServletHolder(servletName, webSocketServlet), path);
+                    JettyWebSocketServletContainerInitializer.configure(webSocketServletContextHandler, (servletContext, container) -> {
+                        webSocketIdleTimeoutMillis.ifPresent(aLong -> container.setIdleTimeout(Duration.ofMillis(aLong)));
+                        container.addMapping(path, webSocketCreator);
+                    });
+
                 }
             } catch (Exception ex) {
                 logger.error("creation of websocket context handler failed.", ex);

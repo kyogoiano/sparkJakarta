@@ -51,9 +51,9 @@ public class StaticFilesConfiguration {
     private boolean staticResourcesSet = false;
     private boolean externalStaticResourcesSet = false;
 
-    public static StaticFilesConfiguration servletInstance = new StaticFilesConfiguration();
+    public static final StaticFilesConfiguration servletInstance = new StaticFilesConfiguration();
 
-    private Map<String, String> customHeaders = new HashMap<>();
+    private final Map<String, String> customHeaders = new HashMap<>();
 
     /**
      * Attempt consuming using either static resource handlers or jar resource handlers

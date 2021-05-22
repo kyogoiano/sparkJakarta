@@ -42,7 +42,7 @@ public class QueryParamsMap {
     /**
      * Holds the nested keys
      */
-    private Map<String, QueryParamsMap> queryMap = new HashMap<>();
+    private final Map<String, QueryParamsMap> queryMap = new HashMap<>();
 
     /**
      * Value(s) for this key
@@ -160,12 +160,8 @@ public class QueryParamsMap {
      */
     public QueryParamsMap get(String... keys) {
         QueryParamsMap ret = this;
-        for (String key : keys) {
-            if (ret.queryMap.containsKey(key)) {
-                ret = ret.queryMap.get(key);
-            } else {
-                ret = NULL;
-            }
+        for (final String key : keys) {
+            ret = ret.queryMap.getOrDefault(key, NULL);
         }
         return ret;
     }

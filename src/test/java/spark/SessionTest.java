@@ -10,8 +10,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class SessionTest {
@@ -101,9 +100,9 @@ public class SessionTest {
     @Test
     public void testCreationTime() {
 
-        when(httpSession.getCreationTime()).thenReturn(10000000l);
+        when(httpSession.getCreationTime()).thenReturn(10000000L);
 
-        assertEquals("Should return creationTime from HttpSession", 10000000l, session.creationTime());
+        assertEquals("Should return creationTime from HttpSession", 10000000L, session.creationTime());
     }
 
     @Test
@@ -117,9 +116,9 @@ public class SessionTest {
     @Test
     public void testLastAccessedTime() {
 
-        when(httpSession.getLastAccessedTime()).thenReturn(20000000l);
+        when(httpSession.getLastAccessedTime()).thenReturn(20000000L);
 
-        assertEquals("Should return lastAccessedTime from HttpSession", 20000000l, session.lastAccessedTime());
+        assertEquals("Should return lastAccessedTime from HttpSession", 20000000L, session.lastAccessedTime());
     }
 
     @Test
@@ -151,7 +150,7 @@ public class SessionTest {
 
         when(httpSession.isNew()).thenReturn(true);
 
-        assertEquals("Should return isNew status from HttpSession", true, session.isNew());
+        assertTrue("Should return isNew status from HttpSession", session.isNew());
     }
 
     @Test

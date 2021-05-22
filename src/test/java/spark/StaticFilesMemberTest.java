@@ -139,7 +139,7 @@ public class StaticFilesMemberTest {
 
     @Test
     public void testStaticFileHeaders() throws Exception {
-        staticFiles.headers(new HashMap() {
+        staticFiles.headers(new HashMap<>() {
             {
                 put("Server", "Microsoft Word");
                 put("Cache-Control", "private, max-age=600");

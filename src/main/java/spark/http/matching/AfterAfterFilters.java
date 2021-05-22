@@ -40,7 +40,7 @@ final class AfterAfterFilters {
         for (RouteMatch filterMatch : matchSet) {
             Object filterTarget = filterMatch.getTarget();
 
-            if (filterTarget instanceof FilterImpl) {
+            if (filterTarget instanceof FilterImpl filter) {
 
                 if (context.requestWrapper().getDelegate() == null) {
                     Request request = RequestResponseFactory.create(filterMatch, context.httpRequest());
@@ -51,7 +51,6 @@ final class AfterAfterFilters {
 
                 context.responseWrapper().setDelegate(context.response());
 
-                FilterImpl filter = (FilterImpl) filterTarget;
                 filter.handle(context.requestWrapper(), context.responseWrapper());
 
                 String bodyAfterFilter = context.response().body();

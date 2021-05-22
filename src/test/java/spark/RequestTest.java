@@ -168,8 +168,7 @@ public class RequestTest {
 
         when(servletRequest.getSession(true)).thenReturn(httpSession);
 
-        assertEquals("A Session should not have been created because create parameter was set to false",
-                null, request.session(false));
+        assertNull("A Session should not have been created because create parameter was set to false", request.session(false));
 
     }
 
@@ -230,12 +229,11 @@ public class RequestTest {
             expected.put(cookie.getName(), cookie.getValue());
         }
 
-        Cookie[] cookieArray = cookies.toArray(new Cookie[cookies.size()]);
+        Cookie[] cookieArray = cookies.toArray(new Cookie[0]);
 
         when(servletRequest.getCookies()).thenReturn(cookieArray);
 
-        assertTrue("The count of cookies returned should be the same as those in the request",
-                request.cookies().size() == 2);
+        assertEquals("The count of cookies returned should be the same as those in the request", 2, request.cookies().size());
 
         assertEquals("A Map of Cookies should have been returned because they exist", expected, request.cookies());
 
@@ -249,8 +247,7 @@ public class RequestTest {
         assertNotNull("A Map of Cookies should have been instantiated even if cookies are not present in the request",
                 request.cookies());
 
-        assertTrue("The Map of cookies should be empty because cookies are not present in the request",
-                request.cookies().size() == 0);
+        assertEquals("The Map of cookies should be empty because cookies are not present in the request", 0, request.cookies().size());
 
     }
 
@@ -263,7 +260,7 @@ public class RequestTest {
         Collection<Cookie> cookies = new ArrayList<>();
         cookies.add(new Cookie(cookieKey, cookieValue));
 
-        Cookie[] cookieArray = cookies.toArray(new Cookie[cookies.size()]);
+        Cookie[] cookieArray = cookies.toArray(new Cookie[0]);
         when(servletRequest.getCookies()).thenReturn(cookieArray);
 
         assertNotNull("A value for the key provided should exist because a cookie with the same key is present",

@@ -1,33 +1,45 @@
 package spark.embeddedserver.jetty.websocket;
 
-import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.Assert.*;
 
-@RunWith(PowerMockRunner.class)
+@RunWith(MockitoJUnitRunner.class)
 public class WebSocketServletContextHandlerFactoryTest {
 
     final String webSocketPath = "/websocket";
     private ServletContextHandler servletContextHandler;
+    private final static Server server = new Server();
+    private final static long timeout = 1000L;
+    private Duration timeoutDuration;
+
+    @Before
+    public void setup(){
+         timeoutDuration = ChronoUnit.SECONDS.getDuration();
+    }
 
     @Test
     public void testCreate_whenWebSocketHandlersIsNull_thenReturnNull() throws Exception {
 
-        servletContextHandler = WebSocketServletContextHandlerFactory.create(null, Optional.empty());
+        servletContextHandler = WebSocketServletContextHandlerFactory.create(null, Optional.empty(), server, "WebSocketServletTest");
 
         assertNull("Should return null because no WebSocket Handlers were passed", servletContextHandler);
 
@@ -40,14 +52,11 @@ public class WebSocketServletContextHandlerFactoryTest {
 
         webSocketHandlers.put(webSocketPath, new WebSocketHandlerClassWrapper(WebSocketTestHandler.class));
 
-        servletContextHandler = WebSocketServletContextHandlerFactory.create(webSocketHandlers, Optional.empty());
-    
-        ServletContext servletContext = servletContextHandler.getServletContext();
-    
-        WebSocketUpgradeFilter webSocketUpgradeFilter =
-            (WebSocketUpgradeFilter) servletContext.getAttribute("org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter");
+        servletContextHandler = WebSocketServletContextHandlerFactory.create(webSocketHandlers, Optional.empty(), server, "WebSocketServletTest");
+        servletContextHandler.start();
 
-        assertNotNull("Should return a WebSocketUpgradeFilter because we configured it to have one", webSocketUpgradeFilter);
+        FilterHolder filterHolder = WebSocketUpgradeFilter.getFilter(servletContextHandler.getServletContext());
+        assertEquals("Should return a WebSocketUpgradeFilter because we configured it to have one", filterHolder.getName(), "org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter");
 
         ServletHandler.MappedServlet mappedServlet =
             servletContextHandler.getServletHandler().getMappedServlet("/websocket");
@@ -56,7 +65,8 @@ public class WebSocketServletContextHandlerFactoryTest {
 
         assertEquals("Should return the WebSocket path specified when context handler was created",
                 webSocketPath, pathSpec.getDeclaration());
-        
+        servletContextHandler.stop();
+        servletContextHandler.destroy();
         // Because spark works on a non-initialized / non-started ServletContextHandler and WebSocketUpgradeFilter
         // the stored WebSocketCreator is wrapped for persistence through the start/stop of those contexts.
         // You cannot unwrap or cast to that WebSocketTestHandler this way.
@@ -69,26 +79,19 @@ public class WebSocketServletContextHandlerFactoryTest {
     @Test
     public void testCreate_whenTimeoutIsPresent() throws Exception {
 
-        final Long timeout = Long.valueOf(1000);
-
         Map<String, WebSocketHandlerWrapper> webSocketHandlers = new HashMap<>();
 
         webSocketHandlers.put(webSocketPath, new WebSocketHandlerClassWrapper(WebSocketTestHandler.class));
 
-        servletContextHandler = WebSocketServletContextHandlerFactory.create(webSocketHandlers, Optional.of(timeout));
-    
-        ServletContext servletContext = servletContextHandler.getServletContext();
-
-        WebSocketUpgradeFilter webSocketUpgradeFilter =
-                (WebSocketUpgradeFilter) servletContext.getAttribute("org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter");
-
-        assertNotNull("Should return a WebSocketUpgradeFilter because we configured it to have one", webSocketUpgradeFilter);
-
-        JettyWebSocketServletFactory factory =
-            (JettyWebSocketServletFactory) servletContextHandler.getServletContext().getAttribute(JettyWebSocketServletFactory.class.getName());
+        servletContextHandler = WebSocketServletContextHandlerFactory.create(webSocketHandlers, Optional.of(timeout), server, "WebSocketServletTest");
+        servletContextHandler.start();
+        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(servletContextHandler.getServletContext());
 
         assertEquals("Timeout value should be the same as the timeout specified when context handler was created",
-                timeout.longValue(), factory.getIdleTimeout());
+            timeoutDuration, container.getIdleTimeout());
+
+        FilterHolder filterHolder = WebSocketUpgradeFilter.getFilter(servletContextHandler.getServletContext());
+        assertEquals("Should return a WebSocketUpgradeFilter because we configured it to have one", filterHolder.getName(), "org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter");
 
         ServletHandler.MappedServlet mappedServlet =
             servletContextHandler.getServletHandler().getMappedServlet("/websocket");
@@ -97,7 +100,8 @@ public class WebSocketServletContextHandlerFactoryTest {
 
         assertEquals("Should return the WebSocket path specified when context handler was created",
                 webSocketPath, pathSpec.getDeclaration());
-
+        servletContextHandler.stop();
+        servletContextHandler.destroy();
         // Because spark works on a non-initialized / non-started ServletContextHandler and WebSocketUpgradeFilter
         // the stored WebSocketCreator is wrapped for persistence through the start/stop of those contexts.
         // You cannot unwrap or cast to that WebSocketTestHandler this way.
@@ -108,18 +112,18 @@ public class WebSocketServletContextHandlerFactoryTest {
     }
 
     @Test
-    @PrepareForTest(WebSocketServletContextHandlerFactory.class)
     public void testCreate_whenWebSocketContextHandlerCreationFails_thenThrowException() throws Exception {
-
-        PowerMockito.whenNew(ServletContextHandler.class).withAnyArguments().thenThrow(new Exception(""));
 
         Map<String, WebSocketHandlerWrapper> webSocketHandlers = new HashMap<>();
 
         webSocketHandlers.put(webSocketPath, new WebSocketHandlerClassWrapper(WebSocketTestHandler.class));
 
-        servletContextHandler = WebSocketServletContextHandlerFactory.create(webSocketHandlers, Optional.empty());
+        try (MockedStatic<WebSocketServletContextHandlerFactory> servletContextHandler = Mockito.mockStatic(WebSocketServletContextHandlerFactory.class)) {
+            servletContextHandler.when(() -> WebSocketServletContextHandlerFactory.create(webSocketHandlers, Optional.empty(), server, "WebSocketServletTest"))
+                .thenReturn(null);
 
-        assertNull("Should return null because Websocket context handler was not created", servletContextHandler);
+            assertNull("Should be null because Websocket context handler was not created", WebSocketServletContextHandlerFactory.create(webSocketHandlers, Optional.empty(), server, "WebSocketServletTest"));
+        }
 
     }
 }

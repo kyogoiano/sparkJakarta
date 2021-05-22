@@ -56,15 +56,15 @@ public class MultipleFiltersTest {
         }
     }
 
-    private static Filter loadUser = (request, response) -> {
+    private static final Filter loadUser = (request, response) -> {
         User u = new User();
         u.name("Kevin");
         request.attribute("user", u);
     };
 
-    private static Filter initializeCounter = (request, response) -> request.attribute("counter", 0);
+    private static final Filter initializeCounter = (request, response) -> request.attribute("counter", 0);
 
-    private static Filter incrementCounter = (request, response) -> {
+    private static final Filter incrementCounter = (request, response) -> {
         int counter = request.attribute("counter");
         counter++;
         request.attribute("counter", counter);

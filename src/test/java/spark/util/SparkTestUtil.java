@@ -23,14 +23,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.security.KeyStore;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SparkTestUtil {
 
-    private int port;
+    private final int port;
 
     private CloseableHttpClient httpClient;
 
@@ -41,7 +38,7 @@ public class SparkTestUtil {
 
     private HttpClientBuilder httpClientBuilder() {
         SSLConnectionSocketFactory sslConnectionSocketFactory =
-                new SSLConnectionSocketFactory(getSslFactory(), (paramString, paramSSLSession) -> true);
+                new SSLConnectionSocketFactory(Objects.requireNonNull(getSslFactory()), (paramString, paramSSLSession) -> true);
         Registry<ConnectionSocketFactory> socketRegistry = RegistryBuilder
                 .<ConnectionSocketFactory>create()
                 .register("http", PlainConnectionSocketFactory.INSTANCE)
@@ -54,6 +51,7 @@ public class SparkTestUtil {
     public void setFollowRedirectStrategy(Integer... codes) {
         final List<Integer> redirectCodes = Arrays.asList(codes);
         DefaultRedirectStrategy redirectStrategy = new DefaultRedirectStrategy() {
+            @Override
             public boolean isRedirected(HttpRequest request, HttpResponse response, HttpContext context) {
                 boolean isRedirect = false;
                 try {
@@ -222,7 +220,7 @@ public class SparkTestUtil {
      * keystore specified in JVM params
      */
     private SSLSocketFactory getSslFactory() {
-        KeyStore keyStore = null;
+        KeyStore keyStore;
         try {
             keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             FileInputStream fis = new FileInputStream(getTrustStoreLocation());
@@ -293,7 +291,7 @@ public class SparkTestUtil {
     public static void sleep(long time) {
         try {
             Thread.sleep(time);
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
     }
 

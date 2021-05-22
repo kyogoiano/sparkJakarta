@@ -46,8 +46,7 @@ final class Routes {
         if (target != null) {
             Object result = null;
 
-            if (target instanceof RouteImpl) {
-                RouteImpl route = ((RouteImpl) target);
+            if (target instanceof RouteImpl route) {
 
                 if (context.requestWrapper().getDelegate() == null) {
                     Request request = RequestResponseFactory.create(match, context.httpRequest());
@@ -67,8 +66,7 @@ final class Routes {
             if (result != null) {
                 content = result;
 
-                if (content instanceof String) {
-                    String contentStr = (String) content;
+                if (content instanceof String contentStr) {
 
                     if (!contentStr.equals("")) {
                         context.responseWrapper().body(contentStr);

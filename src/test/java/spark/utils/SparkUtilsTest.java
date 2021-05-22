@@ -1,17 +1,18 @@
 package spark.utils;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.*;
 
 public class SparkUtilsTest {
 
     @Test
-    public void testConvertRouteToList() throws Exception {
+    public void testConvertRouteToList() {
 
         List<String> expected = Arrays.asList("api", "person", ":id");
 
@@ -24,33 +25,33 @@ public class SparkUtilsTest {
     }
 
     @Test
-    public void testIsParam_whenParameterFormattedAsParm() throws Exception {
+    public void testIsParam_whenParameterFormattedAsParm() {
 
-        assertTrue("Should return true because parameter follows convention of a parameter (:paramname)",
+        Assert.assertTrue("Should return true because parameter follows convention of a parameter (:paramname)",
                 SparkUtils.isParam(":param"));
 
     }
 
     @Test
-    public void testIsParam_whenParameterNotFormattedAsParm() throws Exception {
+    public void testIsParam_whenParameterNotFormattedAsParm() {
 
-        assertFalse("Should return false because parameter does not follows convention of a parameter (:paramname)",
+        Assert.assertFalse("Should return false because parameter does not follows convention of a parameter (:paramname)",
                 SparkUtils.isParam(".param"));
 
     }
 
 
     @Test
-    public void testIsSplat_whenParameterIsASplat() throws Exception {
+    public void testIsSplat_whenParameterIsASplat() {
 
-        assertTrue("Should return true because parameter is a splat (*)", SparkUtils.isSplat("*"));
+        Assert.assertTrue("Should return true because parameter is a splat (*)", SparkUtils.isSplat("*"));
 
     }
 
     @Test
-    public void testIsSplat_whenParameterIsNotASplat() throws Exception {
+    public void testIsSplat_whenParameterIsNotASplat() {
 
-        assertFalse("Should return true because parameter is not a splat (*)", SparkUtils.isSplat("!"));
+        Assert.assertFalse("Should return true because parameter is not a splat (*)", SparkUtils.isSplat("!"));
 
     }
 }

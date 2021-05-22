@@ -45,12 +45,12 @@ public class MatcherFilter implements Filter {
 
     private final StaticFilesConfiguration staticFiles;
 
-    private spark.route.Routes routeMatcher;
-    private SerializerChain serializerChain;
-    private ExceptionMapper exceptionMapper;
+    private final spark.route.Routes routeMatcher;
+    private final SerializerChain serializerChain;
+    private final ExceptionMapper exceptionMapper;
 
-    private boolean externalContainer;
-    private boolean hasOtherHandlers;
+    private final boolean externalContainer;
+    private final boolean hasOtherHandlers;
 
     /**
      * Constructor
@@ -167,7 +167,7 @@ public class MatcherFilter implements Filter {
                     responseWrapper.setDelegate(RequestResponseFactory.create(httpResponse));
                     body.set(CustomErrorPages.getFor(404, requestWrapper, responseWrapper));
                 } else {
-                    body.set(String.format(CustomErrorPages.NOT_FOUND));
+                    body.set(CustomErrorPages.NOT_FOUND);
                 }
             }
         } finally {

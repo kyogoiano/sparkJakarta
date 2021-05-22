@@ -24,9 +24,12 @@ public class ServletTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServletTest.class);
 
     private static SparkTestUtil testUtil;
+    private final static Server server = new Server();
 
     @AfterClass
-    public static void tearDown() {
+    public static void tearDown() throws Exception {
+        LOGGER.info(">>> STOPPING EMBEDDED JETTY SERVER");
+        server.stop();
         Spark.stop();
         if (MyApp.tmpExternalFile != null) {
             LOGGER.debug("tearDown().deleting: " + MyApp.tmpExternalFile);
@@ -38,8 +41,7 @@ public class ServletTest {
     public static void setup() throws InterruptedException {
         testUtil = new SparkTestUtil(PORT);
 
-        final Server server = new Server();
-        ServerConnector connector = new ServerConnector(server);
+       ServerConnector connector = new ServerConnector(server);
 
         // Set some timeout options to make debugging easier.
         connector.setIdleTimeout(1000 * 60 * 60);
@@ -55,21 +57,18 @@ public class ServletTest {
         server.setHandler(bb);
         CountDownLatch latch = new CountDownLatch(1);
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    LOGGER.info(">>> STARTING EMBEDDED JETTY SERVER for jUnit testing of SparkFilter");
-                    server.start();
-                    latch.countDown();
-                    System.in.read();
-                    LOGGER.info(">>> STOPPING EMBEDDED JETTY SERVER");
-                    server.stop();
-                    server.join();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    System.exit(100);
-                }
+        new Thread(() -> {
+            try {
+                LOGGER.info(">>> STARTING EMBEDDED JETTY SERVER for jUnit testing of SparkFilter");
+                server.start();
+                latch.countDown();
+                System.in.read();
+                //LOGGER.info(">>> STOPPING EMBEDDED JETTY SERVER");
+                //server.stop();
+                server.join();
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.exit(100);
             }
         }).start();
 
@@ -120,13 +119,13 @@ public class ServletTest {
     @Test
     public void testUnauthorized() throws Exception {
         UrlResponse urlResponse = testUtil.doMethod("GET", SOMEPATH + "/protected/resource", null);
-        Assert.assertTrue(urlResponse.status == 401);
+        Assert.assertEquals(401, urlResponse.status);
     }
 
     @Test
     public void testNotFound() throws Exception {
         UrlResponse urlResponse = testUtil.doMethod("GET", SOMEPATH + "/no/resource", null);
-        Assert.assertTrue(urlResponse.status == 404);
+        Assert.assertEquals(404, urlResponse.status);
     }
 
     @Test

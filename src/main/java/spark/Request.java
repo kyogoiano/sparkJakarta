@@ -16,19 +16,6 @@
  */
 package spark;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-
-
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -37,6 +24,10 @@ import spark.utils.IOUtils;
 import spark.utils.SparkUtils;
 import spark.utils.StringUtils;
 import spark.utils.urldecoding.UrlDecode;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 /**
  * Provides information about the HTTP request
@@ -159,7 +150,7 @@ public class Request {
      * @return an array containing the splat (wildcard) parameters
      */
     public String[] splat() {
-        return splat.toArray(new String[splat.size()]);
+        return splat.toArray(new String[0]);
     }
 
     /**
@@ -397,7 +388,7 @@ public class Request {
      */
     public Set<String> attributes() {
         Set<String> attrList = new HashSet<>();
-        Enumeration<String> attributes = (Enumeration<String>) servletRequest.getAttributeNames();
+        Enumeration<String> attributes = servletRequest.getAttributeNames();
         while (attributes.hasMoreElements()) {
             attrList.add(attributes.nextElement());
         }
@@ -559,11 +550,8 @@ public class Request {
                         splatParam.append(request.get(j));
                     }
                 }
-                try {
-                    String decodedSplat = URLDecoder.decode(splatParam.toString(), "UTF-8");
-                    splat.add(decodedSplat);
-                } catch (UnsupportedEncodingException e) {
-                }
+                String decodedSplat = URLDecoder.decode(splatParam.toString(), StandardCharsets.UTF_8);
+                splat.add(decodedSplat);
             }
         }
 

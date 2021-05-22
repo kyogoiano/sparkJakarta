@@ -24,7 +24,7 @@ import java.util.HashMap;
 public enum HttpMethod {
     get, post, put, patch, delete, head, trace, connect, options, before, after, afterafter, unsupported;
 
-    private static HashMap<String, HttpMethod> methods = new HashMap<>();
+    private static final HashMap<String, HttpMethod> methods = new HashMap<>();
 
     static {
         for (HttpMethod method : values()) {

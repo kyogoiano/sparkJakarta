@@ -59,7 +59,7 @@ public abstract class StringUtils {
             return true;
         }
         for (int i = 0; i < strLen; i++) {
-            if (Character.isWhitespace(cs.charAt(i)) == false) {
+            if (!Character.isWhitespace(cs.charAt(i))) {
                 return false;
             }
         }
@@ -128,17 +128,17 @@ public abstract class StringUtils {
      * @param newPattern String to insert
      * @return a String with the replacements
      */
-    public static String replace(String inString, String oldPattern, String newPattern) {
+    public static String replace(final String inString, final String oldPattern, final String newPattern) {
         if (!hasLength(inString) || !hasLength(oldPattern) || newPattern == null) {
             return inString;
         }
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
         int pos = 0; // our position in the old string
         int index = inString.indexOf(oldPattern);
         // the index of an occurrence we've found, or -1
-        int patLen = oldPattern.length();
+        final int patLen = oldPattern.length();
         while (index >= 0) {
-            sb.append(inString.substring(pos, index));
+            sb.append(inString, pos, index);
             sb.append(newPattern);
             pos = index + patLen;
             index = inString.indexOf(oldPattern, pos);
@@ -156,13 +156,13 @@ public abstract class StringUtils {
      *                      E.g. "az\n" will delete 'a's, 'z's and new lines.
      * @return the resulting String
      */
-    public static String deleteAny(String inString, String charsToDelete) {
+    public static String deleteAny(final String inString, final String charsToDelete) {
         if (!hasLength(inString) || !hasLength(charsToDelete)) {
             return inString;
         }
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
         for (int i = 0; i < inString.length(); i++) {
-            char c = inString.charAt(i);
+            final char c = inString.charAt(i);
             if (charsToDelete.indexOf(c) == -1) {
                 sb.append(c);
             }
@@ -176,11 +176,11 @@ public abstract class StringUtils {
      * @param path the file path (may be {@code null})
      * @return the extracted filename, or {@code null} if none
      */
-    public static String getFilename(String path) {
+    public static String getFilename(final String path) {
         if (path == null) {
             return null;
         }
-        int separatorIndex = path.lastIndexOf(FOLDER_SEPARATOR);
+        final int separatorIndex = path.lastIndexOf(FOLDER_SEPARATOR);
         return (separatorIndex != -1 ? path.substring(separatorIndex + 1) : path);
     }
 
@@ -193,8 +193,8 @@ public abstract class StringUtils {
      *                     (relative to the full file path above)
      * @return the full file path that results from applying the relative path
      */
-    public static String applyRelativePath(String path, String relativePath) {
-        int separatorIndex = path.lastIndexOf(FOLDER_SEPARATOR);
+    public static String applyRelativePath(final String path, final String relativePath) {
+        final int separatorIndex = path.lastIndexOf(FOLDER_SEPARATOR);
         if (separatorIndex != -1) {
             String newPath = path.substring(0, separatorIndex);
             if (!relativePath.startsWith(FOLDER_SEPARATOR)) {
@@ -215,7 +215,7 @@ public abstract class StringUtils {
      * @param path the original path
      * @return the normalized path
      */
-    public static String cleanPath(String path) {
+    public static String cleanPath(final String path) {
         if (path == null) {
             return null;
         }
@@ -236,25 +236,28 @@ public abstract class StringUtils {
             pathToUse = pathToUse.substring(1);
         }
 
-        String[] pathArray = delimitedListToStringArray(pathToUse, FOLDER_SEPARATOR);
-        List<String> pathElements = new LinkedList<>();
+        final String[] pathArray = delimitedListToStringArray(pathToUse, FOLDER_SEPARATOR);
+        final List<String> pathElements = new LinkedList<>();
         int tops = 0;
 
         for (int i = pathArray.length - 1; i >= 0; i--) {
-            String element = pathArray[i];
-            if (CURRENT_PATH.equals(element)) {
-                // Points to current directory - drop it.
-            } else if (TOP_PATH.equals(element)) {
-                // Registering top path found.
-                tops++;
-            } else {
-                if (tops > 0) {
-                    // Merging path element with element corresponding to top path.
-                    tops--;
-                } else {
-                    // Normal path element found.
-                    pathElements.add(0, element);
-                }
+            switch (pathArray[i]) {
+                case CURRENT_PATH:
+                    // Points to current directory - drop it.
+                    break;
+                case TOP_PATH:
+                    // Registering top path found.
+                    tops++;
+                    break;
+                default:
+                    if (tops > 0) {
+                        // Merging path element with element corresponding to top path.
+                        tops--;
+                    } else {
+                        // Normal path element found.
+                        pathElements.add(0, pathArray[i]);
+                    }
+                    break;
             }
         }
 
@@ -274,11 +277,11 @@ public abstract class StringUtils {
      * @return the String array ({@code null} if the passed-in
      * Collection was {@code null})
      */
-    public static String[] toStringArray(Collection<String> collection) {
+    public static String[] toStringArray(final Collection<String> collection) {
         if (collection == null) {
             return null;
         }
-        return collection.toArray(new String[collection.size()]);
+        return collection.toArray(new String[0]);
     }
 
     /**
@@ -309,14 +312,14 @@ public abstract class StringUtils {
      *                      line breaks: e.g. "\r\n\f" will delete all new lines and line feeds in a String.
      * @return an array of the tokens in the list
      */
-    public static String[] delimitedListToStringArray(String str, String delimiter, String charsToDelete) {
+    public static String[] delimitedListToStringArray(final String str, final String delimiter, final String charsToDelete) {
         if (str == null) {
             return new String[0];
         }
         if (delimiter == null) {
             return new String[] {str};
         }
-        List<String> result = new ArrayList<>();
+        final List<String> result = new ArrayList<>();
         if ("".equals(delimiter)) {
             for (int i = 0; i < str.length(); i++) {
                 result.add(deleteAny(str.substring(i, i + 1), charsToDelete));
@@ -346,12 +349,12 @@ public abstract class StringUtils {
      * @param suffix the String to end each element with
      * @return the delimited String
      */
-    public static String collectionToDelimitedString(Collection<?> coll, String delim, String prefix, String suffix) {
+    public static String collectionToDelimitedString(final Collection<?> coll, final String delim, final String prefix, final String suffix) {
         if (CollectionUtils.isEmpty(coll)) {
             return "";
         }
-        StringBuilder sb = new StringBuilder();
-        Iterator<?> it = coll.iterator();
+        final StringBuilder sb = new StringBuilder();
+        final Iterator<?> it = coll.iterator();
         while (it.hasNext()) {
             sb.append(prefix).append(it.next()).append(suffix);
             if (it.hasNext()) {
@@ -373,7 +376,7 @@ public abstract class StringUtils {
         return collectionToDelimitedString(coll, delim, "", "");
     }
 
-    public static String toString(byte[] bytes, String encoding) {
+    public static String toString(final byte[] bytes, final String encoding) {
         String str;
 
         if (encoding != null && Charset.isSupported(encoding)) {
@@ -390,7 +393,7 @@ public abstract class StringUtils {
         return str;
     }
 
-    public static String removeLeadingAndTrailingSlashesFrom(String string) {
+    public static String removeLeadingAndTrailingSlashesFrom(final String string) {
         
         String trimmed = string;
 

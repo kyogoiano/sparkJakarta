@@ -2,28 +2,25 @@ package spark.embeddedserver.jetty.websocket;
 
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
+import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
 import org.junit.Test;
-
 import spark.embeddedserver.jetty.websocket.WebSocketCreatorFactory.SparkWebSocketCreator;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class WebSocketCreatorFactoryTest {
 
     @Test
     public void testCreateWebSocketHandler() {
-        WebSocketCreator annotated =
+        JettyWebSocketCreator annotated =
                 WebSocketCreatorFactory.create(new WebSocketHandlerClassWrapper(AnnotatedHandler.class));
         assertTrue(annotated instanceof SparkWebSocketCreator);
-        assertTrue(SparkWebSocketCreator.class.cast(annotated).getHandler() instanceof AnnotatedHandler);
+        assertTrue(((SparkWebSocketCreator) annotated).getHandler() instanceof AnnotatedHandler);
 
-        WebSocketCreator listener =
+        JettyWebSocketCreator listener =
                 WebSocketCreatorFactory.create(new WebSocketHandlerClassWrapper(ListenerHandler.class));
         assertTrue(listener instanceof SparkWebSocketCreator);
-        assertTrue(SparkWebSocketCreator.class.cast(listener).getHandler() instanceof ListenerHandler);
+        assertTrue(((SparkWebSocketCreator) listener).getHandler() instanceof ListenerHandler);
     }
 
     @Test

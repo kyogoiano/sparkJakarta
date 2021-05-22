@@ -6,18 +6,11 @@ import jakarta.servlet.ServletContext;
 import java.util.Enumeration;
 
 
+public record FilterConfigWrapper(FilterConfig delegate) implements FilterConfig {
 
-public class FilterConfigWrapper implements FilterConfig {
- 
-    private FilterConfig delegate;
-
-    public FilterConfigWrapper(FilterConfig delegate) {
-        this.delegate = delegate;
-    }
-    
     /**
-     * @return
-     * @see jakarta.servlet.FilterConfig#getFilterName()
+     * @return filter name
+     * @see FilterConfig#getFilterName()
      */
     public String getFilterName() {
         return delegate.getFilterName();
@@ -26,7 +19,7 @@ public class FilterConfigWrapper implements FilterConfig {
     /**
      * @param name
      * @return
-     * @see jakarta.servlet.FilterConfig#getInitParameter(java.lang.String)
+     * @see FilterConfig#getInitParameter(String)
      */
     public String getInitParameter(String name) {
         if (name.equals("applicationClass")) {
@@ -37,7 +30,7 @@ public class FilterConfigWrapper implements FilterConfig {
 
     /**
      * @return
-     * @see jakarta.servlet.FilterConfig#getInitParameterNames()
+     * @see FilterConfig#getInitParameterNames()
      */
     public Enumeration<String> getInitParameterNames() {
         return delegate.getInitParameterNames();
@@ -45,10 +38,10 @@ public class FilterConfigWrapper implements FilterConfig {
 
     /**
      * @return
-     * @see jakarta.servlet.FilterConfig#getServletContext()
+     * @see FilterConfig#getServletContext()
      */
     public ServletContext getServletContext() {
         return delegate.getServletContext();
     }
-    
+
 }

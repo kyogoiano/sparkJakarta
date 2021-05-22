@@ -19,12 +19,15 @@ package spark;
 
 import jakarta.servlet.http.HttpServletResponse;
 
+import java.io.Serial;
+
 /**
  * Exception used for stopping the execution
  *
  * @author Per Wendel
  */
 public class HaltException extends RuntimeException {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private int statusCode = HttpServletResponse.SC_OK;

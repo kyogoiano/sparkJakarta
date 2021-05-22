@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -118,7 +119,7 @@ public class StaticFilesTestExternal {
 
     @Test
     public void testDirectoryTraversalProtectionExternal() throws Exception {
-        String path = "/" + URLEncoder.encode("..\\..\\spark\\", "UTF-8") + "Spark.class";
+        String path = "/" + URLEncoder.encode("..\\..\\spark\\", StandardCharsets.UTF_8) + "Spark.class";
         SparkTestUtil.UrlResponse response = doGet(path);
 
         Assert.assertEquals(404, response.status);

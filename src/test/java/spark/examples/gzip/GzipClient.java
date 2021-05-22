@@ -14,18 +14,17 @@ import spark.utils.IOUtils;
 public class GzipClient {
 
     public static String getAndDecompress(String url) throws Exception {
-        InputStream compressed = get(url);
-        GZIPInputStream gzipInputStream = new GZIPInputStream(compressed);
-        String decompressed = IOUtils.toString(gzipInputStream);
-        return decompressed;
+        final InputStream compressed = get(url);
+        final GZIPInputStream gzipInputStream = new GZIPInputStream(compressed);
+        return IOUtils.toString(gzipInputStream);
     }
 
     public static InputStream get(String url) throws IOException {
-        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        final HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         connection.addRequestProperty("Accept-Encoding", "gzip");
         connection.connect();
 
-        return (InputStream) connection.getInputStream();
+        return connection.getInputStream();
     }
 
 }

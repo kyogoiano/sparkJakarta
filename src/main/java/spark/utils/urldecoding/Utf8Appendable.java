@@ -130,7 +130,7 @@ public abstract class Utf8Appendable {
             int next = TRANS_TABLE[_state + type];
 
             switch (next) {
-                case UTF8_ACCEPT:
+                case UTF8_ACCEPT -> {
                     _state = next;
                     if (_codep < Character.MIN_HIGH_SURROGATE) {
                         _appendable.append((char) _codep);
@@ -138,18 +138,15 @@ public abstract class Utf8Appendable {
                         for (char c : Character.toChars(_codep))
                             _appendable.append(c);
                     }
-                    break;
-
-                case UTF8_REJECT:
+                }
+                case UTF8_REJECT -> {
                     String reason = "byte " + TypeUtil.toHexString(b) + " in state " + (_state / 12);
                     _codep = 0;
                     _state = UTF8_ACCEPT;
                     _appendable.append(REPLACEMENT);
                     throw new org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception(reason);
-
-                default:
-                    _state = next;
-
+                }
+                default -> _state = next;
             }
         }
     }

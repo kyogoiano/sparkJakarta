@@ -42,7 +42,7 @@ final class GeneralError {
                        ExceptionMapper exceptionMapper,
                        Exception e) {
 
-        ExceptionHandlerImpl handler = exceptionMapper.getHandler(e);
+        final ExceptionHandlerImpl<Exception> handler = (ExceptionHandlerImpl<Exception>) exceptionMapper.getHandler(e);
 
         if (handler != null) {
             handler.handle(e, requestWrapper, responseWrapper);

@@ -30,7 +30,7 @@ public abstract class FilterImpl implements Filter, Wrapper {
     static final String DEFAULT_ACCEPT_TYPE = "*/*";
 
     private String path;
-    private String acceptType;
+    private final String acceptType;
     private Filter delegate;
 
     /**

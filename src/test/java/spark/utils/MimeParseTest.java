@@ -4,13 +4,14 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 import static org.junit.Assert.*;
 
 public class MimeParseTest {
 
     @Test
-    public void testBestMatch() throws Exception {
+    public void testBestMatch() {
 
         final String header = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
 
@@ -23,11 +24,11 @@ public class MimeParseTest {
     }
 
     @Test
-    public void testBestMatch_whenSupportedIsLowQualityFactor() throws Exception {
+    public void testBestMatch_whenSupportedIsLowQualityFactor() {
 
         final String header = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
 
-        Collection<String> supported = Arrays.asList("application/json");
+        Collection<String> supported = Collections.singletonList("application/json");
 
         assertEquals("bestMatch should return the mime type even if it is not included in the supported" +
                         "mime types because it is considered by the */* all media type specified in the Accept" +

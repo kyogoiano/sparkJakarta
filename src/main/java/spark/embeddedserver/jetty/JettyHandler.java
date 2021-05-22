@@ -32,7 +32,7 @@ import org.eclipse.jetty.server.session.SessionHandler;
  */
 public class JettyHandler extends SessionHandler {
 
-    private Filter filter;
+    private final Filter filter;
 
     public JettyHandler(Filter filter) {
         this.filter = filter;
@@ -48,11 +48,7 @@ public class JettyHandler extends SessionHandler {
         HttpRequestWrapper wrapper = new HttpRequestWrapper(request);
         filter.doFilter(wrapper, response, null);
 
-        if (wrapper.notConsumed()) {
-            baseRequest.setHandled(false);
-        } else {
-            baseRequest.setHandled(true);
-        }
+        baseRequest.setHandled(!wrapper.notConsumed());
 
     }
 

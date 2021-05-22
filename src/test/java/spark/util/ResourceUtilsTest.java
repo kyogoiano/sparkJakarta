@@ -6,8 +6,10 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.function.ThrowingRunnable;
 import org.junit.rules.ExpectedException;
 
 import spark.utils.ResourceUtils;
@@ -16,19 +18,15 @@ import static org.junit.Assert.assertEquals;
 
 public class ResourceUtilsTest {
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void testGetFile_whenURLProtocolIsNotFile_thenThrowFileNotFoundException() throws
                                                                                       MalformedURLException,
                                                                                       FileNotFoundException {
-        thrown.expect(FileNotFoundException.class);
-        thrown.expectMessage("My File Path cannot be resolved to absolute file path " +
-                                     "because it does not reside in the file system: http://example.com/");
 
         URL url = new URL("http://example.com/");
-        ResourceUtils.getFile(url, "My File Path");
+        Assert.assertThrows("My File Path cannot be resolved to absolute file path " +
+            "because it does not reside in the file system: http://example.com/", FileNotFoundException.class, (ThrowingRunnable) ResourceUtils.getFile(url, "My File Path"));
     }
 
     @Test

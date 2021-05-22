@@ -41,9 +41,7 @@ public class GenericSecureIntegrationTest {
         Spark.secure(SparkTestUtil.getKeyStoreLocation(),
                      SparkTestUtil.getKeystorePassword(), null, null);
 
-        before("/protected/*", (request, response) -> {
-            halt(401, "Go Away!");
-        });
+        before("/protected/*", (request, response) -> halt(401, "Go Away!"));
 
         get("/hi", (request, response) -> "Hello World!");
 
@@ -67,9 +65,7 @@ public class GenericSecureIntegrationTest {
             return "Body was: " + body;
         });
 
-        after("/hi", (request, response) -> {
-            response.header("after", "foobar");
-        });
+        after("/hi", (request, response) -> response.header("after", "foobar"));
 
         Spark.awaitInitialization();
     }
@@ -139,13 +135,13 @@ public class GenericSecureIntegrationTest {
     @Test
     public void testUnauthorized() throws Exception {
         UrlResponse urlResponse = testUtil.doMethodSecure("GET", "/protected/resource", null);
-        Assert.assertTrue(urlResponse.status == 401);
+        Assert.assertEquals(401, urlResponse.status);
     }
 
     @Test
     public void testNotFound() throws Exception {
         UrlResponse urlResponse = testUtil.doMethodSecure("GET", "/no/resource", null);
-        Assert.assertTrue(urlResponse.status == 404);
+        Assert.assertEquals(404, urlResponse.status);
     }
 
     @Test

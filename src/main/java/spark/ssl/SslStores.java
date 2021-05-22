@@ -19,37 +19,31 @@ package spark.ssl;
 /**
  * SSL Stores
  */
-public class SslStores {
-
-    protected String keystoreFile;
-    protected String keystorePassword;
-    protected String certAlias;
-    protected String truststoreFile;
-    protected String truststorePassword;
-    protected boolean needsClientCert;
+public record SslStores(String keystoreFile, String keystorePassword, String certAlias,
+                        String truststoreFile, String truststorePassword, boolean needsClientCert) {
 
     /**
      * Creates a Stores instance.
      *
-     * @param keystoreFile the keystoreFile
-     * @param keystorePassword the keystorePassword
-     * @param truststoreFile the truststoreFile
+     * @param keystoreFile       the keystoreFile
+     * @param keystorePassword   the keystorePassword
+     * @param truststoreFile     the truststoreFile
      * @param truststorePassword the truststorePassword
      * @return the SslStores instance.
      */
     public static SslStores create(String keystoreFile,
-                                String keystorePassword,
-                                String truststoreFile,
-                                String truststorePassword) {
+                                   String keystorePassword,
+                                   String truststoreFile,
+                                   String truststorePassword) {
 
         return new SslStores(keystoreFile, keystorePassword, null, truststoreFile, truststorePassword, false);
     }
 
     public static SslStores create(String keystoreFile,
-                                String keystorePassword,
-                                String certAlias,
-                                String truststoreFile,
-                                String truststorePassword) {
+                                   String keystorePassword,
+                                   String certAlias,
+                                   String truststoreFile,
+                                   String truststorePassword) {
 
         return new SslStores(keystoreFile, keystorePassword, certAlias, truststoreFile, truststorePassword, false);
     }
@@ -73,23 +67,10 @@ public class SslStores {
         return new SslStores(keystoreFile, keystorePassword, certAlias, truststoreFile, truststorePassword, needsClientCert);
     }
 
-    private SslStores(String keystoreFile,
-                      String keystorePassword,
-                      String certAlias,
-                      String truststoreFile,
-                      String truststorePassword,
-                      boolean needsClientCert) {
-        this.keystoreFile = keystoreFile;
-        this.keystorePassword = keystorePassword;
-        this.certAlias = certAlias;
-        this.truststoreFile = truststoreFile;
-        this.truststorePassword = truststorePassword;
-        this.needsClientCert = needsClientCert;
-    }
-
     /**
      * @return keystoreFile
      */
+    @Override
     public String keystoreFile() {
         return keystoreFile;
     }
@@ -97,6 +78,7 @@ public class SslStores {
     /**
      * @return keystorePassword
      */
+    @Override
     public String keystorePassword() {
         return keystorePassword;
     }
@@ -104,6 +86,7 @@ public class SslStores {
     /**
      * @return certAlias
      */
+    @Override
     public String certAlias() {
         return certAlias;
     }
@@ -125,6 +108,7 @@ public class SslStores {
     /**
      * @return needsClientCert
      */
+    @Override
     public boolean needsClientCert() {
         return needsClientCert;
     }

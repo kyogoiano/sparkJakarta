@@ -50,6 +50,7 @@ class Base64 {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        assert buf != null;
         return new String(buf);
     }
 

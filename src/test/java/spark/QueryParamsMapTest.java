@@ -55,10 +55,10 @@ public class QueryParamsMapTest {
         queryMap.loadKeys("user[age]",new String[] {"10"});
         queryMap.loadKeys("user[agrees]",new String[] {"true"});
 
-        assertEquals(new Integer(10),queryMap.get("user").get("age").integerValue());
-        assertEquals(new Float(10),queryMap.get("user").get("age").floatValue());
-        assertEquals(new Double(10),queryMap.get("user").get("age").doubleValue());
-        assertEquals(new Long(10),queryMap.get("user").get("age").longValue());
+        assertEquals(Integer.valueOf(10),queryMap.get("user").get("age").integerValue());
+        assertEquals(Float.valueOf(10),queryMap.get("user").get("age").floatValue());
+        assertEquals(Double.valueOf(10),queryMap.get("user").get("age").doubleValue());
+        assertEquals(Long.valueOf(10),queryMap.get("user").get("age").longValue());
         assertEquals(Boolean.TRUE,queryMap.get("user").get("agrees").booleanValue());
     }
     
@@ -72,7 +72,7 @@ public class QueryParamsMapTest {
     
     @Test
     public void parseKeyShouldParseSubkeys() {
-        String[] parsed = null;
+        String[] parsed;
         
         parsed = queryMap.parseKey("[name][more]");
         

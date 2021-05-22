@@ -11,7 +11,7 @@ import spark.TemplateEngine;
 
 public class FreeMarkerTemplateEngine extends TemplateEngine {
 
-    private Configuration configuration;
+    private final Configuration configuration;
 
     protected FreeMarkerTemplateEngine() {
         this.configuration = createFreemarkerConfiguration();
@@ -26,9 +26,7 @@ public class FreeMarkerTemplateEngine extends TemplateEngine {
             template.process(modelAndView.getModel(), stringWriter);
 
             return stringWriter.toString();
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        } catch (TemplateException e) {
+        } catch (IOException | TemplateException e) {
             throw new IllegalArgumentException(e);
         }
     }
