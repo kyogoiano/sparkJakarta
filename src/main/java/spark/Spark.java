@@ -1235,11 +1235,11 @@ public class Spark {
      * @param path    the WebSocket path.
      * @param handler the handler class that will manage the WebSocket connection to the given path.
      */
-    public static void webSocket(String path, Class<?> handler) {
+    public static <T> void webSocket(String path, Class<T> handler) {
         getInstance().webSocket(path, handler);
     }
 
-    public static void webSocket(String path, Object handler) {
+    public static <T> void webSocket(String path, T handler) {
         getInstance().webSocket(path, handler);
     }
 

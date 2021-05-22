@@ -396,7 +396,7 @@ public final class Service extends Routable {
      * @param path         the WebSocket path.
      * @param handlerClass the handler class that will manage the WebSocket connection to the given path.
      */
-    public void webSocket(String path, Class<?> handlerClass) {
+    public <T> void webSocket(String path, Class<T> handlerClass) {
         addWebSocketHandler(path, new WebSocketHandlerClassWrapper(handlerClass));
     }
 
@@ -408,7 +408,7 @@ public final class Service extends Routable {
      * @param path    the WebSocket path.
      * @param handler the handler instance that will manage the WebSocket connection to the given path.
      */
-    public void webSocket(String path, Object handler) {
+    public <T> void webSocket(String path, T handler) {
         addWebSocketHandler(path, new WebSocketHandlerInstanceWrapper(handler));
     }
 

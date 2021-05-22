@@ -55,12 +55,12 @@ public class SparkFilter implements Filter {
     private SparkApplication[] applications;
 
     @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
+    public void init(final FilterConfig filterConfig) throws ServletException {
         ServletFlag.runFromServlet();
 
         applications = getApplications(filterConfig);
 
-        for (SparkApplication application : applications) {
+        for (final SparkApplication application : applications) {
             application.init();
         }
 
@@ -95,7 +95,7 @@ public class SparkFilter implements Filter {
      */
     protected SparkApplication getApplication(String applicationClassName) throws ServletException {
         try {
-            Class<?> applicationClass = Class.forName(applicationClassName);
+            final Class<?> applicationClass = Class.forName(applicationClassName);
             return (SparkApplication) applicationClass.getDeclaredConstructor().newInstance();
         } catch (Exception exc) {
             throw new ServletException(exc);
@@ -113,7 +113,7 @@ public class SparkFilter implements Filter {
      */
     protected SparkApplication[] getApplications(final FilterConfig filterConfig) throws ServletException {
 
-        String applications = filterConfig.getInitParameter(APPLICATION_CLASS_PARAM);
+        final String applications = filterConfig.getInitParameter(APPLICATION_CLASS_PARAM);
         SparkApplication[] solvedApplications = null;
 
         if (StringUtils.isNotBlank(applications)) {
@@ -137,8 +137,8 @@ public class SparkFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws
                                                                                               IOException,
                                                                                               ServletException {
-        HttpServletRequest httpRequest = (HttpServletRequest) request; // NOSONAR
-        HttpServletResponse httpResponse = (HttpServletResponse) response; // NOSONAR
+        final HttpServletRequest httpRequest = (HttpServletRequest) request; // NOSONAR
+        final HttpServletResponse httpResponse = (HttpServletResponse) response; // NOSONAR
 
         final String relativePath = FilterTools.getRelativePath(httpRequest, filterPath);
 
@@ -171,7 +171,7 @@ public class SparkFilter implements Filter {
     @Override
     public void destroy() {
         if (applications != null) {
-            for (SparkApplication sparkApplication : applications) {
+            for (final SparkApplication sparkApplication : applications) {
                 sparkApplication.destroy();
             }
         }

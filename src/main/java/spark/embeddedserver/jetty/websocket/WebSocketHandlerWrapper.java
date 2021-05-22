@@ -6,16 +6,16 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 /**
  * A wrapper for web socket handler classes/instances.
  */
-public interface WebSocketHandlerWrapper {
+public interface WebSocketHandlerWrapper <T> {
     
     /**
      * Gets the actual handler - if necessary, instantiating an object.
      * 
      * @return The handler instance.
      */
-    Object getHandler();
+    T getHandler();
     
-    static void validateHandlerClass(Class<?> handlerClass) {
+    static <T> void validateHandlerClass(Class<T> handlerClass) {
         boolean valid = WebSocketListener.class.isAssignableFrom(handlerClass)
                 || handlerClass.isAnnotationPresent(WebSocket.class);
         if (!valid) {

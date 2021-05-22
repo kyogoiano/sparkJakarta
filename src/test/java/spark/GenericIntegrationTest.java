@@ -23,7 +23,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import spark.embeddedserver.jetty.websocket.WebSocketTestClient;
 import spark.embeddedserver.jetty.websocket.WebSocketTestHandler;
 import spark.examples.exception.BaseException;
@@ -33,18 +32,19 @@ import spark.examples.exception.SubclassOfBaseException;
 import spark.util.SparkTestUtil;
 import spark.util.SparkTestUtil.UrlResponse;
 
-import static spark.Spark.after;
-import static spark.Spark.afterAfter;
-import static spark.Spark.before;
-import static spark.Spark.exception;
-import static spark.Spark.externalStaticFileLocation;
-import static spark.Spark.get;
-import static spark.Spark.halt;
-import static spark.Spark.patch;
-import static spark.Spark.path;
-import static spark.Spark.post;
-import static spark.Spark.staticFileLocation;
-import static spark.Spark.webSocket;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static spark.Spark.*;
 
 public class GenericIntegrationTest {
 
@@ -478,6 +478,7 @@ public class GenericIntegrationTest {
         try {
             client.start();
             client.connect(ws, URI.create(uri), new ClientUpgradeRequest());
+            client.getHttpClient().POST("/ws");
             ws.awaitClose(30, TimeUnit.SECONDS);
         } finally {
             client.stop();
