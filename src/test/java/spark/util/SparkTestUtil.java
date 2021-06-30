@@ -1,76 +1,56 @@
 package spark.util;
 
-import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
-import org.apache.hc.client5.http.classic.methods.*;
-import org.apache.hc.client5.http.config.RequestConfig;
-import org.apache.hc.client5.http.cookie.StandardCookieSpec;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
 import org.apache.hc.client5.http.impl.DefaultRedirectStrategy;
-import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
-import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
-import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
-import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
-import org.apache.hc.core5.concurrent.FutureCallback;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.BasicHttpClientConnectionManager;
+import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
+import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
+import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.core5.http.*;
+import org.apache.hc.core5.http.config.Registry;
+import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.apache.hc.core5.http.io.entity.StringEntity;
-import org.apache.hc.core5.http.nio.AsyncRequestProducer;
-import org.apache.hc.core5.http.nio.support.AsyncRequestBuilder;
+import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 import org.apache.hc.core5.http.protocol.HttpContext;
-import org.apache.hc.core5.http.ssl.TLS;
-import org.apache.hc.core5.http2.HttpVersionPolicy;
-import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
-import org.apache.hc.core5.pool.PoolReusePolicy;
-import org.apache.hc.core5.util.TimeValue;
-import org.apache.hc.core5.util.Timeout;
+import org.apache.hc.core5.http.support.AbstractRequestBuilder;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.security.KeyStore;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class SparkTestUtil {
 
     private final int port;
 
-    private CloseableHttpAsyncClient httpClient;
+    private CloseableHttpClient httpClient;
 
     public SparkTestUtil(int port) {
         this.port = port;
         this.httpClient = httpClientBuilder().build();
     }
 
-    private HttpAsyncClientBuilder httpClientBuilder() {
-//        SSLConnectionSocketFactory sslConnectionSocketFactory =
-//            new SSLConnectionSocketFactory(Objects.requireNonNull(getSslFactory()), (paramString, paramSSLSession) -> true);
-//
-//        Registry<ConnectionSocketFactory> socketRegistry = RegistryBuilder
-//            .<ConnectionSocketFactory>create()
-//            .register("http", PlainConnectionSocketFactory.INSTANCE)
-//            .register("https", sslConnectionSocketFactory)
-//            .build();
-
-        final PoolingAsyncClientConnectionManager connectionManager =
-            PoolingAsyncClientConnectionManagerBuilder.create()
-            .setTlsStrategy(ClientTlsStrategyBuilder.create()
-                .setSslContext(getSslContext())
-                .setTlsVersions(TLS.V_1_3, TLS.V_1_2)
-                .build())
-            .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.STRICT)
-            .setConnPoolPolicy(PoolReusePolicy.LIFO)
-            .setConnectionTimeToLive(TimeValue.ofMinutes(1L))
-            .build();
-
-        RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(Timeout.ofSeconds(50))
-                .setResponseTimeout(Timeout.ofSeconds(50))
-                .setCookieSpec(StandardCookieSpec.STRICT)
+    private HttpClientBuilder httpClientBuilder() {
+        final SSLConnectionSocketFactory sslConnectionSocketFactory =
+                new SSLConnectionSocketFactory(Objects.requireNonNull(getSslFactory()), (paramString, paramSSLSession) -> true);
+        final Registry<ConnectionSocketFactory> socketRegistry = RegistryBuilder
+                .<ConnectionSocketFactory>create()
+                .register("http", PlainConnectionSocketFactory.INSTANCE)
+                .register("https", sslConnectionSocketFactory)
                 .build();
-        return HttpAsyncClientBuilder.create().setConnectionManager(connectionManager).setDefaultRequestConfig(requestConfig).setVersionPolicy(HttpVersionPolicy.NEGOTIATE);
+        final BasicHttpClientConnectionManager connManager = new BasicHttpClientConnectionManager(socketRegistry);
+        return HttpClientBuilder.create().setConnectionManager(connManager);
     }
 
     public void setFollowRedirectStrategy(Integer... codes) {
@@ -125,78 +105,52 @@ public class SparkTestUtil {
     }
 
     public UrlResponse doMethod(String requestMethod, String path, String body, boolean secureConnection,
-                                String acceptType, Map<String, String> reqHeaders) throws IOException, ParseException {
-        final AsyncRequestProducer httpRequest = getHttpRequest(requestMethod, path, body, secureConnection, acceptType, reqHeaders);
-        httpClient.start();
+                                String acceptType, final Map<String, String> reqHeaders) throws IOException, ParseException {
+        final ClassicHttpRequest httpRequest = getHttpRequest(requestMethod, path, body, secureConnection, acceptType, reqHeaders);
+        final CloseableHttpResponse httpResponse = httpClient.execute(httpRequest);
 
-        final UrlResponse httpResponse = httpClient.execute(httpRequest, new FutureCallback<SimpleHttpResponse>() {
-            @Override
-            public void completed(SimpleHttpResponse result) {
-
-            }
-
-            @Override
-            public void failed(Exception ex) {
-
-            }
-
-            @Override
-            public void cancelled() {
-
-            }
-        });
-//                if (callback.getCode() >= 400) {
-//                    throw new ClientProtocolException(Objects.toString(callback.getCode()));
-//                }
-                final UrlResponse urlResponse = new UrlResponse();
-                urlResponse.status = callback.getCode();
-                final HttpEntity entity = callback.getEntity();
-                if (entity != null) {
-                    urlResponse.body = EntityUtils.toString(entity);
-                } else {
-                    urlResponse.body = "";
-                }
-                final Map<String, String> headers = new HashMap<>();
-                final Header[] allHeaders = callback.getHeaders();
-                for (final Header header : allHeaders) {
-                    headers.put(header.getName(), header.getValue());
-                }
-                urlResponse.headers = headers;
-                return urlResponse;
-            });
-
-        return httpResponse;
+        final UrlResponse urlResponse = new UrlResponse();
+        urlResponse.status = httpResponse.getCode();
+        final HttpEntity entity = httpResponse.getEntity();
+        if (entity != null) {
+            urlResponse.body = EntityUtils.toString(entity);
+        } else {
+            urlResponse.body = "";
+        }
+        final Map<String, String> headers;
+        final Header[] allHeaders = httpResponse.getHeaders();
+        headers = Arrays.stream(allHeaders).
+            collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue, (a, b) -> b));
+        urlResponse.headers = headers;
+        return urlResponse;
     }
 
-    private AsyncRequestProducer getHttpRequest(String requestMethod, String path, String body, boolean secureConnection,
-                                                String acceptType, Map<String, String> reqHeaders) {
+    private ClassicHttpRequest getHttpRequest(String requestMethod, String path, String body, boolean secureConnection,
+                                          String acceptType, Map<String, String> reqHeaders) {
 
         String protocol = secureConnection ? "https" : "http";
         String uri = protocol + "://localhost:" + port + path;
 
-        final AsyncRequestBuilder asyncRequestBuilder = AsyncRequestBuilder.create(requestMethod).setUri(uri);
+        final ClassicRequestBuilder requestBuilder = ClassicRequestBuilder.create(requestMethod).setUri(uri);
         switch (requestMethod) {
-             case "GET", "DELETE":
-                 asyncRequestBuilder.setHeader("Accept", acceptType);
-             break;
-             case "POST", "PATCH", "PUT":
-                 asyncRequestBuilder.setHeader("Accept", acceptType);
-                         asyncRequestBuilder.setEntity(body);
-             break;
-            case "HEAD", "TRACE", "OPTIONS", "LOCK":
-            default: throw new IllegalArgumentException("Unknown method " + requestMethod);
+            case "GET", "DELETE" -> requestBuilder.setHeader("Accept", acceptType);
+            case "POST", "PATCH", "PUT" -> {
+                requestBuilder.setHeader("Accept", acceptType);
+                requestBuilder.setEntity(body);
+            }
+            case "HEAD", "TRACE", "OPTIONS", "LOCK" -> {
+            }
+            default -> throw new IllegalArgumentException("Unknown method " + requestMethod);
         }
 
-        addHeaders(reqHeaders, asyncRequestBuilder);
+        addHeaders(reqHeaders, requestBuilder);
 
-        return asyncRequestBuilder.build();
+        return requestBuilder.build();
     }
 
-    private void addHeaders(final Map<String, String> reqHeaders, final AsyncRequestBuilder req) {
+    private void addHeaders(final Map<String, String> reqHeaders, final AbstractRequestBuilder<? extends ClassicHttpRequest> requestBuilder) {
         if (reqHeaders != null) {
-            for (final Map.Entry<String, String> header : reqHeaders.entrySet()) {
-                req.addHeader(header.getKey(), header.getValue());
-            }
+            reqHeaders.forEach(requestBuilder::addHeader);
         }
     }
 
@@ -218,19 +172,19 @@ public class SparkTestUtil {
      * @return an SSL Socket Factory using either provided keystore OR the
      * keystore specified in JVM params
      */
-    private SSLContext getSslContext() {
+    private SSLSocketFactory getSslFactory() {
         KeyStore keyStore;
         try {
             keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            FileInputStream fis = new FileInputStream(getTrustStoreLocation());
+            final FileInputStream fis = new FileInputStream(getTrustStoreLocation());
             keyStore.load(fis, getTrustStorePassword().toCharArray());
             fis.close();
 
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             tmf.init(keyStore);
-            SSLContext ctx = SSLContext.getInstance("TLS");
+            final SSLContext ctx = SSLContext.getInstance("TLS");
             ctx.init(null, tmf.getTrustManagers(), null);
-            return ctx;
+            return ctx.getSocketFactory();
         } catch (Exception e) {
             e.printStackTrace();
         }

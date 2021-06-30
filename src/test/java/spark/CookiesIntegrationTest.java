@@ -8,10 +8,13 @@ import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.core5.http.HttpResponse;
+import org.eclipse.jetty.server.Server;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import spark.util.SparkTestUtil;
 
+import static spark.Service.ignite;
 /**
  * System tests for the Cookies support.
  *
@@ -21,9 +24,16 @@ public class CookiesIntegrationTest {
 
     private static final String DEFAULT_HOST_URL = "http://localhost:4567";
     private HttpClient httpClient = HttpClientBuilder.create().build();
+    private static Service service;
+    private static String errorMessage = "";
 
     @BeforeClass
-    public static void initRoutes() throws InterruptedException {
+    public static void initRoutes() {
+        service = ignite();
+        service.port(8080);
+        service.initExceptionHandler((e) -> errorMessage = "Custom init error");
+        service.init();
+        service.awaitInitialization();
         post("/assertNoCookies", (request, response) -> {
             if (!request.cookies().isEmpty()) {
                 halt(500);
