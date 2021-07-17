@@ -482,6 +482,7 @@ public class GenericIntegrationTest {
             ws.awaitClose(30, TimeUnit.SECONDS);
         } finally {
             client.stop();
+            client.destroy();
         }
 
         List<String> events = WebSocketTestHandler.events;

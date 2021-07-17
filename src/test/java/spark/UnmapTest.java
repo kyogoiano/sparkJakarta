@@ -1,13 +1,13 @@
 package spark;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Test;
 
 import spark.util.SparkTestUtil;
 
-import static spark.Spark.awaitInitialization;
-import static spark.Spark.get;
-import static spark.Spark.unmap;
+import static spark.Spark.*;
+import static spark.Spark.awaitStop;
 
 public class UnmapTest {
 
@@ -37,5 +37,11 @@ public class UnmapTest {
 
         response = testUtil.doMethod("GET", "/tobeunmapped", null);
         Assert.assertEquals(404, response.status);
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        stop();
+        awaitStop();
     }
 }

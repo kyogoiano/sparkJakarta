@@ -48,6 +48,9 @@ public class EmbeddedServersTest {
         assertTrue(requestLogFile.exists());
         embeddedServer.extinguish();
         verify(serverFactory).create(0, 0, 0);
+
+        server.stop();
+        server.destroy();
     }
 
     @Test

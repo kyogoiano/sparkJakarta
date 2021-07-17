@@ -26,8 +26,7 @@ import spark.examples.gzip.GzipExample;
 import spark.util.SparkTestUtil;
 
 import static org.junit.Assert.assertEquals;
-import static spark.Spark.awaitInitialization;
-import static spark.Spark.stop;
+import static spark.Spark.*;
 
 /**
  * Tests the GZIP compression support in Spark.
@@ -44,6 +43,7 @@ public class GzipTest {
     @AfterClass
     public static void tearDown() {
         stop();
+        awaitStop();
     }
 
     @Test

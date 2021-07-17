@@ -3,9 +3,7 @@ package spark;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 import org.powermock.reflect.Whitebox;
@@ -34,6 +32,12 @@ public class ServiceTest {
     public void test() {
         service = ignite();
     }
+
+    @After
+    public void tearDown() {
+        service.stop();
+    }
+
 
     @Test
     public void testEmbeddedServerIdentifier_defaultAndSet() {

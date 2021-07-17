@@ -18,14 +18,11 @@ package spark;
 
 import java.io.IOException;
 
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import spark.util.SparkTestUtil;
 
-import static spark.Spark.get;
-import static spark.Spark.redirect;
+import static spark.Spark.*;
 
 /**
  * Tests the redirect utility methods in {@link spark.Redirect}
@@ -42,6 +39,9 @@ public class RedirectTest {
         testUtil.setFollowRedirectStrategy(301, 302); // don't set the others to be able to verify affect of Redirect.Status
 
         get("/hello", (request, response) -> REDIRECTED);
+        post("/hello", (request, response) -> REDIRECTED);
+        put("/hello", (request, response) -> REDIRECTED);
+        delete("/hello", (request, response) -> REDIRECTED);
 
         redirect.get("/hi", "/hello");
         redirect.post("/hi", "/hello");
@@ -55,8 +55,20 @@ public class RedirectTest {
         redirect.delete("/hiagain", "/hello", Redirect.Status.USE_PROXY);
         redirect.any("/anyagain", "/hello", Redirect.Status.USE_PROXY);
 
+
         Spark.awaitInitialization();
     }
+
+    @AfterClass
+    public static void tearDown() {
+        Spark.stop();
+        Spark.awaitStop();
+    }
+
+//    @After
+//    public void closeClient() throws IOException {
+//        testUtil.closeClient();
+//    }
 
     @Test
     public void testRedirectGet() throws Exception {

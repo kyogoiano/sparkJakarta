@@ -10,9 +10,7 @@ import org.junit.Test;
 import spark.util.SparkTestUtil;
 import spark.util.SparkTestUtil.UrlResponse;
 
-import static spark.Spark.awaitInitialization;
-import static spark.Spark.before;
-import static spark.Spark.stop;
+import static spark.Spark.*;
 
 public class FilterTest {
     static SparkTestUtil testUtil;
@@ -20,6 +18,7 @@ public class FilterTest {
     @AfterClass
     public static void tearDown() {
         stop();
+        awaitStop();
     }
 
     @BeforeClass
