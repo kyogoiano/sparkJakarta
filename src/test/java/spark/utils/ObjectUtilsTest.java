@@ -1,22 +1,23 @@
 package spark.utils;
 
-import org.junit.Test;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ObjectUtilsTest {
 
     @Test
-    public void testIsEmpty_whenArrayIsEmpty() throws Exception {
+    public void testIsEmpty_whenArrayIsEmpty() {
 
-        assertTrue("Should return false because array is empty", ObjectUtils.isEmpty(new Object[]{}));
+        assertTrue(ObjectUtils.isEmpty(new Object[]{}), "Should return false because array is empty");
 
     }
 
     @Test
-    public void testIsEmpty_whenArrayIsNotEmpty() throws Exception {
+    public void testIsEmpty_whenArrayIsNotEmpty() {
 
-        assertFalse("Should return false because array is not empty", ObjectUtils.isEmpty(new Integer[]{1,2}));
+        assertFalse(ObjectUtils.isEmpty(new Integer[]{1,2}), "Should return false because array is not empty");
 
     }
 }

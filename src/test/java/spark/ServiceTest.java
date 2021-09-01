@@ -3,21 +3,29 @@ package spark;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.junit.*;
+import org.junit.Rule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
+import org.junit.jupiter.migrationsupport.rules.ExpectedExceptionSupport;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 import org.powermock.reflect.Whitebox;
-
 import spark.embeddedserver.EmbeddedServer;
 import spark.embeddedserver.EmbeddedServers;
 import spark.route.Routes;
 import spark.ssl.SslStores;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static spark.Service.ignite;
 
+@EnableRuleMigrationSupport
+@ExtendWith(ExpectedExceptionSupport.class)
 public class ServiceTest {
 
     private static final String IP_ADDRESS = "127.0.0.1";
@@ -25,33 +33,42 @@ public class ServiceTest {
 
     private Service service;
 
+    private static String errorMessage = "";
+
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    @Before
+    @BeforeEach
     public void test() {
         service = ignite();
+        service.port(Service.SPARK_DEFAULT_PORT);
+        service.initExceptionHandler((e) -> errorMessage = "Custom init error");
+        service.init();
+        service.awaitInitialization();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         service.stop();
+        service.awaitStop();
     }
 
 
     @Test
     public void testEmbeddedServerIdentifier_defaultAndSet() {
-        assertEquals("Should return defaultIdentifier()",
+        service.initialized = false;
+
+        assertEquals(
             EmbeddedServers.defaultIdentifier(),
-            service.embeddedServerIdentifier());
+            service.embeddedServerIdentifier(), "Should return defaultIdentifier()");
 
         Object obj = new Object();
 
         service.embeddedServerIdentifier(obj);
 
-        assertEquals("Should return expected obj",
+        assertEquals(
             obj,
-            service.embeddedServerIdentifier());
+            service.embeddedServerIdentifier(), "Should return expected obj");
     }
 
     @Test
@@ -65,32 +82,33 @@ public class ServiceTest {
         service.embeddedServerIdentifier(obj);
     }
 
-    @Test(expected = HaltException.class)
+    @Test()
     public void testHalt_whenOutParameters_thenThrowHaltException() {
-        service.halt();
+        assertThrows(HaltException.class, () -> service.halt());
     }
 
-    @Test(expected = HaltException.class)
+    @Test()
     public void testHalt_whenStatusCode_thenThrowHaltException() {
-        service.halt(NOT_FOUND_STATUS_CODE);
+        assertThrows(HaltException.class, () -> service.halt(NOT_FOUND_STATUS_CODE));
     }
 
-    @Test(expected = HaltException.class)
+    @Test()
     public void testHalt_whenBodyContent_thenThrowHaltException() {
-        service.halt("error");
+        assertThrows(HaltException.class, () -> service.halt("error"));
     }
 
-    @Test(expected = HaltException.class)
+    @Test()
     public void testHalt_whenStatusCodeAndBodyContent_thenThrowHaltException() {
-        service.halt(NOT_FOUND_STATUS_CODE, "error");
+        assertThrows(HaltException.class, () -> service.halt(NOT_FOUND_STATUS_CODE, "error"));
     }
 
     @Test
     public void testIpAddress_whenInitializedFalse() {
+        service.initialized = false;
         service.ipAddress(IP_ADDRESS);
 
         String ipAddress = Whitebox.getInternalState(service, "ipAddress");
-        assertEquals("IP address should be set to the IP address that was specified", IP_ADDRESS, ipAddress);
+        assertEquals(IP_ADDRESS, ipAddress, "IP address should be set to the IP address that was specified");
     }
 
     @Test
@@ -104,10 +122,11 @@ public class ServiceTest {
 
     @Test
     public void testSetIpAddress_whenInitializedFalse() {
+        service.initialized = false;
         service.ipAddress(IP_ADDRESS);
 
         String ipAddress = Whitebox.getInternalState(service, "ipAddress");
-        assertEquals("IP address should be set to the IP address that was specified", IP_ADDRESS, ipAddress);
+        assertEquals(IP_ADDRESS, ipAddress,"IP address should be set to the IP address that was specified");
     }
 
     @Test
@@ -121,10 +140,11 @@ public class ServiceTest {
 
     @Test
     public void testPort_whenInitializedFalse() {
+        service.initialized = false;
         service.port(8080);
 
         int port = Whitebox.getInternalState(service, "port");
-        assertEquals("Port should be set to the Port that was specified", 8080, port);
+        assertEquals( 8080, port, "Port should be set to the Port that was specified");
     }
 
     @Test
@@ -138,10 +158,11 @@ public class ServiceTest {
 
     @Test
     public void testSetPort_whenInitializedFalse() {
+        service.initialized = false;
         service.port(8080);
 
         int port = Whitebox.getInternalState(service, "port");
-        assertEquals("Port should be set to the Port that was specified", 8080, port);
+        assertEquals( 8080, port, "Port should be set to the Port that was specified");
     }
 
     @Test
@@ -170,7 +191,7 @@ public class ServiceTest {
 
         int actualPort = service.port();
 
-        assertEquals("Port retrieved should be the port setted", expectedPort, actualPort);
+        assertEquals(expectedPort, actualPort, "Port retrieved should be the port setted");
     }
 
     @Test
@@ -180,29 +201,31 @@ public class ServiceTest {
 
         int actualPort = service.port();
 
-        assertEquals("Port retrieved should be the port setted", expectedPort, actualPort);
+        assertEquals(expectedPort, actualPort, "Port retrieved should be the port setted");
     }
 
     @Test
     public void testThreadPool_whenOnlyMaxThreads() {
+        service.initialized = false;
         service.threadPool(100);
         int maxThreads = Whitebox.getInternalState(service, "maxThreads");
         int minThreads = Whitebox.getInternalState(service, "minThreads");
         int threadIdleTimeoutMillis = Whitebox.getInternalState(service, "threadIdleTimeoutMillis");
-        assertEquals("Should return maxThreads specified", 100, maxThreads);
-        assertEquals("Should return minThreads specified", -1, minThreads);
-        assertEquals("Should return threadIdleTimeoutMillis specified", -1, threadIdleTimeoutMillis);
+        assertEquals(100, maxThreads, "Should return maxThreads specified");
+        assertEquals(-1, minThreads, "Should return minThreads specified");
+        assertEquals(-1, threadIdleTimeoutMillis, "Should return threadIdleTimeoutMillis specified");
     }
 
     @Test
     public void testThreadPool_whenMaxMinAndTimeoutParameters() {
+        service.initialized = false;
         service.threadPool(100, 50, 75);
         int maxThreads = Whitebox.getInternalState(service, "maxThreads");
         int minThreads = Whitebox.getInternalState(service, "minThreads");
         int threadIdleTimeoutMillis = Whitebox.getInternalState(service, "threadIdleTimeoutMillis");
-        assertEquals("Should return maxThreads specified", 100, maxThreads);
-        assertEquals("Should return minThreads specified", 50, minThreads);
-        assertEquals("Should return threadIdleTimeoutMillis specified", 75, threadIdleTimeoutMillis);
+        assertEquals( 100, maxThreads, "Should return maxThreads specified");
+        assertEquals( 50, minThreads, "Should return minThreads specified");
+        assertEquals(75, threadIdleTimeoutMillis, "Should return threadIdleTimeoutMillis specified");
     }
 
     @Test
@@ -216,13 +239,14 @@ public class ServiceTest {
 
     @Test
     public void testSecure_thenReturnNewSslStores() {
+        service.initialized = false;
         service.secure("keyfile", "keypassword", "truststorefile", "truststorepassword");
         SslStores sslStores = Whitebox.getInternalState(service, "sslStores");
-        assertNotNull("Should return a SslStores because we configured it to have one", sslStores);
-        assertEquals("Should return keystoreFile from SslStores", "keyfile", sslStores.keystoreFile());
-        assertEquals("Should return keystorePassword from SslStores", "keypassword", sslStores.keystorePassword());
-        assertEquals("Should return trustStoreFile from SslStores", "truststorefile", sslStores.trustStoreFile());
-        assertEquals("Should return trustStorePassword from SslStores", "truststorepassword", sslStores.trustStorePassword());
+        assertNotNull(sslStores, "Should return a SslStores because we configured it to have one");
+        assertEquals("keyfile", sslStores.keystoreFile(), "Should return keystoreFile from SslStores");
+        assertEquals( "keypassword", sslStores.keystorePassword(), "Should return keystorePassword from SslStores");
+        assertEquals( "truststorefile", sslStores.trustStoreFile(), "Should return trustStoreFile from SslStores");
+        assertEquals( "truststorepassword", sslStores.trustStorePassword(), "Should return trustStorePassword from SslStores");
     }
 
     @Test
@@ -238,7 +262,7 @@ public class ServiceTest {
     public void testSecure_whenInitializedFalse_thenThrowIllegalArgumentException() {
         thrown.expect(IllegalArgumentException.class);
         thrown.expectMessage("Must provide a keystore file to run secured");
-
+        service.initialized = false;
         service.secure(null, null, null, null);
     }
 
@@ -264,6 +288,8 @@ public class ServiceTest {
     public void testWebSocket_whenPathNull_thenThrowNullPointerException() {
         thrown.expect(NullPointerException.class);
         thrown.expectMessage("WebSocket path cannot be null");
+
+        service.initialized = false;
         service.webSocket(null, new DummyWebSocketListener());
     }
     
@@ -274,7 +300,7 @@ public class ServiceTest {
         service.webSocket("/", null);
     }
     
-    @Test(timeout = 300)
+    @Test()
     public void stopExtinguishesServer() {
         Service service = Service.ignite();
         Routes routes = Mockito.mock(Routes.class);
@@ -282,7 +308,7 @@ public class ServiceTest {
         service.routes = routes;
         service.server = server;
         service.initialized = true;
-        service.stop();
+        assertTimeout(Duration.of(300L, ChronoUnit.MILLIS), service::stop);
         try {
         	// yes, this is ugly and forces to set a test timeout as a precaution :(
             while (service.initialized) {

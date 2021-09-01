@@ -1,12 +1,13 @@
 package spark.utils;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class MimeParseTest {
 
@@ -17,9 +18,9 @@ public class MimeParseTest {
 
         Collection<String> supported = Arrays.asList("application/xml", "text/html");
 
-        assertEquals("bestMatch should return the supported mime type with the highest quality factor" +
-                        "because it is preferred mime type as indicated in the HTTP header",
-                "text/html", MimeParse.bestMatch(supported, header));
+        assertEquals(
+                "text/html", MimeParse.bestMatch(supported, header), "bestMatch should return the supported mime type with the highest quality factor" +
+                "because it is preferred mime type as indicated in the HTTP header");
 
     }
 
@@ -30,10 +31,10 @@ public class MimeParseTest {
 
         Collection<String> supported = Collections.singletonList("application/json");
 
-        assertEquals("bestMatch should return the mime type even if it is not included in the supported" +
-                        "mime types because it is considered by the */* all media type specified in the Accept" +
-                        "Header",
-                "application/json", MimeParse.bestMatch(supported, header));
+        assertEquals("application/json", MimeParse.bestMatch(supported, header),
+            "bestMatch should return the mime type even if it is not included in the supported" +
+                "mime types because it is considered by the */* all media type specified in the Accept" +
+                "Header");
 
     }
 

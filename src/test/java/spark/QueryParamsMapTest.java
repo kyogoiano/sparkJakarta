@@ -1,14 +1,12 @@
 package spark;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Test;
 
 public class QueryParamsMapTest {
 
@@ -65,7 +63,8 @@ public class QueryParamsMapTest {
     @Test
     public void parseKeyShouldParseRootKey() {
         String[] parsed = queryMap.parseKey("user[name][more]");
-        
+
+        assert parsed != null;
         assertEquals("user",parsed[0]);
         assertEquals("[name][more]",parsed[1]);
     }
@@ -75,12 +74,14 @@ public class QueryParamsMapTest {
         String[] parsed;
         
         parsed = queryMap.parseKey("[name][more]");
-        
+
+        assert parsed != null;
         assertEquals("name",parsed[0]);
         assertEquals("[more]",parsed[1]);
         
         parsed = queryMap.parseKey("[more]");
-        
+
+        assert parsed != null;
         assertEquals("more",parsed[0]);
         assertEquals("",parsed[1]);
     }

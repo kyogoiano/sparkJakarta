@@ -1,8 +1,6 @@
 package spark;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static spark.Spark.after;
 import static spark.Spark.before;
 
@@ -13,11 +11,8 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
+import org.junit.jupiter.api.*;
 import spark.examples.books.Books;
 import spark.utils.IOUtils;
 
@@ -31,24 +26,24 @@ public class BooksIntegrationTest {
 
     private String bookId;
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         Spark.stop();
     }
 
-    @After
+    @AfterEach
     public void clearBooks() {
         Books.books.clear();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() {
         before((request, response) -> response.header("FOZ", "BAZ"));
 
         Books.main(null);
 
         after((request, response) -> response.header("FOO", "BAR"));
-
+        Spark.init();
         Spark.awaitInitialization();
     }
 
@@ -135,9 +130,9 @@ public class BooksIntegrationTest {
         assertTrue(result.contains("deleted"));
     }
 
-    @Test(expected = FileNotFoundException.class)
-    public void wontFindBook() throws IOException {
-        getResponse("GET", "/books/" + bookId, null);
+    @Test
+    public void wontFindBook() {
+        assertThrows(FileNotFoundException.class, () ->  getResponse("GET", "/books/" + bookId, null));
     }
 
     private static UrlResponse doMethod(String requestMethod, String path) {

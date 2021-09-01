@@ -3,15 +3,14 @@ package spark;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import org.junit.Before;
-import org.junit.Test;
 
+import org.junit.jupiter.api.*;
 import spark.routematch.RouteMatch;
 import spark.util.SparkTestUtil;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -36,7 +35,7 @@ public class RequestTest {
     RouteMatch match = new RouteMatch(null, "/hi", "/hi", "text/html", null);
     RouteMatch matchWithParams = new RouteMatch(null, "/users/:username", "/users/bob", "text/html", null);
 
-    @Before
+    @BeforeEach
     public void setup() {
         http = new SparkTestUtil(4567);
 
@@ -64,13 +63,19 @@ public class RequestTest {
 
     }
 
+    @AfterEach
+    public void tearDown(){
+        stop();
+        awaitStop();
+    }
+
     @Test
     public void queryParamShouldReturnsParametersFromQueryString() {
 
         when(servletRequest.getParameter("name")).thenReturn("Federico");
 
         String name = request.queryParams("name");
-        assertEquals("Invalid name in query string", "Federico", name);
+        assertEquals("Federico", name, "Invalid name in query string");
     }
 
     @Test
@@ -79,7 +84,7 @@ public class RequestTest {
         when(servletRequest.getParameter("name")).thenReturn("Federico");
 
         String name = request.queryParamOrDefault("name", "David");
-        assertEquals("Invalid name in query string", "Federico", name);
+        assertEquals("Federico", name, "Invalid name in query string");
     }
 
     @Test
@@ -88,7 +93,7 @@ public class RequestTest {
         when(servletRequest.getParameter("name")).thenReturn(null);
 
         String name = request.queryParamOrDefault("name", "David");
-        assertEquals("Invalid name in default value", "David", name);
+        assertEquals("David", name, "Invalid name in default value");
     }
 
     @Test
@@ -99,7 +104,7 @@ public class RequestTest {
         when(servletRequest.getParameterMap()).thenReturn(params);
 
         String name = request.queryMap("user").value("name");
-        assertEquals("Invalid name in query string", "Federico", name);
+        assertEquals( "Federico", name, "Invalid name in query string");
     }
 
     @Test
@@ -108,7 +113,7 @@ public class RequestTest {
         when(servletRequest.getServletPath()).thenReturn(THE_SERVLET_PATH);
 
         Request request = new Request(match, servletRequest);
-        assertEquals("Should have delegated getting the servlet path", THE_SERVLET_PATH, request.servletPath());
+        assertEquals(THE_SERVLET_PATH, request.servletPath(), "Should have delegated getting the servlet path");
     }
 
     @Test
@@ -117,13 +122,13 @@ public class RequestTest {
         when(servletRequest.getContextPath()).thenReturn(THE_CONTEXT_PATH);
 
         Request request = new Request(match, servletRequest);
-        assertEquals("Should have delegated getting the context path", THE_CONTEXT_PATH, request.contextPath());
+        assertEquals( THE_CONTEXT_PATH, request.contextPath(), "Should have delegated getting the context path");
     }
 
     @Test
     public void shouldBeAbleToGetTheMatchedPath() {
         Request request = new Request(matchWithParams, servletRequest);
-        assertEquals("Should have returned the matched route", THE_MATCHED_ROUTE, request.matchedPath());
+        assertEquals( THE_MATCHED_ROUTE, request.matchedPath(), "Should have returned the matched route");
         try {
             http.get("/users/bob");
         } catch (Exception e) {
@@ -132,15 +137,15 @@ public class RequestTest {
     }
 
     public void shouldBeAbleToGetTheMatchedPathInBeforeFilter(Request q) {
-        assertEquals("Should have returned the matched route from the before filter", BEFORE_MATCHED_ROUTE, q.matchedPath());
+        assertEquals(BEFORE_MATCHED_ROUTE, q.matchedPath(), "Should have returned the matched route from the before filter");
     }
 
     public void shouldBeAbleToGetTheMatchedPathInAfterFilter(Request q) {
-        assertEquals("Should have returned the matched route from the after filter", AFTER_MATCHED_ROUTE, q.matchedPath());
+        assertEquals(AFTER_MATCHED_ROUTE, q.matchedPath(), "Should have returned the matched route from the after filter");
     }
 
     public void shouldBeAbleToGetTheMatchedPathInAfterAfterFilter(Request q) {
-        assertEquals("Should have returned the matched route from the afterafter filter", AFTERAFTER_MATCHED_ROUTE, q.matchedPath());
+        assertEquals(AFTERAFTER_MATCHED_ROUTE, q.matchedPath(), "Should have returned the matched route from the afterafter filter");
     }
 
     @Test
@@ -148,8 +153,7 @@ public class RequestTest {
 
         when(servletRequest.getSession()).thenReturn(httpSession);
 
-        assertEquals("A Session with an HTTPSession from the Request should have been created",
-                httpSession, request.session().raw());
+        assertEquals(httpSession, request.session().raw(), "A Session with an HTTPSession from the Request should have been created");
     }
 
     @Test
@@ -157,9 +161,8 @@ public class RequestTest {
 
         when(servletRequest.getSession(true)).thenReturn(httpSession);
 
-        assertEquals("A Session with an HTTPSession from the Request should have been created because create parameter " +
-                        "was set to true",
-                httpSession, request.session(true).raw());
+        assertEquals(httpSession, request.session(true).raw(), "A Session with an HTTPSession from the Request should have been created because create parameter " +
+            "was set to true");
 
     }
 
@@ -168,7 +171,7 @@ public class RequestTest {
 
         when(servletRequest.getSession(true)).thenReturn(httpSession);
 
-        assertNull("A Session should not have been created because create parameter was set to false", request.session(false));
+        assertNull(request.session(false), "A Session should not have been created because create parameter was set to false");
 
     }
 
@@ -233,9 +236,9 @@ public class RequestTest {
 
         when(servletRequest.getCookies()).thenReturn(cookieArray);
 
-        assertEquals("The count of cookies returned should be the same as those in the request", 2, request.cookies().size());
+        assertEquals(2, request.cookies().size(),"The count of cookies returned should be the same as those in the request");
 
-        assertEquals("A Map of Cookies should have been returned because they exist", expected, request.cookies());
+        assertEquals(expected, request.cookies(), "A Map of Cookies should have been returned because they exist");
 
     }
 
@@ -244,10 +247,9 @@ public class RequestTest {
 
         when(servletRequest.getCookies()).thenReturn(null);
 
-        assertNotNull("A Map of Cookies should have been instantiated even if cookies are not present in the request",
-                request.cookies());
+        assertNotNull(request.cookies(),"A Map of Cookies should have been instantiated even if cookies are not present in the request");
 
-        assertEquals("The Map of cookies should be empty because cookies are not present in the request", 0, request.cookies().size());
+        assertEquals(0, request.cookies().size(), "The Map of cookies should be empty because cookies are not present in the request");
 
     }
 
@@ -263,11 +265,11 @@ public class RequestTest {
         Cookie[] cookieArray = cookies.toArray(new Cookie[0]);
         when(servletRequest.getCookies()).thenReturn(cookieArray);
 
-        assertNotNull("A value for the key provided should exist because a cookie with the same key is present",
-                request.cookie(cookieKey));
+        assertNotNull(
+                request.cookie(cookieKey), "A value for the key provided should exist because a cookie with the same key is present");
 
-        assertEquals("The correct value for the cookie key supplied should be returned",
-                cookieValue, request.cookie(cookieKey));
+        assertEquals(
+                cookieValue, request.cookie(cookieKey), "The correct value for the cookie key supplied should be returned");
 
     }
 
@@ -278,8 +280,8 @@ public class RequestTest {
 
         when(servletRequest.getCookies()).thenReturn(null);
 
-        assertNull("A null value should have been returned because the cookie with that key does not exist",
-                request.cookie(cookieKey));
+        assertNull(
+                request.cookie(cookieKey), "A null value should have been returned because the cookie with that key does not exist");
 
     }
 
@@ -290,8 +292,8 @@ public class RequestTest {
 
         when(servletRequest.getMethod()).thenReturn(requestMethod);
 
-        assertEquals("The request method of the underlying servlet request should be returned",
-                requestMethod, request.requestMethod());
+        assertEquals(
+                requestMethod, request.requestMethod(), "The request method of the underlying servlet request should be returned");
 
     }
 
@@ -302,8 +304,8 @@ public class RequestTest {
 
         when(servletRequest.getScheme()).thenReturn(scheme);
 
-        assertEquals("The scheme of the underlying servlet request should be returned",
-                scheme, request.scheme());
+        assertEquals(
+                scheme, request.scheme(), "The scheme of the underlying servlet request should be returned");
 
     }
 
@@ -314,8 +316,8 @@ public class RequestTest {
 
         when(servletRequest.getHeader("host")).thenReturn(host);
 
-        assertEquals("The value of the host header of the underlying servlet request should be returned",
-                host, request.host());
+        assertEquals(
+                host, request.host(), "The value of the host header of the underlying servlet request should be returned");
 
     }
 
@@ -326,8 +328,8 @@ public class RequestTest {
 
         when(servletRequest.getHeader("user-agent")).thenReturn(userAgent);
 
-        assertEquals("The value of the user agent header of the underlying servlet request should be returned",
-                userAgent, request.userAgent());
+        assertEquals(
+                userAgent, request.userAgent(), "The value of the user agent header of the underlying servlet request should be returned");
 
     }
 
@@ -338,8 +340,8 @@ public class RequestTest {
 
         when(servletRequest.getServerPort()).thenReturn(80);
 
-        assertEquals("The server port of the the underlying servlet request should be returned",
-                port, request.port());
+        assertEquals(
+                port, request.port(), "The server port of the the underlying servlet request should be returned");
 
     }
 
@@ -350,8 +352,8 @@ public class RequestTest {
 
         when(servletRequest.getPathInfo()).thenReturn(pathInfo);
 
-        assertEquals("The path info of the underlying servlet request should be returned",
-                pathInfo, request.pathInfo());
+        assertEquals(
+                pathInfo, request.pathInfo(), "The path info of the underlying servlet request should be returned");
 
     }
 
@@ -362,8 +364,8 @@ public class RequestTest {
 
         when(servletRequest.getServletPath()).thenReturn(servletPath);
 
-        assertEquals("The servlet path of the underlying servlet request should be returned",
-                servletPath, request.servletPath());
+        assertEquals(
+                servletPath, request.servletPath(), "The servlet path of the underlying servlet request should be returned");
 
     }
 
@@ -374,8 +376,8 @@ public class RequestTest {
 
         when(servletRequest.getContextPath()).thenReturn(contextPath);
 
-        assertEquals("The context path of the underlying servlet request should be returned",
-                contextPath, request.contextPath());
+        assertEquals(
+                contextPath, request.contextPath(), "The context path of the underlying servlet request should be returned");
 
     }
 
@@ -386,8 +388,8 @@ public class RequestTest {
 
         when(servletRequest.getRequestURL()).thenReturn(new StringBuffer(url));
 
-        assertEquals("The request url of the underlying servlet request should be returned",
-                url, request.url());
+        assertEquals(
+                url, request.url(), "The request url of the underlying servlet request should be returned");
 
     }
 
@@ -398,8 +400,8 @@ public class RequestTest {
 
         when(servletRequest.getContentType()).thenReturn(contentType);
 
-        assertEquals("The content type of the underlying servlet request should be returned",
-                contentType, request.contentType());
+        assertEquals(
+                contentType, request.contentType(), "The content type of the underlying servlet request should be returned");
 
     }
 
@@ -410,8 +412,8 @@ public class RequestTest {
 
         when(servletRequest.getRemoteAddr()).thenReturn(ip);
 
-        assertEquals("The remote IP of the underlying servlet request should be returned",
-                ip, request.ip());
+        assertEquals(
+                ip, request.ip(), "The remote IP of the underlying servlet request should be returned");
 
     }
 
@@ -422,8 +424,8 @@ public class RequestTest {
 
         when(servletRequest.getContentLength()).thenReturn(contentLength);
 
-        assertEquals("The content length the underlying servlet request should be returned",
-                contentLength, request.contentLength());
+        assertEquals(
+                contentLength, request.contentLength(), "The content length the underlying servlet request should be returned");
 
     }
 
@@ -435,8 +437,8 @@ public class RequestTest {
 
         when(servletRequest.getHeader(headerKey)).thenReturn(host);
 
-        assertEquals("The value of the header specified should be returned",
-                host, request.headers(headerKey));
+        assertEquals(
+                host, request.headers(headerKey), "The value of the header specified should be returned");
 
     }
 
@@ -447,8 +449,8 @@ public class RequestTest {
 
         when(servletRequest.getParameterValues("id")).thenReturn(paramValues);
 
-        assertArrayEquals("An array of Strings for a parameter with multiple values should be returned",
-                paramValues, request.queryParamsValues("id"));
+        assertArrayEquals(paramValues, request.queryParamsValues("id"),
+            "An array of Strings for a parameter with multiple values should be returned");
 
     }
 
@@ -457,8 +459,8 @@ public class RequestTest {
 
         when(servletRequest.getParameterValues("id")).thenReturn(null);
 
-        assertNull("Null should be returned because the parameter specified does not exist in the request",
-                request.queryParamsValues("id"));
+        assertNull(request.queryParamsValues("id"),
+            "Null should be returned because the parameter specified does not exist in the request");
 
     }
 
@@ -473,7 +475,7 @@ public class RequestTest {
 
         Set<String> result = request.queryParams();
 
-        assertArrayEquals("Should return the query parameter names", params.keySet().toArray(), result.toArray());
+        assertArrayEquals(params.keySet().toArray(), result.toArray(),"Should return the query parameter names");
 
     }
 
@@ -484,8 +486,8 @@ public class RequestTest {
 
         when(servletRequest.getRequestURI()).thenReturn(requestURI);
 
-        assertEquals("The request URI should be returned",
-                requestURI, request.uri());
+        assertEquals(
+                requestURI, request.uri(), "The request URI should be returned");
 
     }
 
@@ -496,8 +498,8 @@ public class RequestTest {
 
         when(servletRequest.getProtocol()).thenReturn(protocol);
 
-        assertEquals("The underlying request protocol should be returned",
-                protocol, request.protocol());
+        assertEquals(
+                protocol, request.protocol(), "The underlying request protocol should be returned");
 
     }
 }

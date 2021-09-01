@@ -1,5 +1,6 @@
 package spark.util;
 
+import org.apache.hc.client5.http.HttpRoute;
 import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
 import org.apache.hc.client5.http.impl.DefaultRedirectStrategy;
 import org.apache.hc.client5.http.impl.classic.BasicHttpClientResponseHandler;
@@ -20,6 +21,7 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.http.support.AbstractRequestBuilder;
+import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 
 import javax.net.ssl.SSLContext;
@@ -41,17 +43,33 @@ public class SparkTestUtil {
     private final int port;
 
     private CloseableHttpClient httpClient;
+    private static final PoolingHttpClientConnectionManager connManager;
 
-    public SparkTestUtil(int port) {
+    static {
+        final SSLConnectionSocketFactory sslConnectionSocketFactory =
+            new SSLConnectionSocketFactory(Objects.requireNonNull(getSslFactory()), (paramString, paramSSLSession) -> true);
+        final Registry<ConnectionSocketFactory> socketRegistry = RegistryBuilder
+            .<ConnectionSocketFactory>create()
+            .register("http", PlainConnectionSocketFactory.INSTANCE)
+            .register("https", sslConnectionSocketFactory)
+            .build();
+        connManager
+            = new PoolingHttpClientConnectionManager(socketRegistry);
+        connManager.setDefaultMaxPerRoute(40);
+        connManager.setMaxTotal(40);
+        connManager.setValidateAfterInactivity(TimeValue.of(5000L, TimeUnit.MILLISECONDS));
+        connManager.setDefaultSocketConfig(SocketConfig.custom().
+            setSoTimeout(Timeout.of(5000L, TimeUnit.MILLISECONDS)).
+            //setSoLinger(5000, TimeUnit.MILLISECONDS).
+            setSoReuseAddress(true).
+            build());
+    }
+
+    public SparkTestUtil(final int port) {
         this.port = port;
 
-        PoolingHttpClientConnectionManager connManager
-            = new PoolingHttpClientConnectionManager();
-        connManager.setDefaultMaxPerRoute(5);
-        connManager.setMaxTotal(5);
-        connManager.setDefaultSocketConfig(SocketConfig.custom().
-            setSoTimeout(Timeout.of(5000L, TimeUnit.MILLISECONDS)).build());
-        this.httpClient = httpClientBuilder().setConnectionManager(connManager).build();
+
+        this.httpClient = httpClientBuilder().build();
     }
 
 //    public void closeClient() throws IOException {
@@ -59,20 +77,12 @@ public class SparkTestUtil {
 //    }
 
     private HttpClientBuilder httpClientBuilder() {
-        final SSLConnectionSocketFactory sslConnectionSocketFactory =
-                new SSLConnectionSocketFactory(Objects.requireNonNull(getSslFactory()), (paramString, paramSSLSession) -> true);
-        final Registry<ConnectionSocketFactory> socketRegistry = RegistryBuilder
-                .<ConnectionSocketFactory>create()
-                .register("http", PlainConnectionSocketFactory.INSTANCE)
-                .register("https", sslConnectionSocketFactory)
-                .build();
-        final BasicHttpClientConnectionManager connManager = new BasicHttpClientConnectionManager(socketRegistry);
         return HttpClientBuilder.create().setConnectionManager(connManager);
     }
 
-    public void setFollowRedirectStrategy(Integer... codes) {
+    public void setFollowRedirectStrategy(final Integer... codes) {
         final List<Integer> redirectCodes = Arrays.asList(codes);
-        DefaultRedirectStrategy redirectStrategy = new DefaultRedirectStrategy() {
+        final DefaultRedirectStrategy redirectStrategy = new DefaultRedirectStrategy() {
             @Override
             public boolean isRedirected(HttpRequest request, HttpResponse response, HttpContext context) {
                 boolean isRedirect = false;
@@ -125,23 +135,25 @@ public class SparkTestUtil {
                                 String acceptType, final Map<String, String> reqHeaders) throws IOException, ParseException {
         final ClassicHttpRequest httpRequest = getHttpRequest(requestMethod, path, body, secureConnection, acceptType, reqHeaders);
 
-        try(final CloseableHttpResponse httpResponse = httpClient.execute(httpRequest)) {
-            final UrlResponse urlResponse = new UrlResponse();
-            urlResponse.status = httpResponse.getCode();
-            final HttpEntity entity = httpResponse.getEntity();
-            if (entity != null) {
-                urlResponse.body = EntityUtils.toString(entity);
-            } else {
-                urlResponse.body = "";
-            }
-            EntityUtils.consume(entity);
-            final Map<String, String> headers;
-            final Header[] allHeaders = httpResponse.getHeaders();
-            headers = Arrays.stream(allHeaders).
-                collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue, (a, b) -> b));
-            urlResponse.headers = headers;
-            return urlResponse;
-        }
+       try(final CloseableHttpResponse httpResponse = httpClient.execute(httpRequest)) {
+           final UrlResponse urlResponse = new UrlResponse();
+           urlResponse.status = httpResponse.getCode();
+           try (final HttpEntity entity = httpResponse.getEntity()) {
+               if (entity != null) {
+                   urlResponse.body = EntityUtils.toString(entity);
+               } else {
+                   urlResponse.body = "";
+               }
+               EntityUtils.consume(entity);
+           }
+           final Map<String, String> headers;
+           final Header[] allHeaders = httpResponse.getHeaders();
+
+           headers = Arrays.stream(allHeaders).
+               collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue, (a, b) -> b));
+           urlResponse.headers = headers;
+           return urlResponse;
+       }
     }
 
     private ClassicHttpRequest getHttpRequest(final String requestMethod, final String path, final String body,
@@ -191,7 +203,7 @@ public class SparkTestUtil {
      * @return an SSL Socket Factory using either provided keystore OR the
      * keystore specified in JVM params
      */
-    private SSLSocketFactory getSslFactory() {
+    private static SSLSocketFactory getSslFactory() {
         KeyStore keyStore;
         try {
             keyStore = KeyStore.getInstance(KeyStore.getDefaultType());

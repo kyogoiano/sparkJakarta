@@ -1,17 +1,13 @@
 package spark;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import spark.util.SparkTestUtil;
 
-import static spark.Spark.after;
-import static spark.Spark.awaitInitialization;
-import static spark.Spark.before;
-import static spark.Spark.get;
-import static spark.Spark.stop;
+import static org.junit.jupiter.api.Assertions.*;
+import static spark.Spark.*;
 
 /**
  * Basic test to ensure that multiple before and after filters can be mapped to a route.
@@ -21,7 +17,7 @@ public class MultipleFiltersTest {
     private static SparkTestUtil http;
 
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() {
         http = new SparkTestUtil(4567);
 
@@ -29,28 +25,29 @@ public class MultipleFiltersTest {
 
         after("/user", incrementCounter, (req, res) -> {
             int counter = req.attribute("counter");
-            Assert.assertEquals(counter, 2);
+            assertEquals(counter, 2);
         });
 
         get("/user", (request, response) -> {
-            Assert.assertEquals((int) request.attribute("counter"), 1);
+            assertEquals((int) request.attribute("counter"), 1);
             return ((User) request.attribute("user")).name();
         });
 
         awaitInitialization();
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() {
-        stop();
+        Spark.stop();
+        awaitStop();
     }
 
     @Test
     public void testMultipleFilters() {
         try {
             SparkTestUtil.UrlResponse response = http.get("/user");
-            Assert.assertEquals(200, response.status);
-            Assert.assertEquals("Kevin", response.body);
+            assertEquals(200, response.status);
+            assertEquals("Kevin", response.body);
         } catch (Exception e) {
             e.printStackTrace();
         }

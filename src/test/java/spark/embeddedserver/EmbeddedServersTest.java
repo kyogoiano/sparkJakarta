@@ -1,36 +1,35 @@
 package spark.embeddedserver;
 
-import java.io.File;
-
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.junit.AfterClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import spark.Service;
 import spark.Spark;
 import spark.embeddedserver.jetty.EmbeddedJettyFactory;
 import spark.embeddedserver.jetty.JettyServerFactory;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import java.io.File;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.*;
+import static spark.Service.ignite;
+
+@Disabled
 public class EmbeddedServersTest {
 
-    @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @TempDir
+    public File temporaryFolder;
 
     @Test
     public void testAddAndCreate_whenCreate_createsCustomServer() throws Exception {
         // Create custom Server
-        Server server = new Server();
-        File requestLogDir = temporaryFolder.newFolder();
-        File requestLogFile = new File(requestLogDir, "request.log");
+        final Server server = new Server();
+        File requestLogFile = new File(temporaryFolder, "request.log");
         server.setRequestLog(new CustomRequestLog(requestLogFile.getAbsolutePath()));
         JettyServerFactory serverFactory = mock(JettyServerFactory.class);
         when(serverFactory.create(0, 0, 0)).thenReturn(server);
@@ -39,7 +38,7 @@ public class EmbeddedServersTest {
 
         // Register custom server
         EmbeddedServers.add(id, new EmbeddedJettyFactory(serverFactory));
-        EmbeddedServer embeddedServer = EmbeddedServers.create(id, null, null, null, false);
+        final EmbeddedServer embeddedServer = EmbeddedServers.create(id, null, null, null, false);
         assertNotNull(embeddedServer);
 
         embeddedServer.trustForwardHeaders(true);
@@ -54,9 +53,9 @@ public class EmbeddedServersTest {
     }
 
     @Test
-    public void testAdd_whenConfigureRoutes_createsCustomServer() throws Exception {
-        File requestLogDir = temporaryFolder.newFolder();
-        File requestLogFile = new File(requestLogDir, "request.log");
+    public void testAdd_whenConfigureRoutes_createsCustomServer() {
+
+        final File requestLogFile = new File(temporaryFolder, "request.log");
         // Register custom server
         EmbeddedServers.add(EmbeddedServers.Identifiers.JETTY, new EmbeddedJettyFactory(new JettyServerFactory() {
             @Override
@@ -68,18 +67,30 @@ public class EmbeddedServersTest {
 
             @Override
             public Server create(ThreadPool threadPool) {
-                return null;
+                return new Server(new QueuedThreadPool(10));
             }
         }));
         Spark.get("/", (request, response) -> "OK");
-        Spark.awaitInitialization();
+
+//        EmbeddedServers.initialize();
+//
+//        Spark.awaitInitialization();
+
+        Service service = ignite();
+        service.port(8080);
+        service.init();
+        service.awaitInitialization();
 
         assertTrue(requestLogFile.exists());
+
+        Spark.stop();
+        Spark.awaitStop();
     }
 
-    @AfterClass
-    public static void tearDown() {
-        Spark.stop();
-    }
+//    @AfterAll
+//    public static void tearDown() {
+//        Spark.stop();
+//        Spark.awaitStop();
+//    }
 
 }

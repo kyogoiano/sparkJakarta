@@ -2,9 +2,11 @@ package spark.embeddedserver.jetty;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.After;
-import org.junit.Test;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import spark.ExceptionMapper;
 import spark.embeddedserver.EmbeddedServer;
 import spark.route.Routes;
@@ -40,7 +42,7 @@ public class EmbeddedJettyFactoryTest {
 
         verify(jettyServerFactory, times(1)).create(100, 10, 10000);
         verifyNoMoreInteractions(jettyServerFactory);
-        assertTrue(((JettyHandler) server.getHandler()).getSessionCookieConfig().isHttpOnly());
+        Assertions.assertTrue(((JettyHandler) server.getHandler()).getSessionCookieConfig().isHttpOnly());
     }
 
     @Test
@@ -96,10 +98,10 @@ public class EmbeddedJettyFactoryTest {
         embeddedServer.trustForwardHeaders(true);
         embeddedServer.ignite("localhost", 6759, null, 100, 10, 10000);
 
-        assertFalse(((JettyHandler) server.getHandler()).getSessionCookieConfig().isHttpOnly());
+        Assertions.assertFalse(((JettyHandler) server.getHandler()).getSessionCookieConfig().isHttpOnly());
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         if (embeddedServer != null) {
             embeddedServer.extinguish();

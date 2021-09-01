@@ -18,13 +18,14 @@ package spark;
 
 import java.io.IOException;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import spark.util.SparkTestUtil;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static spark.Spark.after;
 import static spark.Spark.get;
 
@@ -45,13 +46,13 @@ public class ResponseBodyTest {
 
     private static SparkTestUtil http;
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         Spark.stop();
         Spark.awaitStop();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() throws IOException {
         http = new SparkTestUtil(4567);
 
@@ -91,7 +92,7 @@ public class ResponseBodyTest {
             String body = a.body();
             assertEquals($11AB, body);
         });
-
+        Spark.init();
         Spark.awaitInitialization();
     }
 

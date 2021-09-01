@@ -22,10 +22,10 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,10 +36,12 @@ import spark.util.SparkTestUtil;
 import static spark.Spark.exception;
 import static spark.Spark.get;
 import static spark.Spark.staticFiles;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test external static files
  */
+
 public class StaticFilesTestExternal {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StaticFilesTestExternal.class);
@@ -57,9 +59,10 @@ public class StaticFilesTestExternal {
     private static File tmpExternalFile2;
     private static File folderOutsideStaticFiles;
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         Spark.stop();
+        Spark.awaitStop();
         if (tmpExternalFile1 != null) {
             LOGGER.debug("tearDown(). Deleting tmp files");
             tmpExternalFile1.delete();
@@ -68,12 +71,12 @@ public class StaticFilesTestExternal {
         }
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() throws IOException {
         testUtil = new SparkTestUtil(4567);
 
-        String directoryRoot = System.getProperty("java.io.tmpdir") + "sparkish";
-        new File(directoryRoot).mkdirs();
+        String directoryRoot = System.getProperty("java.io.tmpdir") + "/sparkish";
+        boolean dirMkd = new File(directoryRoot).mkdirs();
 
         tmpExternalFile1 = new File(directoryRoot, EXTERNAL_FILE_NAME_HTML);
 
@@ -104,15 +107,16 @@ public class StaticFilesTestExternal {
             response.body(NOT_FOUND_BRO);
         });
 
+        Spark.init();
         Spark.awaitInitialization();
     }
 
     @Test
     public void testExternalStaticFile() throws Exception {
         SparkTestUtil.UrlResponse response = doGet("/externalFile.html");
-        Assert.assertEquals(200, response.status);
-        Assert.assertEquals("text/html", response.headers.get("Content-Type"));
-        Assert.assertEquals(CONTENT_OF_EXTERNAL_FILE, response.body);
+        assertEquals(200, response.status);
+        assertEquals("text/html", response.headers.get("Content-Type"));
+        assertEquals(CONTENT_OF_EXTERNAL_FILE, response.body);
 
         testGet();
     }
@@ -122,8 +126,8 @@ public class StaticFilesTestExternal {
         String path = "/" + URLEncoder.encode("..\\..\\spark\\", StandardCharsets.UTF_8) + "Spark.class";
         SparkTestUtil.UrlResponse response = doGet(path);
 
-        Assert.assertEquals(404, response.status);
-        Assert.assertEquals(NOT_FOUND_BRO, response.body);
+        assertEquals(404, response.status);
+        assertEquals(NOT_FOUND_BRO, response.body);
 
         testGet();
     }
@@ -131,8 +135,8 @@ public class StaticFilesTestExternal {
     private static void testGet() throws Exception {
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/hello", "");
 
-        Assert.assertEquals(200, response.status);
-        Assert.assertTrue(response.body.contains(FO_SHIZZY));
+        assertEquals(200, response.status);
+        assertTrue(response.body.contains(FO_SHIZZY));
     }
 
     private SparkTestUtil.UrlResponse doGet(String fileName) throws Exception {

@@ -2,11 +2,10 @@ package spark.embeddedserver.jetty;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.powermock.reflect.Whitebox;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class JettyServerTest {
     @Test
@@ -19,9 +18,9 @@ public class JettyServerTest {
         int maxThreads = Whitebox.getInternalState(threadPool, "_maxThreads");
         int idleTimeout = Whitebox.getInternalState(threadPool, "_idleTimeout");
 
-        assertEquals("Server thread pool default minThreads should be 8", 8, minThreads);
-        assertEquals("Server thread pool default maxThreads should be 200", 200, maxThreads);
-        assertEquals("Server thread pool default idleTimeout should be 60000", 60000, idleTimeout);
+        assertEquals(8, minThreads, "Server thread pool default minThreads should be 8");
+        assertEquals(200, maxThreads, "Server thread pool default maxThreads should be 200");
+        assertEquals(60000, idleTimeout, "Server thread pool default idleTimeout should be 60000");
     }
 
     @Test
@@ -34,9 +33,9 @@ public class JettyServerTest {
         int maxThreads = Whitebox.getInternalState(threadPool, "_maxThreads");
         int idleTimeout = Whitebox.getInternalState(threadPool, "_idleTimeout");
 
-        assertEquals("Server thread pool default minThreads should be 8", 8, minThreads);
-        assertEquals("Server thread pool default maxThreads should be the same as specified", 9, maxThreads);
-        assertEquals("Server thread pool default idleTimeout should be 60000", 60000, idleTimeout);
+        assertEquals(8, minThreads, "Server thread pool default minThreads should be 8");
+        assertEquals(9, maxThreads, "Server thread pool default maxThreads should be the same as specified");
+        assertEquals(60000, idleTimeout, "Server thread pool default idleTimeout should be 60000");
 
     }
 

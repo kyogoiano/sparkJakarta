@@ -487,6 +487,7 @@ public final class Service extends Routable {
 
         try {
             initLatch.await();
+            LOG.info("latch released!, current count {}", initLatch.getCount());
         } catch (InterruptedException e) {
             LOG.info("Interrupted by another thread");
             Thread.currentThread().interrupt();
@@ -635,6 +636,7 @@ public final class Service extends Routable {
                   }
                     try {
                         initLatch.countDown();
+                        LOG.info("counted down latch, current count {}", initLatch.getCount());
                         server.join();
                     } catch (InterruptedException e) {
                         LOG.error("server interrupted", e);
