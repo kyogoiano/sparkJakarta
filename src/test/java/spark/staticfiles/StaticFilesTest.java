@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Test static files
  */
+@Disabled
 public class StaticFilesTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StaticFilesTest.class);

@@ -16,7 +16,7 @@ public class UnmapTest {
     @Test
     public void testUnmap() throws Exception {
         get("/tobeunmapped", (q, a) -> "tobeunmapped");
-        init();
+        //init();
         awaitInitialization();
 
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/tobeunmapped", null);

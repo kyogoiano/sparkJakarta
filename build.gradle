@@ -36,13 +36,11 @@ dependencies {
     testImplementation "org.mockito:mockito-inline:$mockitoVersion"
     testImplementation "org.mockito:mockito-junit-jupiter:$mockitoVersion"
 
-    testImplementation ("org.powermock:powermock-module-junit4:$powermockVersion"){
-        exclude group: 'junit', module: 'junit'
-    }
     testImplementation "org.powermock:powermock-api-mockito2:$powermockVersion"
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.0-RC1")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.0-RC1")
-    testImplementation("org.junit.jupiter:junit-jupiter-migrationsupport:5.8.0-RC1")
+    testImplementation 'io.github.artsok:rerunner-jupiter:2.1.6'
+
 
     testImplementation "org.apache.httpcomponents.client5:httpclient5:5.1"
     testImplementation "org.freemarker:freemarker:2.3.31"

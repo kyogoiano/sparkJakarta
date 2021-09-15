@@ -1,7 +1,5 @@
 package spark.servlet;
 
-import java.util.concurrent.CountDownLatch;
-
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -12,12 +10,14 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import spark.Spark;
 import spark.util.SparkTestUtil;
 import spark.util.SparkTestUtil.UrlResponse;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.concurrent.CountDownLatch;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Disabled
 public class ServletTest {
@@ -29,19 +29,48 @@ public class ServletTest {
     private static SparkTestUtil testUtil;
     private final static Server server = new Server();
     private final static WebAppContext bb = new WebAppContext();
+    private final static Worker worker = new Worker();
 
     @AfterAll
-    public static void tearDown() throws Exception {
+    public static void tearDown() throws Throwable {
         LOGGER.info(">>> STOPPING EMBEDDED JETTY SERVER");
+
+        worker.interrupt();
         bb.stop();
         bb.shutdown();
-        server.stop();
-        server.destroy();
         Spark.stop();
         Spark.awaitStop();
         if (MyApp.tmpExternalFile != null) {
             LOGGER.debug("tearDown().deleting: " + MyApp.tmpExternalFile);
             MyApp.tmpExternalFile.delete();
+        }
+    }
+
+    static class Worker implements Runnable {
+        private final CountDownLatch latch = new CountDownLatch(1);
+
+        public void interrupt() throws Throwable {
+            server.stop();
+            server.destroy();
+            this.finalize();
+        }
+
+        @Override
+        public void run() {
+            try {
+                LOGGER.info(">>> STARTING EMBEDDED JETTY SERVER for jUnit testing of SparkFilter");
+                server.start();
+                latch.countDown();
+                System.in.read();
+                LOGGER.info("latch count: {}", latch.getCount());
+                //LOGGER.info(">>> STOPPING EMBEDDED JETTY SERVER");
+//                server.stop();
+                //server.join();
+                latch.await();
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.exit(100);
+            }
         }
     }
 
@@ -62,28 +91,15 @@ public class ServletTest {
         bb.setWar("src/test/webapp");
 
         server.setHandler(bb);
-        CountDownLatch latch = new CountDownLatch(1);
+        //CountDownLatch latch = new CountDownLatch(1);
 
-        new Thread(() -> {
-            try {
-                LOGGER.info(">>> STARTING EMBEDDED JETTY SERVER for jUnit testing of SparkFilter");
-                server.start();
-                latch.countDown();
-                System.in.read();
-                LOGGER.info("latch count: {}", latch.getCount());
-                //LOGGER.info(">>> STOPPING EMBEDDED JETTY SERVER");
-//                server.stop();
-//                server.join();
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.exit(100);
-            }
-        }).start();
 
-        latch.await();
+        worker.run();
+
     }
 
     @Test
+    
     public void testStaticResource() throws Exception {
         UrlResponse response = testUtil.doMethod("GET", SOMEPATH + "/css/style.css", null);
         assertEquals(200, response.status);
@@ -91,6 +107,7 @@ public class ServletTest {
     }
 
     @Test
+    
     public void testStaticWelcomeResource() throws Exception {
         UrlResponse response = testUtil.doMethod("GET", SOMEPATH + "/pages/", null);
         assertEquals(200, response.status);
@@ -98,6 +115,7 @@ public class ServletTest {
     }
 
     @Test
+    
     public void testExternalStaticFile() throws Exception {
         UrlResponse response = testUtil.doMethod("GET", SOMEPATH + "/" + MyApp.EXTERNAL_FILE, null);
         assertEquals(200, response.status);
@@ -105,6 +123,7 @@ public class ServletTest {
     }
 
     @Test
+    
     public void testGetHi() throws Exception {
         UrlResponse response = testUtil.doMethod("GET", SOMEPATH + "/hi", null);
         assertEquals(200, response.status);
@@ -112,6 +131,7 @@ public class ServletTest {
     }
 
     @Test
+    
     public void testHiHead() throws Exception {
         UrlResponse response = testUtil.doMethod("HEAD", SOMEPATH + "/hi", null);
         assertEquals(200, response.status);
@@ -119,12 +139,14 @@ public class ServletTest {
     }
 
     @Test
+    
     public void testGetHiAfterFilter() throws Exception {
         UrlResponse response = testUtil.doMethod("GET", SOMEPATH + "/hi", null);
         assertTrue(response.headers.get("after").contains("foobar"));
     }
 
     @Test
+    
     public void testGetRoot() throws Exception {
         UrlResponse response = testUtil.doMethod("GET", SOMEPATH + "/", null);
         assertEquals(200, response.status);
@@ -132,6 +154,7 @@ public class ServletTest {
     }
 
     @Test
+    
     public void testEchoParam1() throws Exception {
         UrlResponse response = testUtil.doMethod("GET", SOMEPATH + "/shizzy", null);
         assertEquals(200, response.status);
@@ -139,6 +162,7 @@ public class ServletTest {
     }
 
     @Test
+    
     public void testEchoParam2() throws Exception {
         UrlResponse response = testUtil.doMethod("GET", SOMEPATH + "/gunit", null);
         assertEquals(200, response.status);
@@ -146,12 +170,14 @@ public class ServletTest {
     }
 
     @Test
+    
     public void testUnauthorized() throws Exception {
         UrlResponse urlResponse = testUtil.doMethod("GET", SOMEPATH + "/protected/resource", null);
         assertEquals(401, urlResponse.status);
     }
 
     @Test
+    
     public void testNotFound() throws Exception {
         UrlResponse urlResponse = testUtil.doMethod("GET", SOMEPATH + "/no/resource", null);
         assertEquals(404, urlResponse.status);

@@ -11,6 +11,7 @@ import spark.util.SparkTestUtil;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static spark.Spark.*;
+
 public class BodyAvailabilityTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BodyAvailabilityTest.class);
@@ -60,10 +61,9 @@ public class BodyAvailabilityTest {
             afterBody = req.body();
         });
 
-        SparkTestUtil.sleep(50L);
-        Spark.init();
+//        SparkTestUtil.sleep(50L);
+//        Spark.init();
         Spark.awaitInitialization();
-
     }
 
     @Test

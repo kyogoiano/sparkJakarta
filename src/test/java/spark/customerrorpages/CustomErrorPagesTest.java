@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import spark.CustomErrorPages;
 import spark.Spark;
@@ -62,6 +63,7 @@ public class CustomErrorPagesTest {
     }
 
     @Test
+    @Disabled
     public void testCustomNotFound() throws Exception {
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/othernotmapped", null);
         assertEquals(404, response.status);

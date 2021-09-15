@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -107,11 +108,10 @@ public class StaticFilesTestExternal {
             response.body(NOT_FOUND_BRO);
         });
 
-        Spark.init();
         Spark.awaitInitialization();
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = 2, suspend = 1000L)
     public void testExternalStaticFile() throws Exception {
         SparkTestUtil.UrlResponse response = doGet("/externalFile.html");
         assertEquals(200, response.status);

@@ -66,6 +66,9 @@ public class GenericIntegrationTest {
         writer.flush();
         writer.close();
 
+        Spark.stop();
+        Spark.awaitStop();
+
         staticFileLocation("/public");
         externalStaticFileLocation(System.getProperty("java.io.tmpdir"));
         webSocket("/ws", WebSocketTestHandler.class);
@@ -183,7 +186,7 @@ public class GenericIntegrationTest {
 
         afterAfter((request, response) -> response.header("post-process-all", "nice done response after all"));
 
-        Spark.init();
+        //Spark.init();
 
         Spark.awaitInitialization();
     }

@@ -13,6 +13,7 @@ import spark.util.SparkTestUtil.UrlResponse;
 import static org.junit.jupiter.api.Assertions.*;
 import static spark.Spark.*;
 
+@Disabled
 public class FilterTest {
     static SparkTestUtil testUtil;
 
@@ -27,7 +28,7 @@ public class FilterTest {
         testUtil = new SparkTestUtil(4567);
 
         before("/justfilter", (q, a) -> System.out.println("Filter matched"));
-        init();
+        //init();
         awaitInitialization();
     }
 

@@ -47,17 +47,17 @@ public class HttpRequestWrapper extends HttpServletRequestWrapper {
 
     @Override
     public ServletInputStream getInputStream() throws IOException {
-        HttpServletRequest request = (HttpServletRequest) super.getRequest();
+        final HttpServletRequest request = (HttpServletRequest) super.getRequest();
 
         // disable stream cache for chunked transfer encoding
-        String transferEncoding = request.getHeader("Transfer-Encoding");
+        final String transferEncoding = request.getHeader("Transfer-Encoding");
         if ("chunked".equals(transferEncoding)) {
             return super.getInputStream();
         }
 
         // disable stream cache for multipart/form-data file upload
         // -> upload might be very large and might lead to out-of-memory error if we try to cache the bytes
-        String contentType = request.getHeader("Content-Type");
+        final String contentType = request.getHeader("Content-Type");
         if (contentType != null && contentType.startsWith("multipart/form-data")) {
             return super.getInputStream();
         }

@@ -1,13 +1,13 @@
 package spark.util;
 
-import org.apache.hc.client5.http.HttpRoute;
 import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.cookie.StandardCookieSpec;
+import org.apache.hc.client5.http.impl.DefaultHttpRequestRetryStrategy;
 import org.apache.hc.client5.http.impl.DefaultRedirectStrategy;
-import org.apache.hc.client5.http.impl.classic.BasicHttpClientResponseHandler;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
-import org.apache.hc.client5.http.impl.io.BasicHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
 import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
@@ -15,7 +15,6 @@ import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.core5.http.*;
 import org.apache.hc.core5.http.config.Registry;
 import org.apache.hc.core5.http.config.RegistryBuilder;
-import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
@@ -23,6 +22,8 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.http.support.AbstractRequestBuilder;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
@@ -40,9 +41,10 @@ import java.util.stream.Collectors;
 
 public class SparkTestUtil {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SparkTestUtil.class);
     private final int port;
 
-    private CloseableHttpClient httpClient;
+    private final CloseableHttpClient httpClient;
     private static final PoolingHttpClientConnectionManager connManager;
 
     static {
@@ -55,11 +57,11 @@ public class SparkTestUtil {
             .build();
         connManager
             = new PoolingHttpClientConnectionManager(socketRegistry);
-        connManager.setDefaultMaxPerRoute(40);
-        connManager.setMaxTotal(40);
-        connManager.setValidateAfterInactivity(TimeValue.of(5000L, TimeUnit.MILLISECONDS));
+        connManager.setDefaultMaxPerRoute(20);
+        connManager.setMaxTotal(200);
+        connManager.setValidateAfterInactivity(TimeValue.of(6000L, TimeUnit.MILLISECONDS));
         connManager.setDefaultSocketConfig(SocketConfig.custom().
-            setSoTimeout(Timeout.of(5000L, TimeUnit.MILLISECONDS)).
+            setSoTimeout(Timeout.of(6000L, TimeUnit.MILLISECONDS)).
             //setSoLinger(5000, TimeUnit.MILLISECONDS).
             setSoReuseAddress(true).
             build());
@@ -72,15 +74,30 @@ public class SparkTestUtil {
         this.httpClient = httpClientBuilder().build();
     }
 
+    public SparkTestUtil(final int port, final Integer... codes) {
+        this.port = port;
+
+        final DefaultRedirectStrategy redirectStrategy = this.buildFollowRedirectStrategy(codes);
+        this.httpClient = httpClientBuilder().setRedirectStrategy(redirectStrategy).build();
+    }
+
 //    public void closeClient() throws IOException {
 //        this.httpClient.close();
 //    }
 
     private HttpClientBuilder httpClientBuilder() {
-        return HttpClientBuilder.create().setConnectionManager(connManager);
+        int timeout = 5;
+        final RequestConfig config = RequestConfig.custom()
+            .setConnectTimeout(Timeout.of(timeout*1000, TimeUnit.MILLISECONDS))
+            .setConnectionRequestTimeout(Timeout.of(timeout*1000, TimeUnit.MILLISECONDS))
+            .setCookieSpec(StandardCookieSpec.RELAXED)
+            .setConnectTimeout(Timeout.of(timeout*1000, TimeUnit.MILLISECONDS))
+            .setConnectionRequestTimeout(Timeout.of(timeout*1000, TimeUnit.MILLISECONDS)).build();
+
+        return HttpClientBuilder.create().setDefaultRequestConfig(config).setRetryStrategy(new DefaultHttpRequestRetryStrategy()).setConnectionManager(connManager);
     }
 
-    public void setFollowRedirectStrategy(final Integer... codes) {
+    private DefaultRedirectStrategy buildFollowRedirectStrategy(final Integer... codes) {
         final List<Integer> redirectCodes = Arrays.asList(codes);
         final DefaultRedirectStrategy redirectStrategy = new DefaultRedirectStrategy() {
             @Override
@@ -100,7 +117,7 @@ public class SparkTestUtil {
                 return isRedirect;
             }
         };
-        this.httpClient = httpClientBuilder().setRedirectStrategy(redirectStrategy).build();
+        return redirectStrategy;
     }
 
     public UrlResponse get(String path) throws Exception {
@@ -131,10 +148,9 @@ public class SparkTestUtil {
         return doMethod(requestMethod, path, body, secureConnection, acceptType, null);
     }
 
-    public UrlResponse doMethod(String requestMethod, String path, String body, boolean secureConnection,
-                                String acceptType, final Map<String, String> reqHeaders) throws IOException, ParseException {
+    public UrlResponse doMethod(final String requestMethod, final String path, final String body, final boolean secureConnection,
+                                final String acceptType, final Map<String, String> reqHeaders) throws IOException, ParseException {
         final ClassicHttpRequest httpRequest = getHttpRequest(requestMethod, path, body, secureConnection, acceptType, reqHeaders);
-
        try(final CloseableHttpResponse httpResponse = httpClient.execute(httpRequest)) {
            final UrlResponse urlResponse = new UrlResponse();
            urlResponse.status = httpResponse.getCode();
@@ -145,6 +161,8 @@ public class SparkTestUtil {
                    urlResponse.body = "";
                }
                EntityUtils.consume(entity);
+           } finally {
+               LOGGER.info("Execution terminated, releasing HttpEntity ");
            }
            final Map<String, String> headers;
            final Header[] allHeaders = httpResponse.getHeaders();
@@ -153,6 +171,8 @@ public class SparkTestUtil {
                collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue, (a, b) -> b));
            urlResponse.headers = headers;
            return urlResponse;
+       } finally {
+           LOGGER.info("Execution terminated, releasing httpClient for request: {}", httpRequest.toString());
        }
     }
 

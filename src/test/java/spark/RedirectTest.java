@@ -20,7 +20,6 @@ import java.io.IOException;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import spark.util.SparkTestUtil;
 
@@ -38,8 +37,7 @@ public class RedirectTest {
 
     @BeforeAll
     public static void setup() throws IOException {
-        testUtil = new SparkTestUtil(4567);
-        testUtil.setFollowRedirectStrategy(301, 302); // don't set the others to be able to verify affect of Redirect.Status
+        testUtil = new SparkTestUtil(4567, 301, 302); // don't set the others to be able to verify affect of Redirect.Status
 
         get("/hello", (request, response) -> REDIRECTED);
         post("/hello", (request, response) -> REDIRECTED);
@@ -58,7 +56,7 @@ public class RedirectTest {
         redirect.delete("/hiagain", "/hello", Redirect.Status.USE_PROXY);
         redirect.any("/anyagain", "/hello", Redirect.Status.USE_PROXY);
 
-        Spark.init();
+        //Spark.init();
         Spark.awaitInitialization();
     }
 

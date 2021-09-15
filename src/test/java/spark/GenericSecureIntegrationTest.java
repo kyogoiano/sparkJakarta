@@ -64,7 +64,7 @@ public class GenericSecureIntegrationTest {
         });
 
         after("/hi", (request, response) -> response.header("after", "foobar"));
-        Spark.init();
+        //Spark.init();
         Spark.awaitInitialization();
     }
 

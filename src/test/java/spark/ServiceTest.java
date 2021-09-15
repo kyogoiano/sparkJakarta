@@ -3,14 +3,9 @@ package spark;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
-import org.junit.jupiter.migrationsupport.rules.ExpectedExceptionSupport;
-import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 import org.powermock.reflect.Whitebox;
 import spark.embeddedserver.EmbeddedServer;
@@ -24,8 +19,6 @@ import java.time.temporal.ChronoUnit;
 import static org.junit.jupiter.api.Assertions.*;
 import static spark.Service.ignite;
 
-@EnableRuleMigrationSupport
-@ExtendWith(ExpectedExceptionSupport.class)
 public class ServiceTest {
 
     private static final String IP_ADDRESS = "127.0.0.1";
@@ -34,9 +27,6 @@ public class ServiceTest {
     private Service service;
 
     private static String errorMessage = "";
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     @BeforeEach
     public void test() {
@@ -49,6 +39,7 @@ public class ServiceTest {
 
     @AfterEach
     public void tearDown() {
+        service.server.extinguish();
         service.stop();
         service.awaitStop();
     }
@@ -73,13 +64,11 @@ public class ServiceTest {
 
     @Test
     public void testEmbeddedServerIdentifier_thenThrowIllegalStateException() {
-        thrown.expect(IllegalStateException.class);
-        thrown.expectMessage("This must be done before route mapping has begun");
 
         Object obj = new Object();
 
         Whitebox.setInternalState(service, "initialized", true);
-        service.embeddedServerIdentifier(obj);
+        assertThrows(IllegalStateException.class, () -> service.embeddedServerIdentifier(obj), "This must be done before route mapping has begun");
     }
 
     @Test()
@@ -113,11 +102,9 @@ public class ServiceTest {
 
     @Test
     public void testIpAddress_whenInitializedTrue_thenThrowIllegalStateException() {
-        thrown.expect(IllegalStateException.class);
-        thrown.expectMessage("This must be done before route mapping has begun");
 
         Whitebox.setInternalState(service, "initialized", true);
-        service.ipAddress(IP_ADDRESS);
+        assertThrows(IllegalStateException.class, () -> service.ipAddress(IP_ADDRESS), "This must be done before route mapping has begun");
     }
 
     @Test
@@ -131,11 +118,8 @@ public class ServiceTest {
 
     @Test
     public void testSetIpAddress_whenInitializedTrue_thenThrowIllegalStateException() {
-        thrown.expect(IllegalStateException.class);
-        thrown.expectMessage("This must be done before route mapping has begun");
-
         Whitebox.setInternalState(service, "initialized", true);
-        service.ipAddress(IP_ADDRESS);
+        assertThrows(IllegalStateException.class, () -> service.ipAddress(IP_ADDRESS), "This must be done before route mapping has begun");
     }
 
     @Test
@@ -149,11 +133,8 @@ public class ServiceTest {
 
     @Test
     public void testPort_whenInitializedTrue_thenThrowIllegalStateException() {
-        thrown.expect(IllegalStateException.class);
-        thrown.expectMessage("This must be done before route mapping has begun");
-
         Whitebox.setInternalState(service, "initialized", true);
-        service.port(8080);
+        assertThrows(IllegalStateException.class, () -> service.port(8080), "This must be done before route mapping has begun");
     }
 
     @Test
@@ -167,20 +148,14 @@ public class ServiceTest {
 
     @Test
     public void testSetPort_whenInitializedTrue_thenThrowIllegalStateException() {
-        thrown.expect(IllegalStateException.class);
-        thrown.expectMessage("This must be done before route mapping has begun");
-
         Whitebox.setInternalState(service, "initialized", true);
-        service.port(8080);
+        assertThrows(IllegalStateException.class, () -> service.port(8080), "This must be done before route mapping has begun");
     }
 
     @Test
     public void testGetPort_whenInitializedFalse_thenThrowIllegalStateException() {
-        thrown.expect(IllegalStateException.class);
-        thrown.expectMessage("This must be done after route mapping has begun");
-
         Whitebox.setInternalState(service, "initialized", false);
-        service.port();
+        assertThrows(IllegalStateException.class, () -> service.port(), "This must be done before route mapping has begun");
     }
 
     @Test
@@ -230,11 +205,10 @@ public class ServiceTest {
 
     @Test
     public void testThreadPool_whenMaxMinAndTimeoutParameters_thenThrowIllegalStateException() {
-        thrown.expect(IllegalStateException.class);
-        thrown.expectMessage("This must be done before route mapping has begun");
-
+        service.initialized = false;
         Whitebox.setInternalState(service, "initialized", true);
-        service.threadPool(100, 50, 75);
+        assertThrows(IllegalStateException.class, () -> service.threadPool(100, 50, 75),
+            "This must be done before route mapping has begun");
     }
 
     @Test
@@ -251,53 +225,42 @@ public class ServiceTest {
 
     @Test
     public void testSecure_whenInitializedTrue_thenThrowIllegalStateException() {
-        thrown.expect(IllegalStateException.class);
-        thrown.expectMessage("This must be done before route mapping has begun");
 
         Whitebox.setInternalState(service, "initialized", true);
-        service.secure(null, null, null, null);
+        assertThrows(IllegalStateException.class, () -> service.secure(null, null, null, null),
+            "This must be done before route mapping has begun");
     }
 
     @Test
     public void testSecure_whenInitializedFalse_thenThrowIllegalArgumentException() {
-        thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage("Must provide a keystore file to run secured");
         service.initialized = false;
-        service.secure(null, null, null, null);
+        assertThrows(IllegalArgumentException.class, () -> service.secure(null, null, null, null),
+            "Must provide a keystore file to run secured");
     }
 
     @Test
     public void testWebSocketIdleTimeoutMillis_whenInitializedTrue_thenThrowIllegalStateException() {
-        thrown.expect(IllegalStateException.class);
-        thrown.expectMessage("This must be done before route mapping has begun");
-
         Whitebox.setInternalState(service, "initialized", true);
-        service.webSocketIdleTimeoutMillis(100);
+        assertThrows(IllegalStateException.class, () -> service.webSocketIdleTimeoutMillis(100), "This must be done before route mapping has begun");
     }
 
     @Test
     public void testWebSocket_whenInitializedTrue_thenThrowIllegalStateException() {
-        thrown.expect(IllegalStateException.class);
-        thrown.expectMessage("This must be done before route mapping has begun");
-
         Whitebox.setInternalState(service, "initialized", true);
-        service.webSocket("/", DummyWebSocketListener.class);
+        assertThrows(IllegalStateException.class, () -> service.webSocket("/", DummyWebSocketListener.class),
+            "This must be done before route mapping has begun");
     }
     
     @Test
     public void testWebSocket_whenPathNull_thenThrowNullPointerException() {
-        thrown.expect(NullPointerException.class);
-        thrown.expectMessage("WebSocket path cannot be null");
-
         service.initialized = false;
-        service.webSocket(null, new DummyWebSocketListener());
+        assertThrows(NullPointerException.class , () -> service.webSocket(null, new DummyWebSocketListener()), "WebSocket path cannot be null");
     }
     
     @Test
     public void testWebSocket_whenHandlerNull_thenThrowNullPointerException() {
-        thrown.expect(NullPointerException.class);
-        thrown.expectMessage("WebSocket handler class cannot be null");
-        service.webSocket("/", null);
+        assertThrows(NullPointerException.class , () -> service.webSocket("/", null),
+            "WebSocket handler class cannot be null");
     }
     
     @Test()

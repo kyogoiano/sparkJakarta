@@ -127,8 +127,8 @@ public final class IOUtils {
      * @throws IOException
      *             if an I/O error occurs
      */
-    public static byte[] toByteArray(InputStream input) throws IOException {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
+    public static byte[] toByteArray(final InputStream input) throws IOException {
+        final ByteArrayOutputStream os = new ByteArrayOutputStream();
         byte[] buf = new byte[1024];
         for (int n = input.read(buf); n != -1; n = input.read(buf)) {
             os.write(buf, 0, n);

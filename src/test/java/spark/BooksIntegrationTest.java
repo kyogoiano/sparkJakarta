@@ -43,7 +43,7 @@ public class BooksIntegrationTest {
         Books.main(null);
 
         after((request, response) -> response.header("FOO", "BAR"));
-        Spark.init();
+        //Spark.init();
         Spark.awaitInitialization();
     }
 

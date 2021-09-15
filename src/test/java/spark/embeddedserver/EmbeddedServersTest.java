@@ -4,6 +4,7 @@ import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -48,8 +49,6 @@ public class EmbeddedServersTest {
         embeddedServer.extinguish();
         verify(serverFactory).create(0, 0, 0);
 
-        server.stop();
-        server.destroy();
     }
 
     @Test
@@ -83,14 +82,12 @@ public class EmbeddedServersTest {
 
         assertTrue(requestLogFile.exists());
 
+    }
+
+    @AfterAll
+    public static void tearDown() {
         Spark.stop();
         Spark.awaitStop();
     }
-
-//    @AfterAll
-//    public static void tearDown() {
-//        Spark.stop();
-//        Spark.awaitStop();
-//    }
 
 }

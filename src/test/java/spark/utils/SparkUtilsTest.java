@@ -5,8 +5,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SparkUtilsTest {
@@ -18,9 +16,8 @@ public class SparkUtilsTest {
 
         List<String> actual = SparkUtils.convertRouteToList("/api/person/:id");
 
-        assertThat("Should return route as a list of individual elements that path is made of",
-                actual,
-                is(expected));
+        assertEquals(
+                expected, actual, "Should return route as a list of individual elements that path is made of");
 
     }
 

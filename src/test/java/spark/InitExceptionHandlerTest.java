@@ -27,6 +27,8 @@ public class InitExceptionHandlerTest {
 
     @AfterAll
     public static void tearDown() throws Exception {
+        service.stop();
+        service.awaitStop();
         Spark.stop();
         Spark.awaitStop();
     }

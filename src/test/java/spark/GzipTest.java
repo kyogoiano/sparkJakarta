@@ -34,9 +34,10 @@ public class GzipTest {
 
     @BeforeAll
     public static void setup() {
+
         GzipExample.addStaticFileLocation();
         GzipExample.addRoutes();
-        init();
+        //init();
         awaitInitialization();
     }
 

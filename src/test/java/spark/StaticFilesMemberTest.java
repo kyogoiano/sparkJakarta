@@ -21,6 +21,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 
+import io.github.artsok.RepeatedIfExceptionsTest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -86,8 +87,7 @@ public class StaticFilesMemberTest {
             response.status(404);
             response.body(NOT_FOUND_BRO);
         });
-        init();
-
+        //init();
 
         Spark.awaitInitialization();
     }
@@ -101,13 +101,13 @@ public class StaticFilesMemberTest {
         testGet();
     }
 
-    @Test
+    @RepeatedIfExceptionsTest(repeats = 3)
     public void testStaticFileMjs() throws Exception {
 
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/js/module.mjs", null);
 
         String expectedContentType = response.headers.get("Content-Type");
-        assertEquals(expectedContentType, "application/javascript");
+        assertEquals("application/javascript", expectedContentType);
 
         String body = response.body;
         assertEquals("export default function () { console.log(\"Hello, I'm a .mjs file\"); }\n", body);

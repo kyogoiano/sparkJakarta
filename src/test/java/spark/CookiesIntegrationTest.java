@@ -90,6 +90,8 @@ public class CookiesIntegrationTest {
 
     @AfterAll
     public static void stopServer() {
+        service.stop();
+        service.awaitStop();
         Spark.stop();
         Spark.awaitStop();
     }

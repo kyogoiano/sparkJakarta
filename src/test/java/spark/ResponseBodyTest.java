@@ -92,7 +92,7 @@ public class ResponseBodyTest {
             String body = a.body();
             assertEquals($11AB, body);
         });
-        Spark.init();
+        //Spark.init();
         Spark.awaitInitialization();
     }
 
