@@ -16,8 +16,6 @@ public record Session(HttpSession session, Request request) {
     /**
      * Creates a session with the <code>HttpSession</code>.
      *
-     * @param session
-     * @param request
      * @throws IllegalArgumentException If the session or the request is null.
      */
     public Session {
