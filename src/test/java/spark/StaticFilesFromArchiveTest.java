@@ -19,7 +19,6 @@ package spark;
 import static java.lang.ClassLoader.getPlatformClassLoader;
 import static java.lang.ClassLoader.getSystemClassLoader;
 import static java.lang.System.arraycopy;
-import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -33,13 +32,16 @@ import java.util.Enumeration;
 import java.util.List;
 
 import org.eclipse.jetty.util.TypeUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import spark.util.SparkTestUtil;
 import spark.util.SparkTestUtil.UrlResponse;
 import sun.misc.Unsafe;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 public class StaticFilesFromArchiveTest {
 
@@ -47,7 +49,7 @@ public class StaticFilesFromArchiveTest {
     private static ClassLoader classLoader;
     private static ClassLoader initialClassLoader;
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() throws Exception {
         setupClassLoader();
         testUtil = new SparkTestUtil(4567);
@@ -64,7 +66,7 @@ public class StaticFilesFromArchiveTest {
         awaitInitializationMethod.invoke(null);
     }
 
-    @AfterClass
+    @AfterAll
     public static void resetClassLoader() {
         Thread.currentThread().setContextClassLoader(initialClassLoader);
         Spark.stop();
@@ -85,24 +87,24 @@ public class StaticFilesFromArchiveTest {
         field.setAccessible(true);
         Unsafe unsafe = (Unsafe) field.get(null);
 
-        Class builtinClazzLoader = Class.forName("jdk.internal.loader.BuiltinClassLoader");
+        Class<?> builtinClazzLoader = Class.forName("jdk.internal.loader.BuiltinClassLoader");
 
         Field ucpField = builtinClazzLoader.getDeclaredField("ucp");
         long ucpFieldOffset = unsafe.objectFieldOffset(ucpField);
         Object ucpObject = unsafe.getObject(builtinClazzLoader, ucpFieldOffset);
-        //Object ucpObject = ucpField.get(getSystemClassLoader());
-        Class clazz = Class.forName("jdk.internal.loader.URLClassPath");
+        //Object ucpObject = ucpField.get();
+        Class<?> clazz = Class.forName("jdk.internal.loader.URLClassPath");
         Method getURLs = clazz.getMethod("getURLs");
 
         // jdk.internal.loader.URLClassPath.path
-//        Field pathField = ucpField.getType().getDeclaredField("path");
-//        long pathFieldOffset = unsafe.objectFieldOffset(pathField);
-//        ArrayList<URL> path = (ArrayList<URL>) unsafe.getObject(ucpObject, pathFieldOffset);
+        Field pathField = ucpField.getType().getDeclaredField("path");
+        long pathFieldOffset = unsafe.objectFieldOffset(pathField);
+        ArrayList<URL> path = (ArrayList<URL>) unsafe.getObject(builtinClazzLoader, pathFieldOffset);
 
-        URL[] path = (URL[]) getURLs.invoke(ucpObject);
+        //URL[] path = (URL[]) getURLs.invoke(ucpField);
 
-        URL[] urls = new URL[path.length + 1];
-        arraycopy(path, 0, urls, 0, path.length);
+        URL[] urls = new URL[path.size() + 1];
+        arraycopy(path, 0, urls, 0, path.size());
 
         URL publicJar = StaticFilesFromArchiveTest.class.getResource("/public-jar.zip");
         urls[urls.length - 1] = publicJar;
@@ -111,14 +113,15 @@ public class StaticFilesFromArchiveTest {
         return URLClassLoader.newInstance(urls, null);
     }
 
-//    @Test
-//    public void testCss() throws Exception {
-//        UrlResponse response = testUtil.doMethod("GET", "/css/style.css", null);
-//
-//        String expectedContentType = response.headers.get("Content-Type");
-//        assertEquals(expectedContentType, "text/css");
-//
-//        String body = response.body;
-//        assertEquals("Content of css file", body);
-//    }
+    @Test
+    @Disabled
+    public void testCss() throws Exception {
+        UrlResponse response = testUtil.doMethod("GET", "/css/style.css", null);
+
+        String expectedContentType = response.headers.get("Content-Type");
+        assertEquals(expectedContentType, "text/css");
+
+        String body = response.body;
+        assertEquals("Content of css file", body);
+    }
 }

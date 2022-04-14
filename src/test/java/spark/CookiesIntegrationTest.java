@@ -1,18 +1,16 @@
 package spark;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static spark.Spark.*;
 
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.core5.http.HttpResponse;
-import org.eclipse.jetty.server.Server;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import spark.util.SparkTestUtil;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 import static spark.Service.ignite;
 /**
@@ -23,11 +21,11 @@ import static spark.Service.ignite;
 public class CookiesIntegrationTest {
 
     private static final String DEFAULT_HOST_URL = "http://localhost:4567";
-    private HttpClient httpClient = HttpClientBuilder.create().build();
+    private final HttpClient httpClient = HttpClientBuilder.create().build();
     private static Service service;
     private static String errorMessage = "";
 
-    @BeforeClass
+    @BeforeAll
     public static void initRoutes() {
         service = ignite();
         service.port(8080);
@@ -90,7 +88,7 @@ public class CookiesIntegrationTest {
 
     }
 
-    @AfterClass
+    @AfterAll
     public static void stopServer() {
         Spark.stop();
     }

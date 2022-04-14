@@ -21,10 +21,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +33,8 @@ import spark.util.SparkTestUtil;
 import static spark.Spark.exception;
 import static spark.Spark.get;
 import static spark.Spark.staticFiles;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test static files
@@ -53,7 +54,7 @@ public class StaticFilesMemberTest {
 
     private static File tmpExternalFile;
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         Spark.stop();
         if (tmpExternalFile != null) {
@@ -62,7 +63,7 @@ public class StaticFilesMemberTest {
         }
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() throws IOException {
         testUtil = new SparkTestUtil(4567);
 
@@ -93,8 +94,8 @@ public class StaticFilesMemberTest {
     @Test
     public void testStaticFileCssStyleCss() throws Exception {
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/css/style.css", null);
-        Assert.assertEquals(200, response.status);
-        Assert.assertEquals("Content of css file", response.body);
+        assertEquals(200, response.status);
+        assertEquals("Content of css file", response.body);
 
         testGet();
     }
@@ -104,17 +105,17 @@ public class StaticFilesMemberTest {
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/js/module.mjs", null);
 
         String expectedContentType = response.headers.get("Content-Type");
-        Assert.assertEquals(expectedContentType, "application/javascript");
+        assertEquals(expectedContentType, "application/javascript");
 
         String body = response.body;
-        Assert.assertEquals("export default function () { console.log(\"Hello, I'm a .mjs file\"); }\n", body);
+        assertEquals("export default function () { console.log(\"Hello, I'm a .mjs file\"); }\r\n", body);
     }
 
     @Test
     public void testStaticFilePagesIndexHtml() throws Exception {
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/pages/index.html", null);
-        Assert.assertEquals(200, response.status);
-        Assert.assertEquals("<html><body>Hello Static World!</body></html>", response.body);
+        assertEquals(200, response.status);
+        assertEquals("<html><body>Hello Static World!</body></html>", response.body);
 
         testGet();
     }
@@ -122,8 +123,8 @@ public class StaticFilesMemberTest {
     @Test
     public void testStaticFilePageHtml() throws Exception {
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/page.html", null);
-        Assert.assertEquals(200, response.status);
-        Assert.assertEquals("<html><body>Hello Static Files World!</body></html>", response.body);
+        assertEquals(200, response.status);
+        assertEquals("<html><body>Hello Static Files World!</body></html>", response.body);
 
         testGet();
     }
@@ -131,8 +132,8 @@ public class StaticFilesMemberTest {
     @Test
     public void testExternalStaticFile() throws Exception {
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/externalFile.html", null);
-        Assert.assertEquals(200, response.status);
-        Assert.assertEquals("Content of external file", response.body);
+        assertEquals(200, response.status);
+        assertEquals("Content of external file", response.body);
 
         testGet();
     }
@@ -146,8 +147,8 @@ public class StaticFilesMemberTest {
             }
         });
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/pages/index.html", null);
-        Assert.assertEquals("Microsoft Word", response.headers.get("Server"));
-        Assert.assertEquals("private, max-age=600", response.headers.get("Cache-Control"));
+        assertEquals("Microsoft Word", response.headers.get("Server"));
+        assertEquals("private, max-age=600", response.headers.get("Cache-Control"));
 
         testGet();
     }
@@ -156,7 +157,7 @@ public class StaticFilesMemberTest {
     public void testStaticFileExpireTime() throws Exception {
         staticFiles.expireTime(600);
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/pages/index.html", null);
-        Assert.assertEquals("private, max-age=600", response.headers.get("Cache-Control"));
+        assertEquals("private, max-age=600", response.headers.get("Cache-Control"));
 
         testGet();
     }
@@ -167,15 +168,15 @@ public class StaticFilesMemberTest {
     private static void testGet() throws Exception {
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/hello", "");
 
-        Assert.assertEquals(200, response.status);
-        Assert.assertTrue(response.body.contains(FO_SHIZZY));
+        assertEquals(200, response.status);
+        assertTrue(response.body.contains(FO_SHIZZY));
     }
 
     @Test
     public void testExceptionMapping404() throws Exception {
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/filethatdoesntexist.html", null);
 
-        Assert.assertEquals(404, response.status);
-        Assert.assertEquals(NOT_FOUND_BRO, response.body);
+        assertEquals(404, response.status);
+        assertEquals(NOT_FOUND_BRO, response.body);
     }
 }

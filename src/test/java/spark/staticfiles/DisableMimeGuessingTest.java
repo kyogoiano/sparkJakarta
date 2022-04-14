@@ -20,10 +20,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +49,7 @@ public class DisableMimeGuessingTest {
 
     private static File tmpExternalFile;
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         Spark.stop();
         if (tmpExternalFile != null) {
@@ -58,7 +58,7 @@ public class DisableMimeGuessingTest {
         }
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() throws IOException {
         testUtil = new SparkTestUtil(4567);
 
@@ -84,20 +84,20 @@ public class DisableMimeGuessingTest {
 
     @Test
     public void testMimeTypes() throws Exception {
-        Assert.assertNull(doGet("/pages/index.html").headers.get("Content-Type"));
-        Assert.assertNull(doGet("/js/scripts.js").headers.get("Content-Type"));
-        Assert.assertNull(doGet("/css/style.css").headers.get("Content-Type"));
-        Assert.assertNull(doGet("/img/sparklogo.png").headers.get("Content-Type"));
-        Assert.assertNull(doGet("/img/sparklogo.svg").headers.get("Content-Type"));
-        Assert.assertNull(doGet("/img/sparklogoPng").headers.get("Content-Type"));
-        Assert.assertNull(doGet("/img/sparklogoSvg").headers.get("Content-Type"));
-        Assert.assertNull(doGet("/externalFile.html").headers.get("Content-Type"));
+        Assertions.assertNull(doGet("/pages/index.html").headers.get("Content-Type"));
+        Assertions.assertNull(doGet("/js/scripts.js").headers.get("Content-Type"));
+        Assertions.assertNull(doGet("/css/style.css").headers.get("Content-Type"));
+        Assertions.assertNull(doGet("/img/sparklogo.png").headers.get("Content-Type"));
+        Assertions.assertNull(doGet("/img/sparklogo.svg").headers.get("Content-Type"));
+        Assertions.assertNull(doGet("/img/sparklogoPng").headers.get("Content-Type"));
+        Assertions.assertNull(doGet("/img/sparklogoSvg").headers.get("Content-Type"));
+        Assertions.assertNull(doGet("/externalFile.html").headers.get("Content-Type"));
     }
 
     @Test
     public void testCustomMimeType() throws Exception {
         staticFiles.registerMimeType("cxt", "custom-extension-type");
-        Assert.assertNull(doGet("/img/file.cxt").headers.get("Content-Type"));
+        Assertions.assertNull(doGet("/img/file.cxt").headers.get("Content-Type"));
     }
 
     private SparkTestUtil.UrlResponse doGet(String fileName) throws Exception {

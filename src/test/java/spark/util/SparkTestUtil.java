@@ -2,11 +2,9 @@ package spark.util;
 
 import org.apache.hc.client5.http.classic.methods.HttpUriRequestBase;
 import org.apache.hc.client5.http.impl.DefaultRedirectStrategy;
-import org.apache.hc.client5.http.impl.classic.BasicHttpClientResponseHandler;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
-import org.apache.hc.client5.http.impl.io.BasicHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.socket.ConnectionSocketFactory;
 import org.apache.hc.client5.http.socket.PlainConnectionSocketFactory;
@@ -14,12 +12,12 @@ import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.core5.http.*;
 import org.apache.hc.core5.http.config.Registry;
 import org.apache.hc.core5.http.config.RegistryBuilder;
-import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.http.support.AbstractRequestBuilder;
+import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 
 import javax.net.ssl.SSLContext;
@@ -45,13 +43,7 @@ public class SparkTestUtil {
     public SparkTestUtil(int port) {
         this.port = port;
 
-        PoolingHttpClientConnectionManager connManager
-            = new PoolingHttpClientConnectionManager();
-        connManager.setDefaultMaxPerRoute(5);
-        connManager.setMaxTotal(5);
-        connManager.setDefaultSocketConfig(SocketConfig.custom().
-            setSoTimeout(Timeout.of(5000L, TimeUnit.MILLISECONDS)).build());
-        this.httpClient = httpClientBuilder().setConnectionManager(connManager).build();
+        this.httpClient = httpClientBuilder().setConnectionManagerShared(true).build();
     }
 
 //    public void closeClient() throws IOException {
@@ -66,11 +58,17 @@ public class SparkTestUtil {
                 .register("http", PlainConnectionSocketFactory.INSTANCE)
                 .register("https", sslConnectionSocketFactory)
                 .build();
-        final BasicHttpClientConnectionManager connManager = new BasicHttpClientConnectionManager(socketRegistry);
+        final PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager(socketRegistry);
+        connManager.setDefaultMaxPerRoute(5);
+        connManager.setMaxTotal(5);
+        connManager.setDefaultSocketConfig(SocketConfig.custom().
+            setSoTimeout(Timeout.of(5000L, TimeUnit.MILLISECONDS)).build());
+        connManager.closeIdle(TimeValue.ofMilliseconds(0L));
+        connManager.setValidateAfterInactivity(TimeValue.NEG_ONE_MILLISECOND);
         return HttpClientBuilder.create().setConnectionManager(connManager);
     }
 
-    public void setFollowRedirectStrategy(Integer... codes) {
+    public void setFollowRedirectStrategy(final Integer... codes) {
         final List<Integer> redirectCodes = Arrays.asList(codes);
         DefaultRedirectStrategy redirectStrategy = new DefaultRedirectStrategy() {
             @Override

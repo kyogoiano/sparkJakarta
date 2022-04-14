@@ -1,9 +1,7 @@
 package spark;
-
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import spark.util.SparkTestUtil;
 import spark.util.SparkTestUtil.UrlResponse;
 
@@ -11,16 +9,18 @@ import java.io.IOException;
 
 import static spark.Spark.*;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 public class ResponseWrapperDelegationTest {
 
     static SparkTestUtil testUtil;
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         Spark.stop();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() throws IOException {
         testUtil = new SparkTestUtil(4567);
 
@@ -55,15 +55,15 @@ public class ResponseWrapperDelegationTest {
     @Test
     public void filters_can_detect_response_status() throws Exception {
         UrlResponse response = testUtil.get("/204");
-        Assert.assertEquals(200, response.status);
-        Assert.assertEquals("ok", response.body);
+        assertEquals(200, response.status);
+        assertEquals("ok", response.body);
     }
 
     @Test
     public void filters_can_detect_content_type() throws Exception {
         UrlResponse response = testUtil.get("/json");
-        Assert.assertEquals(200, response.status);
-        Assert.assertEquals("{\"status\": \"ok\"}", response.body);
-        Assert.assertEquals("text/plain", response.headers.get("Content-Type"));
+        assertEquals(200, response.status);
+        assertEquals("{\"status\": \"ok\"}", response.body);
+        assertEquals("text/plain;charset=utf-8", response.headers.get("Content-Type"));
     }
 }

@@ -1,12 +1,12 @@
 package spark.resource;
 
-import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class UriPathTest {
     @Test
-    public void canonical() throws Exception {
+    public void canonical() {
         String[][] canonical = {
             {"/aaa/bbb/", "/aaa/bbb/"},
             {"/aaa//bbb/", "/aaa//bbb/"},
@@ -57,7 +57,7 @@ public class UriPathTest {
         };
 
         for (String[] aCanonical : canonical) {
-            assertEquals("canonical " + aCanonical[0], aCanonical[1], UriPath.canonical(aCanonical[0]));
+            Assertions.assertEquals(aCanonical[1], UriPath.canonical(aCanonical[0]), "canonical " + aCanonical[0]);
         }
     }
 

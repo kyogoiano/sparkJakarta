@@ -3,10 +3,11 @@ package spark.embeddedserver.jetty.websocket;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import spark.embeddedserver.jetty.websocket.WebSocketCreatorFactory.SparkWebSocketCreator;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 public class WebSocketCreatorFactoryTest {
 
@@ -36,7 +37,7 @@ public class WebSocketCreatorFactoryTest {
     }
 
     @Test
-    public void testCreate_whenInstantiationException() throws Exception {
+    public void testCreate_whenInstantiationException() {
         try {
             WebSocketCreatorFactory.create(new WebSocketHandlerClassWrapper(FailingHandler.class));
             fail("Handler creation should have thrown a RunTimeException");

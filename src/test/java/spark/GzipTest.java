@@ -16,16 +16,15 @@
  */
 package spark;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import spark.examples.gzip.GzipClient;
 import spark.examples.gzip.GzipExample;
 import spark.util.SparkTestUtil;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static spark.Spark.*;
 
 /**
@@ -33,14 +32,14 @@ import static spark.Spark.*;
  */
 public class GzipTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() {
         GzipExample.addStaticFileLocation();
         GzipExample.addRoutes();
         awaitInitialization();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         stop();
         awaitStop();
@@ -55,7 +54,7 @@ public class GzipTest {
     @Test
     public void testStaticFileCssStyleCss() throws Exception {
         String decompressed = GzipClient.getAndDecompress("http://localhost:4567/css/style.css");
-        Assert.assertEquals("Content of css file", decompressed);
+        assertEquals("Content of css file", decompressed);
         testGet();
     }
 
@@ -66,8 +65,8 @@ public class GzipTest {
         SparkTestUtil testUtil = new SparkTestUtil(4567);
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/hello", "");
 
-        Assert.assertEquals(200, response.status);
-        Assert.assertTrue(response.body.contains(GzipExample.FO_SHIZZY));
+        assertEquals(200, response.status);
+        assertTrue(response.body.contains(GzipExample.FO_SHIZZY));
     }
 
 }

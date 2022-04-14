@@ -1,13 +1,14 @@
 package spark.serialization;
 
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.*;
 
 public class InputStreamSerializerTest {
 
-    private InputStreamSerializer serializer = new InputStreamSerializer();
+    private final InputStreamSerializer serializer = new InputStreamSerializer();
 
     @Test
     public void testProcess_copiesData() throws IOException {
@@ -17,7 +18,7 @@ public class InputStreamSerializerTest {
 
         serializer.process(output, input);
 
-        Assert.assertArrayEquals(bytes, output.toByteArray());
+        Assertions.assertArrayEquals(bytes, output.toByteArray());
     }
 
     @Test
@@ -27,10 +28,10 @@ public class InputStreamSerializerTest {
 
         serializer.process(output, input);
 
-        Assert.assertTrue("Expected stream to be closed", input.closed);
+        Assertions.assertTrue(input.closed, "Expected stream to be closed");
     }
 
-    private class MockInputStream extends FilterInputStream {
+    private static class MockInputStream extends FilterInputStream {
 
         boolean closed = false;
 

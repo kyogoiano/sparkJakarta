@@ -1,52 +1,52 @@
 package spark.globalstate;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.powermock.reflect.Whitebox;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(PowerMockRunner.class)
+
+@ExtendWith(MockitoExtension.class)
 public class ServletFlagTest {
 
-    @Before
+    @BeforeEach
     public void setup() {
 
         Whitebox.setInternalState(ServletFlag.class, "isRunningFromServlet", new AtomicBoolean(false));
     }
 
     @Test
-    public void testRunFromServlet_whenDefault() throws Exception {
+    public void testRunFromServlet_whenDefault() {
 
         AtomicBoolean isRunningFromServlet = Whitebox.getInternalState(ServletFlag.class, "isRunningFromServlet");
-        assertFalse("Should be false because it is the default value", isRunningFromServlet.get());
+        assertFalse(isRunningFromServlet.get(), "Should be false because it is the default value");
     }
 
     @Test
-    public void testRunFromServlet_whenExecuted() throws Exception {
+    public void testRunFromServlet_whenExecuted() {
 
         ServletFlag.runFromServlet();
         AtomicBoolean isRunningFromServlet = Whitebox.getInternalState(ServletFlag.class, "isRunningFromServlet");
 
-        assertTrue("Should be true because it flag has been set after runFromServlet", isRunningFromServlet.get());
+        assertTrue( isRunningFromServlet.get(), "Should be true because it flag has been set after runFromServlet");
     }
 
     @Test
-    public void testIsRunningFromServlet_whenDefault() throws Exception {
+    public void testIsRunningFromServlet_whenDefault() {
 
-        assertFalse("Should be false because it is the default value", ServletFlag.isRunningFromServlet());
+        assertFalse(ServletFlag.isRunningFromServlet(), "Should be false because it is the default value");
 
     }
 
     @Test
-    public void testIsRunningFromServlet_whenRunningFromServlet() throws Exception {
+    public void testIsRunningFromServlet_whenRunningFromServlet() {
 
         ServletFlag.runFromServlet();
-        assertTrue("Should be true because call to runFromServlet has been made", ServletFlag.isRunningFromServlet());
+        assertTrue(ServletFlag.isRunningFromServlet(), "Should be true because call to runFromServlet has been made");
     }
 }

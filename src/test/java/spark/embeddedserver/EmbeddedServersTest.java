@@ -5,31 +5,25 @@ import java.io.File;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.junit.AfterClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import spark.Spark;
 import spark.embeddedserver.jetty.EmbeddedJettyFactory;
 import spark.embeddedserver.jetty.JettyServerFactory;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class EmbeddedServersTest {
 
-    @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
     @Test
-    public void testAddAndCreate_whenCreate_createsCustomServer() throws Exception {
+    public void testAddAndCreate_whenCreate_createsCustomServer(@TempDir File requestLogDir) throws Exception {
         // Create custom Server
         Server server = new Server();
-        File requestLogDir = temporaryFolder.newFolder();
         File requestLogFile = new File(requestLogDir, "request.log");
         server.setRequestLog(new CustomRequestLog(requestLogFile.getAbsolutePath()));
         JettyServerFactory serverFactory = mock(JettyServerFactory.class);
@@ -54,15 +48,16 @@ public class EmbeddedServersTest {
     }
 
     @Test
-    public void testAdd_whenConfigureRoutes_createsCustomServer() throws Exception {
-        File requestLogDir = temporaryFolder.newFolder();
-        File requestLogFile = new File(requestLogDir, "request.log");
+    public void testAdd_whenConfigureRoutes_createsCustomServer(@TempDir File requestLogDir) {
+        final File requestLogFile = new File(requestLogDir, "request.log");
+        final CustomRequestLog customRequestLog = new CustomRequestLog(requestLogFile.getAbsolutePath());
+
         // Register custom server
         EmbeddedServers.add(EmbeddedServers.Identifiers.JETTY, new EmbeddedJettyFactory(new JettyServerFactory() {
             @Override
             public Server create(int maxThreads, int minThreads, int threadTimeoutMillis) {
                 Server server = new Server();
-                server.setRequestLog(new CustomRequestLog(requestLogFile.getAbsolutePath()));
+                server.setRequestLog(customRequestLog);
                 return server;
             }
 
@@ -75,9 +70,10 @@ public class EmbeddedServersTest {
         Spark.awaitInitialization();
 
         assertTrue(requestLogFile.exists());
+        customRequestLog.destroy(); //FIXME: even destroying the resource is not recovered as the test scope ends
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         Spark.stop();
     }

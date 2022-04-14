@@ -2,16 +2,16 @@ package spark.embeddedserver.jetty;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.After;
-import org.junit.Test;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import spark.ExceptionMapper;
 import spark.embeddedserver.EmbeddedServer;
 import spark.route.Routes;
 import spark.staticfiles.StaticFilesConfiguration;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -99,7 +99,7 @@ public class EmbeddedJettyFactoryTest {
         assertFalse(((JettyHandler) server.getHandler()).getSessionCookieConfig().isHttpOnly());
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         if (embeddedServer != null) {
             embeddedServer.extinguish();

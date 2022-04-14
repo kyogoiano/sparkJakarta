@@ -1,15 +1,15 @@
 package spark;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.util.SparkTestUtil;
 
 import static spark.Service.ignite;
 
+import static org.junit.jupiter.api.Assertions.*;
 /**
  * Created by Tom on 08/02/2017.
  */
@@ -18,8 +18,8 @@ public class ServicePortIntegrationTest {
     private static Service service;
     private static final Logger LOGGER = LoggerFactory.getLogger(ServicePortIntegrationTest.class);
 
-    @BeforeClass
-    public static void setUpClass() throws Exception {
+    @BeforeAll
+    public static void setUpClass() {
         service = ignite();
         service.port(0);
 
@@ -37,11 +37,11 @@ public class ServicePortIntegrationTest {
         SparkTestUtil testUtil = new SparkTestUtil(actualPort);
 
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/hi", null);
-        Assert.assertEquals(200, response.status);
-        Assert.assertEquals("Hello World!", response.body);
+        assertEquals(200, response.status);
+        assertEquals("Hello World!", response.body);
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         service.stop();
     }

@@ -1,6 +1,7 @@
 package spark.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import spark.utils.ResourceUtils;
 
 import java.io.File;
@@ -9,7 +10,6 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 
-import static org.junit.Assert.assertEquals;
 
 public class ResourceUtilsTest {
 
@@ -34,7 +34,7 @@ public class ResourceUtilsTest {
         File file = ResourceUtils.getFile(url, "Some description");
 
         //then
-        assertEquals("Should be equals because URL protocol is file", file, new File(ResourceUtils.toURI(url).getSchemeSpecificPart()));
+        Assertions.assertEquals(file, new File(ResourceUtils.toURI(url).getSchemeSpecificPart()), "Should be equals because URL protocol is file");
     }
 
 }

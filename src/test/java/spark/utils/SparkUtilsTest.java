@@ -1,7 +1,8 @@
 package spark.utils;
 
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -27,16 +28,16 @@ public class SparkUtilsTest {
     @Test
     public void testIsParam_whenParameterFormattedAsParm() {
 
-        Assert.assertTrue("Should return true because parameter follows convention of a parameter (:paramname)",
-                SparkUtils.isParam(":param"));
+        Assertions.assertTrue(
+                SparkUtils.isParam(":param"), "Should return true because parameter follows convention of a parameter (:paramname)");
 
     }
 
     @Test
     public void testIsParam_whenParameterNotFormattedAsParm() {
 
-        Assert.assertFalse("Should return false because parameter does not follows convention of a parameter (:paramname)",
-                SparkUtils.isParam(".param"));
+        Assertions.assertFalse(
+                SparkUtils.isParam(".param"), "Should return false because parameter does not follows convention of a parameter (:paramname)");
 
     }
 
@@ -44,14 +45,14 @@ public class SparkUtilsTest {
     @Test
     public void testIsSplat_whenParameterIsASplat() {
 
-        Assert.assertTrue("Should return true because parameter is a splat (*)", SparkUtils.isSplat("*"));
+        Assertions.assertTrue(SparkUtils.isSplat("*"), "Should return true because parameter is a splat (*)");
 
     }
 
     @Test
     public void testIsSplat_whenParameterIsNotASplat() {
 
-        Assert.assertFalse("Should return true because parameter is not a splat (*)", SparkUtils.isSplat("!"));
+        Assertions.assertFalse(SparkUtils.isSplat("!"), "Should return true because parameter is not a splat (*)");
 
     }
 }
