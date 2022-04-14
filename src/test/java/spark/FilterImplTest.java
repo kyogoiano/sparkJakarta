@@ -51,3 +51,4 @@ public class FilterImplTest {
         assertEquals(RouteImpl.DEFAULT_ACCEPT_TYPE, filter.getAcceptType(), "Should return accept type specified");
     }
 }
+

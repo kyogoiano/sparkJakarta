@@ -51,25 +51,25 @@ public final class Service extends Routable {
     private static final Logger LOG = LoggerFactory.getLogger("spark.Spark");
 
     public static final int SPARK_DEFAULT_PORT = 4567;
-    protected static final String DEFAULT_ACCEPT_TYPE = "*/*";
+    static final String DEFAULT_ACCEPT_TYPE = "*/*";
 
-    protected boolean initialized = false;
+    boolean initialized = false;
 
-    protected int port = SPARK_DEFAULT_PORT;
-    protected String ipAddress = "0.0.0.0";
+    private int port = SPARK_DEFAULT_PORT;
+    private String ipAddress = "0.0.0.0";
 
-    protected SslStores sslStores;
+    private SslStores sslStores;
 
-    protected Map<String, WebSocketHandlerWrapper> webSocketHandlers = null;
+    private Map<String, WebSocketHandlerWrapper> webSocketHandlers = null;
 
-    protected int maxThreads = -1;
-    protected int minThreads = -1;
-    protected int threadIdleTimeoutMillis = -1;
-    protected Optional<Long> webSocketIdleTimeoutMillis = Optional.empty();
+    private int maxThreads = -1;
+    private int minThreads = -1;
+    private int threadIdleTimeoutMillis = -1;
+    private Optional<Long> webSocketIdleTimeoutMillis = Optional.empty();
 
-    protected EmbeddedServer server;
-    protected final Deque<String> pathDeque = new ArrayDeque<>();
-    protected Routes routes;
+    EmbeddedServer server;
+    private final Deque<String> pathDeque = new ArrayDeque<>();
+    Routes routes;
 
     private CountDownLatch initLatch = new CountDownLatch(1);
     private CountDownLatch stopLatch = new CountDownLatch(0);
@@ -487,6 +487,7 @@ public final class Service extends Routable {
 
         try {
             initLatch.await();
+            LOG.debug("latch released!, current count {}", initLatch.getCount());
         } catch (InterruptedException e) {
             LOG.info("Interrupted by another thread");
             Thread.currentThread().interrupt();
@@ -635,6 +636,7 @@ public final class Service extends Routable {
                   }
                     try {
                         initLatch.countDown();
+                        LOG.info("counted down latch, current count {}", initLatch.getCount());
                         server.join();
                     } catch (InterruptedException e) {
                         LOG.error("server interrupted", e);
@@ -740,7 +742,7 @@ public final class Service extends Routable {
 
     /**
      * Sets Spark to trust the HTTP headers that are commonly used in reverse proxies.
-     * More info at https://www.eclipse.org/jetty/javadoc/current/org/eclipse/jetty/server/ForwardedRequestCustomizer.html
+     * More info at <a href="https://www.eclipse.org/jetty/javadoc/current/org/eclipse/jetty/server/ForwardedRequestCustomizer.html"></a>
      */
     public synchronized Service trustForwardHeaders() {
         if (initialized) {
@@ -753,7 +755,7 @@ public final class Service extends Routable {
 
     /**
      * Sets Spark to NOT trust the HTTP headers that are commonly used in reverse proxies.
-     * More info at https://www.eclipse.org/jetty/javadoc/current/org/eclipse/jetty/server/ForwardedRequestCustomizer.html
+     * More info at <a href="https://www.eclipse.org/jetty/javadoc/current/org/eclipse/jetty/server/ForwardedRequestCustomizer.html"></a>
      */
     public synchronized Service untrustForwardHeaders() {
         if (initialized) {

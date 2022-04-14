@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class UnmapTest {
 
-    SparkTestUtil testUtil = new SparkTestUtil(4567);
+    final SparkTestUtil testUtil = new SparkTestUtil(4567);
 
     @Test
     public void testUnmap() throws Exception {

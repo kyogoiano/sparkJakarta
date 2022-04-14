@@ -63,14 +63,14 @@ public class StaticFilesConfiguration {
      * @return true if consumed, false otherwise.
      * @throws IOException in case of IO error.
      */
-    public boolean consume(HttpServletRequest httpRequest,
-                           HttpServletResponse httpResponse) throws IOException {
+    public boolean consume(final HttpServletRequest httpRequest,
+                           final HttpServletResponse httpResponse) throws IOException {
         try {
             if (consumeWithFileResourceHandlers(httpRequest, httpResponse)) {
                 return true;
             }
 
-        } catch (DirectoryTraversal.DirectoryTraversalDetection directoryTraversalDetection) {
+        } catch (final DirectoryTraversal.DirectoryTraversalDetection directoryTraversalDetection) {
             httpResponse.setStatus(400);
             httpResponse.getWriter().write("Bad request");
             httpResponse.getWriter().flush();
@@ -81,13 +81,13 @@ public class StaticFilesConfiguration {
     }
 
 
-    private boolean consumeWithFileResourceHandlers(HttpServletRequest httpRequest,
-                                                    HttpServletResponse httpResponse) throws IOException {
+    private boolean consumeWithFileResourceHandlers(final HttpServletRequest httpRequest,
+                                                    final HttpServletResponse httpResponse) throws IOException {
         if (staticResourceHandlers != null) {
 
-            for (AbstractResourceHandler staticResourceHandler : staticResourceHandlers) {
+            for (final AbstractResourceHandler staticResourceHandler : staticResourceHandlers) {
 
-                AbstractFileResolvingResource resource = staticResourceHandler.getResource(httpRequest);
+                final AbstractFileResolvingResource resource = staticResourceHandler.getResource(httpRequest);
 
                 if (resource != null && resource.isReadable()) {
 
@@ -96,8 +96,8 @@ public class StaticFilesConfiguration {
                     }
                     customHeaders.forEach(httpResponse::setHeader); //add all user-defined headers to response
 
-                    try (InputStream inputStream = resource.getInputStream();
-                         OutputStream wrappedOutputStream = GzipUtils.checkAndWrap(httpRequest, httpResponse, false)) {
+                    try (final InputStream inputStream = resource.getInputStream();
+                        final OutputStream wrappedOutputStream = GzipUtils.checkAndWrap(httpRequest, httpResponse, false)) {
                         IOUtils.copy(inputStream, wrappedOutputStream);
                     }
 

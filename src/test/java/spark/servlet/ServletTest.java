@@ -43,7 +43,7 @@ public class ServletTest {
     public static void setup() throws InterruptedException {
         testUtil = new SparkTestUtil(PORT);
 
-       ServerConnector connector = new ServerConnector(server);
+        final ServerConnector connector = new ServerConnector(server);
 
         // Set some timeout options to make debugging easier.
         connector.setIdleTimeout(1000 * 60 * 60);
@@ -77,26 +77,26 @@ public class ServletTest {
         latch.await();
     }
 
-//    @Test
-//    public void testStaticResource() throws Exception {
-//        UrlResponse response = testUtil.doMethod("GET", SOMEPATH + "/css/style.css", null);
-//        Assertions.assertEquals(200, response.status);
-//        Assertions.assertTrue(response.body.contains("Content of css file"));
-//    }
-//
-//    @Test
-//    public void testStaticWelcomeResource() throws Exception {
-//        UrlResponse response = testUtil.doMethod("GET", SOMEPATH + "/pages/", null);
-//        Assertions.assertEquals(200, response.status);
-//        Assertions.assertTrue(response.body.contains("<html><body>Hello Static World!</body></html>"));
-//    }
-//
-//    @Test
-//    public void testExternalStaticFile() throws Exception {
-//        UrlResponse response = testUtil.doMethod("GET", SOMEPATH + "/" + MyApp.EXTERNAL_FILE, null);
-//        Assertions.assertEquals(200, response.status);
-//        Assertions.assertEquals("Content of external file", response.body);
-//    }
+    @Test
+    public void testStaticResource() throws Exception {
+        UrlResponse response = testUtil.doMethod("GET", SOMEPATH + "/css/style.css", null);
+        Assertions.assertEquals(200, response.status);
+        Assertions.assertTrue(response.body.contains("Content of css file"));
+    }
+
+    @Test
+    public void testStaticWelcomeResource() throws Exception {
+        UrlResponse response = testUtil.doMethod("GET", SOMEPATH + "/pages/", null);
+        Assertions.assertEquals(200, response.status);
+        Assertions.assertTrue(response.body.contains("<html><body>Hello Static World!</body></html>"));
+    }
+
+    @Test
+    public void testExternalStaticFile() throws Exception {
+        UrlResponse response = testUtil.doMethod("GET", SOMEPATH + "/" + MyApp.EXTERNAL_FILE, null);
+        Assertions.assertEquals(200, response.status);
+        Assertions.assertEquals("Content of external file", response.body);
+    }
 
     @Test
     public void testGetHi() throws Exception {

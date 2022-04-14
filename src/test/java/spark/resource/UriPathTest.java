@@ -56,7 +56,7 @@ public class UriPathTest {
             {"/foo/../bar//", "/bar//"},
         };
 
-        for (String[] aCanonical : canonical) {
+        for (final String[] aCanonical : canonical) {
             Assertions.assertEquals(aCanonical[1], UriPath.canonical(aCanonical[0]), "canonical " + aCanonical[0]);
         }
     }
