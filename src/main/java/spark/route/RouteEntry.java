@@ -25,14 +25,14 @@ import spark.utils.SparkUtils;
  *
  * @author Per Wendel
  */
-class RouteEntry {
+public class RouteEntry {
 
-    HttpMethod httpMethod;
-    String path;
-    String acceptedType;
-    Object target;
+    public HttpMethod httpMethod;
+    public String path;
+    public String acceptedType;
+    public Object target;
 
-    RouteEntry() {
+    public RouteEntry() {
     }
 
     RouteEntry(RouteEntry entry) {
@@ -42,7 +42,7 @@ class RouteEntry {
         this.target = entry.target;
     }
 
-    boolean matches(HttpMethod httpMethod, String path) {
+    public boolean matches(HttpMethod httpMethod, String path) {
         if ((httpMethod == HttpMethod.before || httpMethod == HttpMethod.after || httpMethod == HttpMethod.afterafter)
                 && (this.httpMethod == httpMethod)
                 && this.path.equals(SparkUtils.ALL_PATHS)) {

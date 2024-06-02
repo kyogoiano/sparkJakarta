@@ -22,6 +22,7 @@ import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.MimeTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,8 +57,10 @@ public class SparkFilter implements Filter {
 
     @Override
     public void init(final FilterConfig filterConfig) throws ServletException {
+        LOG.info("init spark filter: {}", filterConfig);
         ServletFlag.runFromServlet();
-
+        filterConfig.getServletContext().setRequestCharacterEncoding(MimeTypes.UTF8);
+        filterConfig.getServletContext().setResponseCharacterEncoding(MimeTypes.UTF8);
         applications = getApplications(filterConfig);
 
         for (final SparkApplication application : applications) {
@@ -137,6 +140,7 @@ public class SparkFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws
                                                                                               IOException,
                                                                                               ServletException {
+        LOG.info("spark do filter : {}", request);
         final HttpServletRequest httpRequest = (HttpServletRequest) request; // NOSONAR
         final HttpServletResponse httpResponse = (HttpServletResponse) response; // NOSONAR
 

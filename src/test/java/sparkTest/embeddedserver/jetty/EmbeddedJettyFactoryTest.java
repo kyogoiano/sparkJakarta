@@ -1,0 +1,123 @@
+package sparkTest.embeddedserver.jetty;
+
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import spark.ExceptionMapper;
+import spark.embeddedserver.EmbeddedServer;
+import spark.embeddedserver.jetty.EmbeddedJettyFactory;
+import spark.embeddedserver.jetty.JettyServerFactory;
+import spark.route.Routes;
+import spark.staticfiles.StaticFilesConfiguration;
+
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+
+public class EmbeddedJettyFactoryTest {
+
+    private static EmbeddedServer embeddedServer;
+
+    @Test
+    public void create() throws Exception {
+        final JettyServerFactory jettyServerFactory = mock(JettyServerFactory.class);
+        final StaticFilesConfiguration staticFilesConfiguration = mock(StaticFilesConfiguration.class);
+        final ExceptionMapper exceptionMapper = mock(ExceptionMapper.class);
+        final Routes routes = mock(Routes.class);
+
+        Server server = new Server();
+        when(jettyServerFactory.create(100, 10, 10000)).thenReturn(server);
+
+        final EmbeddedJettyFactory embeddedJettyFactory = new EmbeddedJettyFactory(jettyServerFactory);
+        embeddedServer = embeddedJettyFactory.create(routes, staticFilesConfiguration, exceptionMapper, false);
+
+        embeddedServer.trustForwardHeaders(true);
+        embeddedServer.ignite("localhost", 6757, null, 100, 10, 10000);
+
+        verify(jettyServerFactory, times(1)).create(100, 10, 10000);
+        verifyNoMoreInteractions(jettyServerFactory);
+
+        ((ContextHandlerCollection) server.getHandler()).getHandlers().forEach( handler -> {
+            if( handler instanceof ContextHandler.CoreContextHandler){
+                Assertions.assertTrue(((ContextHandler.CoreContextHandler) handler).getContextHandler().getServletContext().getSessionCookieConfig().isHttpOnly());
+            }
+        });
+    }
+
+    @Test
+    public void create_withThreadPool() throws Exception {
+        final QueuedThreadPool threadPool = new QueuedThreadPool(100);
+        final JettyServerFactory jettyServerFactory = mock(JettyServerFactory.class);
+        final StaticFilesConfiguration staticFilesConfiguration = mock(StaticFilesConfiguration.class);
+        final ExceptionMapper exceptionMapper = mock(ExceptionMapper.class);
+        final Routes routes = mock(Routes.class);
+
+        when(jettyServerFactory.create(threadPool)).thenReturn(new Server(threadPool));
+
+        final EmbeddedJettyFactory embeddedJettyFactory = new EmbeddedJettyFactory(jettyServerFactory).withThreadPool(threadPool);
+        embeddedServer = embeddedJettyFactory.create(routes, staticFilesConfiguration, exceptionMapper, false);
+
+        embeddedServer.trustForwardHeaders(true);
+        embeddedServer.ignite("localhost", 6758, null, 0, 0, 0);
+
+        verify(jettyServerFactory, times(1)).create(threadPool);
+        verifyNoMoreInteractions(jettyServerFactory);
+    }
+
+    @Test
+    public void create_withNullThreadPool() throws Exception {
+        final JettyServerFactory jettyServerFactory = mock(JettyServerFactory.class);
+        final StaticFilesConfiguration staticFilesConfiguration = mock(StaticFilesConfiguration.class);
+        final ExceptionMapper exceptionMapper = mock(ExceptionMapper.class);
+        final Routes routes = mock(Routes.class);
+
+        when(jettyServerFactory.create(100, 10, 10000)).thenReturn(new Server());
+
+        final EmbeddedJettyFactory embeddedJettyFactory = new EmbeddedJettyFactory(jettyServerFactory).withThreadPool(null);
+        embeddedServer = embeddedJettyFactory.create(routes, staticFilesConfiguration, exceptionMapper, false);
+
+        embeddedServer.trustForwardHeaders(true);
+        embeddedServer.ignite("localhost", 6759, null, 100, 10, 10000);
+
+        verify(jettyServerFactory, times(1)).create(100, 10, 10000);
+        verifyNoMoreInteractions(jettyServerFactory);
+    }
+
+    @Test
+    public void create_withoutHttpOnly() throws Exception {
+        final JettyServerFactory jettyServerFactory = mock(JettyServerFactory.class);
+        final StaticFilesConfiguration staticFilesConfiguration = mock(StaticFilesConfiguration.class);
+        final Routes routes = mock(Routes.class);
+
+        Server server = new Server();
+        when(jettyServerFactory.create(100, 10, 10000)).thenReturn(server);
+
+        final EmbeddedJettyFactory embeddedJettyFactory = new EmbeddedJettyFactory(jettyServerFactory).withHttpOnly(false);
+        embeddedServer = embeddedJettyFactory.create(routes, staticFilesConfiguration, new ExceptionMapper<>(),false);
+        embeddedServer.trustForwardHeaders(true);
+        embeddedServer.ignite("localhost", 6759, null, 100, 10, 10000);
+
+        server.start();
+        ((ContextHandlerCollection) server.getHandler()).getHandlers().forEach( handler -> {
+            if( handler instanceof ContextHandler.CoreContextHandler){
+                Assertions.assertFalse(((ContextHandler.CoreContextHandler) handler).getContextHandler().getServletContext().getSessionCookieConfig().isHttpOnly());
+            }
+        });
+    }
+
+    @AfterEach
+    public void tearDown() {
+        if (embeddedServer != null) {
+            embeddedServer.extinguish();
+        }
+    }
+}

@@ -16,6 +16,7 @@
  */
 package spark.embeddedserver.jetty;
 
+import jakarta.servlet.SessionCookieConfig;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 import spark.ExceptionMapper;
@@ -49,7 +50,10 @@ public class EmbeddedJettyFactory implements EmbeddedServerFactory {
         matcherFilter.init(null);
 
         JettyHandler handler = new JettyHandler(matcherFilter);
-        handler.getSessionCookieConfig().setHttpOnly(httpOnly);
+        final SessionCookieConfig sessionCookieConfig = handler.getSessionCookieConfig();
+        if(sessionCookieConfig != null){
+            sessionCookieConfig.setHttpOnly(httpOnly);
+        }
         return new EmbeddedJettyServer(serverFactory, handler).withThreadPool(threadPool);
     }
 

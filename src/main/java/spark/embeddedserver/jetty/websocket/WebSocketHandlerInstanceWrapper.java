@@ -2,7 +2,7 @@ package spark.embeddedserver.jetty.websocket;
 
 import static java.util.Objects.requireNonNull;
 
-public record WebSocketHandlerInstanceWrapper(Object handler) implements WebSocketHandlerWrapper {
+public record WebSocketHandlerInstanceWrapper<T>(T handler) implements WebSocketHandlerWrapper<T> {
 
     public WebSocketHandlerInstanceWrapper {
         requireNonNull(handler, "WebSocket handler cannot be null");
@@ -10,7 +10,7 @@ public record WebSocketHandlerInstanceWrapper(Object handler) implements WebSock
     }
 
     @Override
-    public Object getHandler() {
+    public T getHandler() {
         return handler;
     }
 

@@ -47,7 +47,7 @@ public class MatcherFilter implements Filter {
 
     private final spark.route.Routes routeMatcher;
     private final SerializerChain serializerChain;
-    private final ExceptionMapper exceptionMapper;
+    private final ExceptionMapper<Exception> exceptionMapper;
 
     private final boolean externalContainer;
     private final boolean hasOtherHandlers;
@@ -63,7 +63,7 @@ public class MatcherFilter implements Filter {
      */
     public MatcherFilter(spark.route.Routes routeMatcher,
                          StaticFilesConfiguration staticFiles,
-                         ExceptionMapper exceptionMapper,
+                         ExceptionMapper<Exception> exceptionMapper,
                          boolean externalContainer,
                          boolean hasOtherHandlers) {
 
@@ -84,7 +84,7 @@ public class MatcherFilter implements Filter {
     public void doFilter(ServletRequest servletRequest,
                          ServletResponse servletResponse,
                          FilterChain chain) throws IOException, ServletException {
-
+        LOG.info("Matcher do Filter: {}", servletRequest);
         HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
         HttpServletResponse httpResponse = (HttpServletResponse) servletResponse;
 
@@ -199,10 +199,6 @@ public class MatcherFilter implements Filter {
             method = httpRequest.getMethod();
         }
         return method;
-    }
-
-    @Override
-    public void destroy() {
     }
 
 

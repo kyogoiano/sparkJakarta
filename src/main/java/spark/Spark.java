@@ -16,8 +16,10 @@
  */
 package spark;
 
+import org.jetbrains.annotations.Contract;
 import spark.routematch.RouteMatch;
 
+import java.net.URI;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -54,6 +56,7 @@ public class Spark {
         private static final Service INSTANCE = ignite();
     }
 
+    @Contract(pure = true)
     private static Service getInstance() {
         return SingletonHolder.INSTANCE;
     }
@@ -1040,12 +1043,12 @@ public class Spark {
      * @param truststoreFile     the truststore file location as string, leave null to reuse
      *                           keystore
      * @param truststorePassword the trust store password
-     * @deprecated replaced by {@link #secure(String, String, String, String)}
+     * @deprecated replaced by {@link #secure(URI, String, URI, String)}
      */
     @Deprecated
-    public static void setSecure(String keystoreFile,
+    public static void setSecure(URI keystoreFile,
                                  String keystorePassword,
-                                 String truststoreFile,
+                                 URI truststoreFile,
                                  String truststorePassword) {
         getInstance().secure(keystoreFile, keystorePassword, truststoreFile, truststorePassword);
     }
@@ -1065,9 +1068,9 @@ public class Spark {
      *                           keystore
      * @param truststorePassword the trust store password
      */
-    public static void secure(String keystoreFile,
+    public static void secure(URI keystoreFile,
                               String keystorePassword,
-                              String truststoreFile,
+                              URI truststoreFile,
                               String truststorePassword) {
         getInstance().secure(keystoreFile, keystorePassword, truststoreFile, truststorePassword);
     }
@@ -1088,10 +1091,10 @@ public class Spark {
      *                           keystore
      * @param truststorePassword the trust store password
      */
-    public static void secure(String keystoreFile,
+    public static void secure(URI keystoreFile,
                               String keystorePassword,
                               String certAlias,
-                              String truststoreFile,
+                              URI truststoreFile,
                               String truststorePassword) {
         getInstance().secure(keystoreFile, keystorePassword, certAlias, truststoreFile, truststorePassword);
     }
@@ -1122,9 +1125,9 @@ public class Spark {
      *                           request
      * @param truststorePassword the trust store password
      */
-    public static void secure(String keystoreFile,
+    public static void secure(URI keystoreFile,
                               String keystorePassword,
-                              String truststoreFile,
+                              URI truststoreFile,
                               String truststorePassword,
                               boolean needsClientCert) {
         getInstance().secure(keystoreFile, keystorePassword, truststoreFile, truststorePassword, needsClientCert);
@@ -1148,13 +1151,15 @@ public class Spark {
      *                           request
      * @param truststorePassword the trust store password
      */
-    public static void secure(String keystoreFile,
+    public static void secure(URI keystoreFile,
                               String keystorePassword,
+                              String keyStoreType,
                               String certAlias,
-                              String truststoreFile,
+                              URI truststoreFile,
                               String truststorePassword,
+                              String trustStoreType,
                               boolean needsClientCert) {
-        getInstance().secure(keystoreFile, keystorePassword, certAlias, truststoreFile, truststorePassword, needsClientCert);
+        getInstance().secure(keystoreFile, keystorePassword, keyStoreType, certAlias, truststoreFile, truststorePassword, trustStoreType, needsClientCert);
     }
 
     /**
@@ -1197,7 +1202,7 @@ public class Spark {
      *
      * @param externalFolder the external folder serving static files.
      */
-    public static void externalStaticFileLocation(String externalFolder) {
+    public static synchronized void externalStaticFileLocation(String externalFolder) {
         getInstance().externalStaticFileLocation(externalFolder);
     }
 

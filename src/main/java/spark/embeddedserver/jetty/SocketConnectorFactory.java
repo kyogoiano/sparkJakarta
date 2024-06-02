@@ -34,24 +34,6 @@ import spark.utils.Assert;
 public class SocketConnectorFactory {
 
     /**
-     * Creates an ordinary, non-secured Jetty server jetty.
-     *
-     * @param server Jetty server
-     * @param host   host
-     * @param port   port
-     * @return - a server jetty
-     */
-    public static ServerConnector createSocketConnector(Server server, String host, int port, boolean trustForwardHeaders) {
-        Assert.notNull(server, "'server' must not be null");
-        Assert.notNull(host, "'host' must not be null");
-
-        HttpConnectionFactory httpConnectionFactory = createHttpConnectionFactory(trustForwardHeaders);
-        ServerConnector connector = new ServerConnector(server, httpConnectionFactory);
-        initializeConnector(connector, host, port);
-        return connector;
-    }
-
-    /**
      * Creates a ssl jetty socket jetty. Keystore required, truststore
      * optional. If truststore not specified keystore will be reused.
      *
@@ -68,13 +50,25 @@ public class SocketConnectorFactory {
                                                               boolean trustForwardHeaders) {
         Assert.notNull(server, "'server' must not be null");
         Assert.notNull(host, "'host' must not be null");
+
+        if(sslStores == null){
+            final HttpConnectionFactory httpConnectionFactory = createHttpConnectionFactory(trustForwardHeaders);
+            final ServerConnector connector = new ServerConnector(server, httpConnectionFactory);
+            initializeConnector(connector, host, port);
+            return connector;
+        }
+
         Assert.notNull(sslStores, "'sslStores' must not be null");
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath(sslStores.keystoreFile());
+        if(sslStores.keyStoreType() != null) {
+            sslContextFactory.setKeyStoreType(sslStores.keyStoreType());
+        }
 
-        if (sslStores.keystorePassword() != null) {
-            sslContextFactory.setKeyStorePassword(sslStores.keystorePassword());
+        sslContextFactory.setKeyStorePath(sslStores.keyStoreFile().getPath());
+
+        if (sslStores.keyStorePassword() != null) {
+            sslContextFactory.setKeyStorePassword(sslStores.keyStorePassword());
         }
 
         if (sslStores.certAlias() != null) {
@@ -82,11 +76,15 @@ public class SocketConnectorFactory {
         }
 
         if (sslStores.trustStoreFile() != null) {
-            sslContextFactory.setTrustStorePath(sslStores.trustStoreFile());
+            sslContextFactory.setTrustStorePath(sslStores.trustStoreFile().getPath());
         }
 
         if (sslStores.trustStorePassword() != null) {
             sslContextFactory.setTrustStorePassword(sslStores.trustStorePassword());
+        }
+
+        if(sslStores.trustStoreType() != null) {
+            sslContextFactory.setTrustStoreType(sslStores.trustStoreType());
         }
 
         if (sslStores.needsClientCert()) {

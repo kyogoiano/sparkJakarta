@@ -90,7 +90,7 @@ public class Request {
      * @param match   the route match
      * @param request the servlet request
      */
-    Request(RouteMatch match, HttpServletRequest request) {
+    public Request(RouteMatch match, HttpServletRequest request) {
         this.servletRequest = request;
         this.matchedPath = match.getMatchUri();
         changeMatch(match);
@@ -110,6 +110,7 @@ public class Request {
     }
 
     protected void changeMatch(RouteMatch match) {
+        LOG.info("Change Route match: {}", match);
         List<String> requestList = SparkUtils.convertRouteToList(match.getRequestURI());
         List<String> matchedList = SparkUtils.convertRouteToList(match.getMatchUri());
 

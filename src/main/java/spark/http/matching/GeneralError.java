@@ -39,7 +39,7 @@ final class GeneralError {
                        Body body,
                        RequestWrapper requestWrapper,
                        ResponseWrapper responseWrapper,
-                       ExceptionMapper exceptionMapper,
+                       ExceptionMapper<Exception> exceptionMapper,
                        Exception e) {
 
         final ExceptionHandlerImpl<Exception> handler = (ExceptionHandlerImpl<Exception>) exceptionMapper.getHandler(e);

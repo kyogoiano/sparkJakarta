@@ -19,6 +19,7 @@ package spark;
 
 import java.util.HashMap;
 
+import org.jetbrains.annotations.Contract;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,6 +116,7 @@ public class CustomErrorPages {
         private static final CustomErrorPages INSTANCE = new CustomErrorPages();
     }
 
+    @Contract(pure = true)
     private static CustomErrorPages getInstance() {
         return SingletonHolder.INSTANCE;
     }

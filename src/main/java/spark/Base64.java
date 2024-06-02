@@ -16,7 +16,7 @@
  */
 package spark;
 
-class Base64 {
+public class Base64 {
 
     //CS304 Issue link:https://github.com/perwendel/spark/issues/1061
 

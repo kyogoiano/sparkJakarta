@@ -44,7 +44,7 @@ public class Response {
         // Used by wrapper
     }
 
-    Response(HttpServletResponse response) {
+    public Response(HttpServletResponse response) {
         this.response = response;
     }
 

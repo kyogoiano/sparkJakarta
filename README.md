@@ -126,7 +126,7 @@ public class Books {
     /**
      * Map holding the books
      */
-    private static Map<String, Book> books = new HashMap<String, Book>();
+    private static Map<String, Book> books = new HashMap<>();
 
     public static void main(String[] args) {
         final Random random = new Random();
@@ -193,11 +193,11 @@ public class Books {
 
         // Gets all available book resources (ids)
         get("/books", (request, response) -> {
-            String ids = "";
+            StringBuilder ids = new StringBuilder();
             for (String id : books.keySet()) {
-                ids += id + " ";
+                ids.append(id).append(" ");
             }
-            return ids;
+            return ids.toString();
         });
     }
 
@@ -256,7 +256,7 @@ import java.util.Map;
  */
 public class FilterExample {
 
-    private static Map<String, String> usernamePasswords = new HashMap<String, String>();
+    private static Map<String, String> usernamePasswords = new HashMap<>();
 
     public static void main(String[] args) {
 
@@ -352,7 +352,7 @@ import static spark.Spark.*;
 
 public class JsonAcceptTypeExample {
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
 
         //Running curl -i -H "Accept: application/json" http://localhost:4567/hello json message is read.
         //Running curl -i -H "Accept: text/html" http://localhost:4567/hello HTTP 404 error is thrown.
@@ -385,9 +385,7 @@ public class FreeMarkerTemplateEngine extends TemplateEngine {
             template.process(modelAndView.getModel(), stringWriter);
 
             return stringWriter.toString();
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        } catch (TemplateException e) {
+        } catch (IOException | TemplateException e) {
             throw new IllegalArgumentException(e);
         }
     }
@@ -405,7 +403,7 @@ Then we can use it to generate our content. Note how we are setting model data a
 ```java
 public class FreeMarkerExample {
 
-    public static void main(String args[]) {
+    public static void main(String[] args) {
 
         get("/hello", (request, response) -> {
             Map<String, Object> attributes = new HashMap<>();
@@ -442,10 +440,9 @@ And then the code which return a simple POJO to be transformed to JSON:
 ```java
 public class TransformerExample {
 
-    public static void main(String args[]) {
-        get("/hello", "application/json", (request, response) -> {
-            return new MyMessage("Hello World");
-        }, new JsonTransformer());
+    public static void main(String[] args) {
+        get("/hello", "application/json", (request, response) -> 
+            new MyMessage("Hello World"), new JsonTransformer());
     }
 }
 ```

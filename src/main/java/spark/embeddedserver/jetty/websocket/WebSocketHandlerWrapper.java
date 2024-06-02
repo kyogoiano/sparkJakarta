@@ -1,7 +1,8 @@
 package spark.embeddedserver.jetty.websocket;
 
-import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketListener;
+
+import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
 
 /**
  * A wrapper for web socket handler classes/instances.

@@ -18,6 +18,7 @@
 package spark.utils.urldecoding;
 
 import java.io.IOException;
+import java.nio.charset.CharacterCodingException;
 
 /* ------------------------------------------------------------ */
 
@@ -88,7 +89,12 @@ public abstract class Utf8Appendable {
             _appendable.append(REPLACEMENT);
             int state = _state;
             _state = UTF8_ACCEPT;
-            throw new org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception("char appended in state " + state);
+            throw new CharacterCodingException()
+            {
+                {
+                    initCause(new IllegalArgumentException("Bad UTF-8 encoding, char appended in state: " + state));
+                }
+            };
         }
     }
 
@@ -144,7 +150,12 @@ public abstract class Utf8Appendable {
                     _codep = 0;
                     _state = UTF8_ACCEPT;
                     _appendable.append(REPLACEMENT);
-                    throw new org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception(reason);
+                    throw new CharacterCodingException()
+                    {
+                        {
+                            initCause(new IllegalArgumentException("Bad UTF-8 encoding, reason: " + reason));
+                        }
+                    };
                 }
                 default -> _state = next;
             }
@@ -162,7 +173,7 @@ public abstract class Utf8Appendable {
         }
     }
 
-    protected void checkState() {
+    protected void checkState() throws CharacterCodingException {
         if (!isUtf8SequenceComplete()) {
             _codep = 0;
             _state = UTF8_ACCEPT;
@@ -171,7 +182,12 @@ public abstract class Utf8Appendable {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            throw new org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception("incomplete UTF8 sequence");
+            throw new CharacterCodingException()
+            {
+                {
+                    initCause(new IllegalArgumentException("Bad UTF-8 encoding, incomplete UTF8 sequence"));
+                }
+            };
         }
     }
 

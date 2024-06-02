@@ -1,4 +1,4 @@
 language: java
 dist: trusty
 jdk:
-  - openjdk16
+  - openjdk17

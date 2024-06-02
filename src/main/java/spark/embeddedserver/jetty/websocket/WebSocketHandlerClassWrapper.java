@@ -4,7 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 
 import static java.util.Objects.requireNonNull;
 
-public record WebSocketHandlerClassWrapper(Class<?> handlerClass) implements WebSocketHandlerWrapper {
+public record WebSocketHandlerClassWrapper<T>(Class<T> handlerClass) implements WebSocketHandlerWrapper<T> {
 
     public WebSocketHandlerClassWrapper {
         requireNonNull(handlerClass, "WebSocket handler class cannot be null");
@@ -12,7 +12,7 @@ public record WebSocketHandlerClassWrapper(Class<?> handlerClass) implements Web
     }
 
     @Override
-    public Object getHandler() {
+    public T getHandler() {
         try {
             return handlerClass.getDeclaredConstructor().newInstance();
         } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException ex) {

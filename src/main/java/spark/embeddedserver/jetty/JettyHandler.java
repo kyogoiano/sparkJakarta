@@ -22,8 +22,8 @@ import jakarta.servlet.Filter;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.SessionHandler;
 
 /**
  * Simple Jetty Handler
@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.session.SessionHandler;
  */
 public class JettyHandler extends SessionHandler {
 
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(JettyHandler.class);
     private final Filter filter;
 
     public JettyHandler(Filter filter) {
@@ -44,7 +45,7 @@ public class JettyHandler extends SessionHandler {
             Request baseRequest,
             HttpServletRequest request,
             HttpServletResponse response) throws IOException, ServletException {
-
+        LOG.info("do handle request: {}", request);
         HttpRequestWrapper wrapper = new HttpRequestWrapper(request);
         filter.doFilter(wrapper, response, null);
 

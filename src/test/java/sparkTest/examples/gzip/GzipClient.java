@@ -1,0 +1,30 @@
+package sparkTest.examples.gzip;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URLConnection;
+import java.util.zip.GZIPInputStream;
+
+import spark.utils.IOUtils;
+
+/**
+ * Created by Per Wendel on 2015-11-24.
+ */
+public class GzipClient {
+
+    public static String getAndDecompress(String url) throws Exception {
+        final InputStream compressed = get(url);
+        final GZIPInputStream gzipInputStream = new GZIPInputStream(compressed);
+        return IOUtils.toString(gzipInputStream);
+    }
+
+    public static InputStream get(String url) throws IOException {
+        final URLConnection connection = URI.create(url).toURL().openConnection();
+        connection.addRequestProperty("Accept-Encoding", "gzip");
+        connection.connect();
+
+        return connection.getInputStream();
+    }
+
+}

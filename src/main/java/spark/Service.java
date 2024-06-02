@@ -31,6 +31,7 @@ import spark.ssl.SslStores;
 import spark.staticfiles.MimeType;
 import spark.staticfiles.StaticFilesConfiguration;
 
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
@@ -60,16 +61,16 @@ public final class Service extends Routable {
 
     private SslStores sslStores;
 
-    private Map<String, WebSocketHandlerWrapper> webSocketHandlers = null;
+    private Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers = null;
 
     private int maxThreads = -1;
     private int minThreads = -1;
     private int threadIdleTimeoutMillis = -1;
-    private Optional<Long> webSocketIdleTimeoutMillis = Optional.empty();
+    private Long webSocketIdleTimeoutMillis;
 
-    EmbeddedServer server;
+    public EmbeddedServer server;
     private final Deque<String> pathDeque = new ArrayDeque<>();
-    Routes routes;
+    public Routes routes;
 
     private CountDownLatch initLatch = new CountDownLatch(1);
     private CountDownLatch stopLatch = new CountDownLatch(0);
@@ -80,7 +81,11 @@ public final class Service extends Routable {
     public final StaticFiles staticFiles;
 
     private final StaticFilesConfiguration staticFilesConfiguration;
-    private final ExceptionMapper exceptionMapper = new ExceptionMapper();
+    private final ExceptionMapper<? extends Exception> exceptionMapper = new ExceptionMapper<>();
+
+    public boolean isInitialized() {
+        return initialized;
+    }
 
     // default exception handler during initialization phase
     private Consumer<Exception> initExceptionHandler = (e) -> {
@@ -195,11 +200,11 @@ public final class Service extends Routable {
      * @param truststorePassword the trust store password
      * @return the object with connection set to be secure
      */
-    public synchronized Service secure(String keystoreFile,
+    public synchronized Service secure(URI keystoreFile,
                                        String keystorePassword,
-                                       String truststoreFile,
+                                       URI truststoreFile,
                                        String truststorePassword) {
-        return secure(keystoreFile, keystorePassword, null, truststoreFile, truststorePassword, false);
+        return secure(keystoreFile, keystorePassword, "JKS", null, truststoreFile, truststorePassword, "JKS", false);
     }
 
     /**
@@ -219,12 +224,12 @@ public final class Service extends Routable {
      * @param truststorePassword the trust store password
      * @return the object with connection set to be secure
      */
-    public synchronized Service secure(String keystoreFile,
+    public synchronized Service secure(URI keystoreFile,
                                        String keystorePassword,
                                        String certAlias,
-                                       String truststoreFile,
+                                       URI truststoreFile,
                                        String truststorePassword) {
-        return secure(keystoreFile, keystorePassword, certAlias, truststoreFile, truststorePassword, false);
+        return secure(keystoreFile, keystorePassword, null, certAlias, truststoreFile, truststorePassword, null, false);
     }
 
     /**
@@ -245,12 +250,12 @@ public final class Service extends Routable {
      * @param truststorePassword the trust store password
      * @return the object with connection set to be secure
      */
-    public synchronized Service secure(String keystoreFile,
+    public synchronized Service secure(URI keystoreFile,
                                        String keystorePassword,
-                                       String truststoreFile,
+                                       URI truststoreFile,
                                        String truststorePassword,
                                        boolean needsClientCert) {
-        return secure(keystoreFile, keystorePassword, null, truststoreFile, truststorePassword, needsClientCert);
+        return secure(keystoreFile, keystorePassword, null, null, truststoreFile, truststorePassword, null, needsClientCert);
     }
 
     /**
@@ -272,11 +277,13 @@ public final class Service extends Routable {
      * @param truststorePassword the trust store password
      * @return the object with connection set to be secure
      */
-    public synchronized Service secure(String keystoreFile,
+    public synchronized Service secure(URI keystoreFile,
                                        String keystorePassword,
+                                       String keyStoreType,
                                        String certAlias,
-                                       String truststoreFile,
+                                       URI truststoreFile,
                                        String truststorePassword,
+                                       String trustStoreType,
                                        boolean needsClientCert) {
         if (initialized) {
             throwBeforeRouteMappingException();
@@ -287,7 +294,8 @@ public final class Service extends Routable {
                     "Must provide a keystore file to run secured");
         }
 
-        sslStores = SslStores.create(keystoreFile, keystorePassword, certAlias, truststoreFile, truststorePassword, needsClientCert);
+        sslStores = SslStores.create(keystoreFile, keystorePassword, keyStoreType, certAlias,
+            truststoreFile, truststorePassword, trustStoreType, needsClientCert);
         return this;
     }
 
@@ -397,7 +405,7 @@ public final class Service extends Routable {
      * @param handlerClass the handler class that will manage the WebSocket connection to the given path.
      */
     public <T> void webSocket(String path, Class<T> handlerClass) {
-        addWebSocketHandler(path, new WebSocketHandlerClassWrapper(handlerClass));
+        addWebSocketHandler(path, new WebSocketHandlerClassWrapper<>(handlerClass));
     }
 
     /**
@@ -409,10 +417,10 @@ public final class Service extends Routable {
      * @param handler the handler instance that will manage the WebSocket connection to the given path.
      */
     public <T> void webSocket(String path, T handler) {
-        addWebSocketHandler(path, new WebSocketHandlerInstanceWrapper(handler));
+        addWebSocketHandler(path, new WebSocketHandlerInstanceWrapper<>(handler));
     }
 
-    private synchronized void addWebSocketHandler(String path, WebSocketHandlerWrapper handlerWrapper) {
+    private synchronized <T> void addWebSocketHandler(String path, WebSocketHandlerWrapper<T> handlerWrapper) {
         if (initialized) {
             throwBeforeRouteMappingException();
         }
@@ -440,7 +448,7 @@ public final class Service extends Routable {
         if (isRunningFromServlet()) {
             throw new IllegalStateException("WebSockets are only supported in the embedded server");
         }
-        webSocketIdleTimeoutMillis = Optional.of(timeoutMillis);
+        webSocketIdleTimeoutMillis = timeoutMillis;
         return this;
     }
 
@@ -535,9 +543,12 @@ public final class Service extends Routable {
                 initLatch = new CountDownLatch(1);
             }
 
-            routes.clear();
+            if(routes != null) {
+                routes.clear();
+            }
             exceptionMapper.clear();
             staticFilesConfiguration.clear();
+            sslStores = null;
             initialized = false;
             stopLatch.countDown();
         });
@@ -678,7 +689,7 @@ public final class Service extends Routable {
      */
     public synchronized <T extends Exception> void exception(Class<T> exceptionClass, ExceptionHandler<? super T> handler) {
         // wrap
-        final ExceptionHandlerImpl<T> wrapper = new ExceptionHandlerImpl<>(exceptionClass) {
+        final ExceptionHandlerImpl<? extends Exception> wrapper = new ExceptionHandlerImpl<>(exceptionClass) {
             @Override
             public void handle(T exception, Request request, Response response) {
                 handler.handle(exception, request, response);
@@ -850,6 +861,14 @@ public final class Service extends Routable {
         public void disableMimeTypeGuessing() {
             MimeType.disableGuessing();
         }
+
+        /**
+         * Disables the automatic setting of Content-Type header made from a guess based on extension.
+         */
+        public void enableMimeTypeGuessing() {
+            MimeType.enableGuessing();
+        }
+
 
     }
 }

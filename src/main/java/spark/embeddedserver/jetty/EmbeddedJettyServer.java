@@ -16,27 +16,22 @@
  */
 package spark.embeddedserver.jetty;
 
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
+import org.eclipse.jetty.ee9.nested.Handler;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import spark.embeddedserver.EmbeddedServer;
 import spark.embeddedserver.jetty.websocket.WebSocketHandlerWrapper;
-import spark.embeddedserver.jetty.websocket.WebSocketServletContextHandlerFactory;
 import spark.ssl.SslStores;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.util.Map;
 
 /**
  * Spark server implementation
@@ -54,8 +49,8 @@ public class EmbeddedJettyServer implements EmbeddedServer {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    private Map<String, WebSocketHandlerWrapper> webSocketHandlers;
-    private Optional<Long> webSocketIdleTimeoutMillis;
+    private Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers;
+    private Long webSocketIdleTimeoutMillis;
 
     private ThreadPool threadPool = null;
     private boolean trustForwardHeaders = true; // true by default
@@ -66,8 +61,8 @@ public class EmbeddedJettyServer implements EmbeddedServer {
     }
 
     @Override
-    public void configureWebSockets(Map<String, WebSocketHandlerWrapper> webSocketHandlers,
-                                    Optional<Long> webSocketIdleTimeoutMillis) {
+    public void configureWebSockets(Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers,
+                                    Long webSocketIdleTimeoutMillis) {
 
         this.webSocketHandlers = webSocketHandlers;
         this.webSocketIdleTimeoutMillis = webSocketIdleTimeoutMillis;
@@ -107,40 +102,38 @@ public class EmbeddedJettyServer implements EmbeddedServer {
             server = serverFactory.create(threadPool);
         }
 
-        ServerConnector connector;
-
-        if (sslStores == null) {
-            connector = SocketConnectorFactory.createSocketConnector(server, host, port, trustForwardHeaders);
-        } else {
-            connector = SocketConnectorFactory.createSecureSocketConnector(server, host, port, sslStores, trustForwardHeaders);
+        try(final ServerConnector connector =
+                SocketConnectorFactory.createSecureSocketConnector(server, host, port, sslStores, trustForwardHeaders)){
+            final Connector[] previousConnectors = server.getConnectors();
+            server = connector.getServer();
+            if (previousConnectors.length != 0) {
+                server.setConnectors(previousConnectors);
+                hasCustomizedConnectors = true;
+            } else {
+                server.setConnectors(new Connector[] {connector});
+            }
         }
 
-        Connector[] previousConnectors = server.getConnectors();
-        server = connector.getServer();
-        if (previousConnectors.length != 0) {
-            server.setConnectors(previousConnectors);
-            hasCustomizedConnectors = true;
-        } else {
-            server.setConnectors(new Connector[] {connector});
-        }
+        //final ServletContextHandler webSocketServletContextHandler =
+        //    WebSocketServletContextHandlerFactory.create(webSocketHandlers, webSocketIdleTimeoutMillis, server);
 
-        final ServletContextHandler webSocketServletContextHandler =
-            WebSocketServletContextHandlerFactory.create(webSocketHandlers, webSocketIdleTimeoutMillis, server, "SparkEmbeddedWebSocketServlet");
+        server.getScheduler().start();
+        ContextHandlerCollection handlers = new ContextHandlerCollection();
 
         // Handle web socket routes
-        if (webSocketServletContextHandler == null) {
-            server.setHandler(handler);
-        } else {
-            List<Handler> handlersInList = new ArrayList<>();
-            handlersInList.add(handler);
+        //if (webSocketServletContextHandler != null) {
+            //handlers.addHandler(webSocketServletContextHandler);
+            //webSocketServletContextHandler.start();
+        //}
 
-            // WebSocket handler must be the last one
-            handlersInList.add(webSocketServletContextHandler);
+        ServletContextHandler apiHandler = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
+        apiHandler.setHandler(handler);
+        //apiHandler.setHandler(handler);
+        //apiHandler.start();
 
-            HandlerList handlers = new HandlerList();
-            handlers.setHandlers(handlersInList.toArray(new Handler[0]));
-            server.setHandler(handlers);
-        }
+        handlers.addHandler(apiHandler);
+
+        server.setHandler(handlers);
 
         logger.info("== {} has ignited ...", NAME);
         if (hasCustomizedConnectors) {

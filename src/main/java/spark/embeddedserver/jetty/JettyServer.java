@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 /**
  * Creates Jetty Server instances.
  */
-class JettyServer implements JettyServerFactory {
+public class JettyServer implements JettyServerFactory {
 
     /**
      * Creates a Jetty server.

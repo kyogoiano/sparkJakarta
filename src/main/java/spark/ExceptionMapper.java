@@ -19,15 +19,15 @@ package spark;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ExceptionMapper {
+public class ExceptionMapper <T extends Exception> {
 
     /**
      * Holds an exception mapper instance for use in servlet mode
      */
-    private static ExceptionMapper servletInstance;
+    private static ExceptionMapper<Exception> servletInstance;
 
     @Deprecated
-    public static ExceptionMapper getInstance() {
+    public static ExceptionMapper<Exception> getInstance() {
         return getServletInstance();
     }
 
@@ -36,9 +36,9 @@ public class ExceptionMapper {
      *
      * @return servlet instance
      */
-    public synchronized static ExceptionMapper getServletInstance() {
+    public synchronized static ExceptionMapper<Exception> getServletInstance() {
         if (servletInstance == null) {
-            servletInstance = new ExceptionMapper();
+            servletInstance = new ExceptionMapper<>();
         }
         return servletInstance;
     }
@@ -108,7 +108,7 @@ public class ExceptionMapper {
      * @param exception Exception that occurred
      * @return Associated handler
      */
-    public <T extends Exception> ExceptionHandlerImpl<? extends Exception> getHandler(T exception) {
+    public ExceptionHandlerImpl<? extends Exception> getHandler(T exception) {
         return this.getHandler(exception.getClass());
     }
 

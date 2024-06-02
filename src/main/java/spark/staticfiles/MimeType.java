@@ -106,6 +106,10 @@ public class MimeType {
         guessingOn = false;
     }
 
+    public static void enableGuessing() {
+        guessingOn = true;
+    }
+
     public static String fromResource(AbstractFileResolvingResource resource) {
         String filename = Optional.ofNullable(resource.getFilename()).orElse("");
         return getMimeType(filename);

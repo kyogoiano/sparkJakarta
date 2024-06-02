@@ -15,15 +15,14 @@
  */
 package spark.embeddedserver.jetty.websocket;
 
-import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
-import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeResponse;
 
 import static java.util.Objects.requireNonNull;
 
 /**
- * Factory class to create {@link WebSocketCreator} implementations that
+ * Factory class to create {@link JettyWebSocketCreator} implementations that
  * delegate to the given handler class.
  *
  * @author Ignasi Barrera
@@ -31,23 +30,23 @@ import static java.util.Objects.requireNonNull;
 public class WebSocketCreatorFactory {
 
     /**
-     * Creates a {@link WebSocketCreator} that uses the given handler class/instance for
+     * Creates a {@link JettyWebSocketCreator} that uses the given handler class/instance for
      * the WebSocket connections.
      *
      * @param handlerWrapper The wrapped handler to use to manage WebSocket connections.
      * @return The WebSocketCreator.
      */
-    public static JettyWebSocketCreator create(WebSocketHandlerWrapper handlerWrapper) {
+    public static JettyWebSocketCreator create(WebSocketHandlerWrapper<?> handlerWrapper) {
         return new SparkWebSocketCreator(handlerWrapper.getHandler());
     }
 
     // Package protected to be visible to the unit tests
-    record SparkWebSocketCreator(Object handler) implements JettyWebSocketCreator {
-        SparkWebSocketCreator(Object handler) {
+    public record SparkWebSocketCreator(Object handler) implements JettyWebSocketCreator {
+        public SparkWebSocketCreator(Object handler) {
             this.handler = requireNonNull(handler, "handler cannot be null");
         }
 
-        Object getHandler() {
+        public Object getHandler() {
             return handler;
         }
 

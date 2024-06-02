@@ -64,7 +64,7 @@ public class QueryParamsMap {
     }
 
     // Just for testing
-    protected QueryParamsMap() {
+    public QueryParamsMap() {
     }
 
 
@@ -77,7 +77,7 @@ public class QueryParamsMap {
      *               user[info][name]).
      * @param values the values
      */
-    protected QueryParamsMap(String key, String... values) {
+    public QueryParamsMap(String key, String... values) {
         loadKeys(key, values);
     }
 
@@ -86,7 +86,7 @@ public class QueryParamsMap {
      *
      * @param params the parameters
      */
-    protected QueryParamsMap(Map<String, String[]> params) {
+    public QueryParamsMap(Map<String, String[]> params) {
         loadQueryString(params);
     }
 
@@ -107,7 +107,7 @@ public class QueryParamsMap {
      * @param key   the key
      * @param value the values
      */
-    protected final void loadKeys(String key, String[] value) {
+    public final void loadKeys(String key, String[] value) {
         String[] parsed = parseKey(key);
 
         if (parsed == null) {
@@ -124,7 +124,7 @@ public class QueryParamsMap {
         }
     }
 
-    protected final String[] parseKey(String key) {
+    public final String[] parseKey(String key) {
         Matcher m = KEY_PATTERN.matcher(key);
 
         if (m.find()) {
@@ -262,14 +262,14 @@ public class QueryParamsMap {
     /**
      * @return the queryMap
      */
-    Map<String, QueryParamsMap> getQueryMap() {
+    public Map<String, QueryParamsMap> getQueryMap() {
         return queryMap;
     }
 
     /**
      * @return the values
      */
-    String[] getValues() {
+    public String[] getValues() {
         return values;
     }
 
