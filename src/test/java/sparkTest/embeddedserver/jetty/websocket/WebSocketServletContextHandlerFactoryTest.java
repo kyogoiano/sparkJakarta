@@ -9,7 +9,6 @@ import org.eclipse.jetty.ee9.servlet.ServletHandler;
 import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
@@ -50,7 +49,6 @@ public class WebSocketServletContextHandlerFactoryTest {
     }
 
     @Test
-    @Disabled
     public void testCreate_whenNoIdleTimeoutIsPresent() throws Exception {
 
         Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers = new HashMap<>();
@@ -58,6 +56,7 @@ public class WebSocketServletContextHandlerFactoryTest {
         webSocketHandlers.put(webSocketPath, new WebSocketHandlerClassWrapper<>(WebSocketTestHandler.class));
 
         servletContextHandler = WebSocketServletContextHandlerFactory.create(webSocketHandlers, null, server);
+        server.getScheduler().start();
         servletContextHandler.start();
 
         FilterHolder filterHolder = WebSocketUpgradeFilter.getFilter(servletContextHandler.getServletContext());
@@ -83,7 +82,6 @@ public class WebSocketServletContextHandlerFactoryTest {
     }
 
     @Test
-    @Disabled
     public void testCreate_whenTimeoutIsPresent() throws Exception {
 
         Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers = new HashMap<>();
@@ -91,6 +89,7 @@ public class WebSocketServletContextHandlerFactoryTest {
         webSocketHandlers.put(webSocketPath, new WebSocketHandlerClassWrapper<>(WebSocketTestHandler.class));
 
         servletContextHandler = WebSocketServletContextHandlerFactory.create(webSocketHandlers, timeout, server);
+        server.getScheduler().start();
         servletContextHandler.start();
         JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(servletContextHandler.getServletContext());
 

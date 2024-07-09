@@ -10,10 +10,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spark.ModelAndView;
-import spark.Session;
-import spark.Spark;
-import spark.TemplateEngine;
+import spark.*;
 import sparkTest.embeddedserver.jetty.websocket.WebSocketTestClient;
 import sparkTest.embeddedserver.jetty.websocket.WebSocketTestHandler;
 import sparkTest.examples.exception.BaseException;
@@ -471,7 +468,6 @@ public class GenericIntegrationTest {
     }
 
     @Test
-    @Disabled
     public void testWebSocketConversation() throws Exception {
         String uri = "ws://localhost:4567/ws";
         WebSocketClient client = new WebSocketClient();

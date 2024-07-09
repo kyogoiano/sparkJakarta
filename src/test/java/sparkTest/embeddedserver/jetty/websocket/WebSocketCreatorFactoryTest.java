@@ -17,13 +17,13 @@ public class WebSocketCreatorFactoryTest {
     public void testCreateWebSocketHandler() {
         JettyWebSocketCreator annotated =
                 WebSocketCreatorFactory.create(new WebSocketHandlerClassWrapper<>(AnnotatedHandler.class));
-        assertTrue(annotated instanceof SparkWebSocketCreator);
-        assertTrue(((SparkWebSocketCreator) annotated).getHandler() instanceof AnnotatedHandler);
+        assertInstanceOf(SparkWebSocketCreator.class, annotated);
+        assertInstanceOf(AnnotatedHandler.class, ((SparkWebSocketCreator) annotated).getHandler());
 
         JettyWebSocketCreator listener =
                 WebSocketCreatorFactory.create(new WebSocketHandlerClassWrapper<>(ListenerHandler.class));
-        assertTrue(listener instanceof SparkWebSocketCreator);
-        assertTrue(((SparkWebSocketCreator) listener).getHandler() instanceof ListenerHandler);
+        assertInstanceOf(SparkWebSocketCreator.class, listener);
+        assertInstanceOf(ListenerHandler.class, ((SparkWebSocketCreator) listener).getHandler());
     }
 
     @Test

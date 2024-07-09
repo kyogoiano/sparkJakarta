@@ -15,14 +15,15 @@
  */
 package spark.embeddedserver.jetty.websocket;
 
-import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketCreator;
 import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.websocket.server.WebSocketCreator;
 
 import static java.util.Objects.requireNonNull;
 
 /**
- * Factory class to create {@link JettyWebSocketCreator} implementations that
+ * Factory class to create {@link WebSocketCreator} implementations that
  * delegate to the given handler class.
  *
  * @author Ignasi Barrera
@@ -30,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 public class WebSocketCreatorFactory {
 
     /**
-     * Creates a {@link JettyWebSocketCreator} that uses the given handler class/instance for
+     * Creates a {@link org.eclipse.jetty.ee9.websocket.server.JettyWebSocketCreator} that uses the given handler class/instance for
      * the WebSocket connections.
      *
      * @param handlerWrapper The wrapped handler to use to manage WebSocket connections.
@@ -40,7 +41,6 @@ public class WebSocketCreatorFactory {
         return new SparkWebSocketCreator(handlerWrapper.getHandler());
     }
 
-    // Package protected to be visible to the unit tests
     public record SparkWebSocketCreator(Object handler) implements JettyWebSocketCreator {
         public SparkWebSocketCreator(Object handler) {
             this.handler = requireNonNull(handler, "handler cannot be null");
@@ -51,7 +51,7 @@ public class WebSocketCreatorFactory {
         }
 
         @Override
-        public Object createWebSocket(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp) {
+        public Object createWebSocket(JettyServerUpgradeRequest jettyServerUpgradeRequest, JettyServerUpgradeResponse jettyServerUpgradeResponse) throws Exception {
             return handler;
         }
     }

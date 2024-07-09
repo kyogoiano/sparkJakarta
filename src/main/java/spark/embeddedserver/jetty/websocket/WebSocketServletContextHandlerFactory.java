@@ -17,8 +17,8 @@
 package spark.embeddedserver.jetty.websocket;
 
 import jakarta.servlet.Servlet;
-import org.eclipse.jetty.ee9.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServletFactory;
 
@@ -77,35 +77,40 @@ public class WebSocketServletContextHandlerFactory {
 //
 //                            return webSocketCreator.createWebSocket((JettyServerUpgradeRequest) serverUpgradeRequest, (JettyServerUpgradeResponse) serverUpgradeResponse);
 //                        }));
+                    //Arrays.stream(webSocketServletContextHandler.getServletHandler().getServlets()).findFirst().get().getName();
+                    //MatchedResource<ServletHandler.MappedServlet> mappedServlet = webSocketServletContextHandler.getServletHandler().getMatchedServlet(entry.getValue().getHandler().getClass().getSimpleName());
+
+                    //ServerWebSocketContainer container = ServerWebSocketContainer.ensure(server);
+                    //WebSocketUpgradeHandler webSocketHandler = new WebSocketUpgradeHandler(container);
 
 
-                    JettyWebSocketServletContainerInitializer.configure(webSocketServletContextHandler, (servletContext, container) -> {
+                    JettyWebSocketServletContainerInitializer.configure(webSocketServletContextHandler, (configurator, serverContainer) -> {
                         if(webSocketIdleTimeoutMillis != null) {
-                            container.setIdleTimeout(Duration.ofMillis(webSocketIdleTimeoutMillis));
+                            serverContainer.setIdleTimeout(Duration.ofMillis(webSocketIdleTimeoutMillis));
                         }
-
-                        JakartaWebSocketServerContainer jakartaWebSocketServerContainer =
-                            JakartaWebSocketServerContainer.ensureContainer(servletContext);
+                        serverContainer.addMapping(entry.getKey(), webSocketCreator);
+                        JettyWebSocketServerContainer.ensureContainer(configurator);
                         try {
-                            jakartaWebSocketServerContainer.start();
+                            serverContainer.start();
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
                     });
-
+                    //ContextHandler contextHandler = new ContextHandler(webSocketHandler, "/");
 
 //                    WebSocketComponents webSocketComponents =
-//                        WebSocketServerComponents.ensureWebSocketComponents(server, webSocketServletContextHandler.getCoreContextHandler());
-//
-//                    WebSocketMappings mappings = WebSocketMappings.ensureMappings(webSocketServletContextHandler.getCoreContextHandler());
-//
-//                    webSocketComponents.start();
-//
-//                    logger.debug("WebSocketMappings: {}", mappings.toString());
+//                        WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler);
+
+
+                    //webSocketComponents.start();
+
+                    //WebSocketMappings mappings = WebSocketMappings.ensureMappings(contextHandler);
+
+
+                    //logger.debug("WebSocketMappings: {}", mappings.toString());
 
 
                 }
-
 
 
             } catch (Exception ex) {
