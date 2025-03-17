@@ -518,10 +518,7 @@ public class Request {
 
                 String decodedReq = UrlDecode.path(request.get(i));
 
-                LOG.debug("matchedPart: "
-                                  + matchedPart
-                                  + " = "
-                                  + decodedReq);
+                LOG.debug("matchedPart: {} = {}", matchedPart, decodedReq);
 
                 params.put(matchedPart.toLowerCase(), decodedReq);
             }

@@ -1,15 +1,15 @@
-group 'com.sparkjava'
-version System.properties.getProperty('version', '0.0.0') + "-SNAPSHOT"
+group = 'com.sparkjava'
+version = System.properties.getProperty('version', '0.0.0') + "-SNAPSHOT"
 
 buildscript {
-    ext.jettyVersion = '12.0.11'
-    ext.mockitoVersion = '5.12.0'
-    ext.slf4jVersion = '2.0.13'
-    ext.junitVersion = '5.10.3'
+    ext.jettyVersion = '12.0.17'
+    ext.mockitoVersion = '5.16.0'
+    ext.slf4jVersion = '2.0.17'
+    ext.junitVersion = '5.12.0'
     repositories {
         mavenCentral()
         maven {
-            url "https://plugins.gradle.org/m2/"
+            url = "https://plugins.gradle.org/m2/"
         }
     }
 }
@@ -43,16 +43,16 @@ dependencies {
     testImplementation "org.mockito:mockito-junit-jupiter:$mockitoVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-engine:$junitVersion"
-    testRuntimeOnly "org.junit.platform:junit-platform-launcher:1.10.3"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher:1.12.0"
 
-    testImplementation 'org.hamcrest:hamcrest:2.2'
-    testImplementation 'org.apache.commons:commons-lang3:3.14.0'
+    testImplementation 'org.hamcrest:hamcrest:3.0'
+    testImplementation 'org.apache.commons:commons-lang3:3.17.0'
 
-    testImplementation "org.apache.httpcomponents.client5:httpclient5:5.3.1"
-    testImplementation "org.freemarker:freemarker:2.3.33"
-    testImplementation "com.google.code.gson:gson:2.11.0"
+    testImplementation "org.apache.httpcomponents.client5:httpclient5:5.4.2"
+    testImplementation "org.freemarker:freemarker:2.3.34"
+    testImplementation "com.google.code.gson:gson:2.12.1"
     testImplementation "org.eclipse.jetty.ee9.websocket:jetty-ee9-websocket-jetty-client:$jettyVersion"
-    implementation 'org.jetbrains:annotations:24.1.0'
+    implementation 'org.jetbrains:annotations:26.0.2'
 
 }
 

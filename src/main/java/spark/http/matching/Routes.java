@@ -70,7 +70,7 @@ final class Routes {
 
                 if (content instanceof String contentStr) {
 
-                    if (!contentStr.equals("")) {
+                    if (!contentStr.isEmpty()) {
                         context.responseWrapper().body(contentStr);
                     }
                 }

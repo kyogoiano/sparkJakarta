@@ -56,7 +56,7 @@ public class StaticFilesTest {
         Spark.stop();
         Spark.awaitStop();
         if (tmpExternalFile != null) {
-            LOGGER.debug("tearDown().deleting: " + tmpExternalFile);
+            LOGGER.debug("tearDown().deleting: {}", tmpExternalFile);
             tmpExternalFile.delete();
         }
     }
@@ -124,7 +124,7 @@ public class StaticFilesTest {
     public void testStaticFilePagesIndexHtml() throws Exception {
         SparkTestUtil.UrlResponse response = doGet("/pages/index.html");
         Assertions.assertEquals(200, response.status);
-        Assertions.assertEquals("<html><body>Hello Static World!</body></html>", response.body);
+        Assertions.assertEquals("<html><body>Hello Static World!</body></html>\n", response.body);
 
         testGet();
     }
@@ -133,7 +133,7 @@ public class StaticFilesTest {
     public void testStaticFilePageHtml() throws Exception {
         SparkTestUtil.UrlResponse response = doGet("/page.html");
         Assertions.assertEquals(200, response.status);
-        Assertions.assertEquals("<html><body>Hello Static Files World!</body></html>", response.body);
+        Assertions.assertEquals("<html><body>Hello Static Files World!</body></html>\n", response.body);
 
         testGet();
     }

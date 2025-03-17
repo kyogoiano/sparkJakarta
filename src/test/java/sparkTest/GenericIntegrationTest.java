@@ -471,13 +471,13 @@ public class GenericIntegrationTest {
     public void testWebSocketConversation() throws Exception {
         String uri = "ws://localhost:4567/ws";
         WebSocketClient client = new WebSocketClient();
-        WebSocketTestClient ws = new WebSocketTestClient();
+        WebSocketTestClient wsTest = new WebSocketTestClient();
 
         try {
             client.start();
-            client.connect(ws, URI.create(uri), new ClientUpgradeRequest());
+            client.connect(wsTest, URI.create(uri), new ClientUpgradeRequest());
             client.getHttpClient().POST(uri);
-            ws.awaitClose(30, TimeUnit.SECONDS);
+            wsTest.awaitClose(30, TimeUnit.SECONDS);
         } finally {
             client.stop();
             client.destroy();

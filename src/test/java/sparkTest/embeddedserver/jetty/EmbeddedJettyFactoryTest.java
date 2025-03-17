@@ -2,6 +2,7 @@ package sparkTest.embeddedserver.jetty;
 
 import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 import org.junit.jupiter.api.AfterEach;
@@ -45,7 +46,7 @@ public class EmbeddedJettyFactoryTest {
         verify(jettyServerFactory, times(1)).create(100, 10, 10000);
         verifyNoMoreInteractions(jettyServerFactory);
 
-        ((ContextHandler.CoreContextHandler) server.getHandler()).getHandlers().forEach( handler -> {
+        ((ContextHandlerCollection) server.getHandler()).getHandlers().forEach(handler -> {
             if( handler instanceof ContextHandler.CoreContextHandler){
                 Assertions.assertTrue(((ContextHandler.CoreContextHandler) handler).getContextHandler().getServletContext().getSessionCookieConfig().isHttpOnly());
             }
@@ -106,7 +107,7 @@ public class EmbeddedJettyFactoryTest {
         embeddedServer.ignite("localhost", 6759, null, 100, 10, 10000);
 
         server.start();
-        ((ContextHandler.CoreContextHandler) server.getHandler()).getHandlers().forEach( handler -> {
+        ((ContextHandlerCollection) server.getHandler()).getHandlers().forEach( handler -> {
             if( handler instanceof ContextHandler.CoreContextHandler){
                 Assertions.assertFalse(((ContextHandler.CoreContextHandler) handler).getContextHandler().getServletContext().getSessionCookieConfig().isHttpOnly());
             }

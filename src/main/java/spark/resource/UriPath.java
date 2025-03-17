@@ -30,7 +30,7 @@ public class UriPath {
      * @return path or null.
      */
     public static String canonical(String path) {
-        if (path == null || path.length() == 0) {
+        if (path == null || path.isEmpty()) {
             return path;
         }
 

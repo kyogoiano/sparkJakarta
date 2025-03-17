@@ -37,7 +37,7 @@ import static spark.Spark.staticFiles;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class DisableMimeGuessingTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(StaticFilesTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DisableMimeGuessingTest.class);
 
     private static final String FO_SHIZZY = "Fo shizzy";
     private static final String EXTERNAL_FILE_NAME_HTML = "externalFile.html";
@@ -52,7 +52,7 @@ public class DisableMimeGuessingTest {
         Spark.stop();
         Spark.awaitStop();
         if (tmpExternalFile != null) {
-            LOGGER.debug("tearDown().deleting: " + tmpExternalFile);
+            LOGGER.debug("tearDown().deleting: {}", tmpExternalFile);
             tmpExternalFile.delete();
         }
     }

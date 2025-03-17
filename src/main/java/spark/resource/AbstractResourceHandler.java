@@ -19,6 +19,7 @@ package spark.resource;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.MalformedURLException;
 
@@ -78,13 +79,13 @@ public abstract class AbstractResourceHandler {
      * @return Legally combined path segments.
      */
     public static String addPaths(String segment1, String segment2) {
-        if (segment1 == null || segment1.length() == 0) {
+        if (segment1 == null || segment1.isEmpty()) {
             if (segment1 != null && segment2 == null) {
                 return segment1;
             }
             return segment2;
         }
-        if (segment2 == null || segment2.length() == 0) {
+        if (segment2 == null || segment2.isEmpty()) {
             return segment1;
         }
 
@@ -99,7 +100,15 @@ public abstract class AbstractResourceHandler {
             split = segment1.length();
         }
 
-        StringBuilder buf = new StringBuilder(segment1.length() + segment2.length() + 2);
+        StringBuilder buf = joinSegments(segment1, segment2, split);
+
+        return buf.toString();
+    }
+
+    private static @NotNull StringBuilder joinSegments(final String segment1,
+                                                       final String segment2,
+                                                       final int split) {
+        final StringBuilder buf = new StringBuilder(segment1.length() + segment2.length() + 2);
         buf.append(segment1);
 
         if (buf.charAt(split - 1) == '/') {
@@ -117,8 +126,7 @@ public abstract class AbstractResourceHandler {
                 buf.insert(split + 1, segment2);
             }
         }
-
-        return buf.toString();
+        return buf;
     }
 
 }

@@ -22,6 +22,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,13 +125,14 @@ public class EmbeddedJettyServer implements EmbeddedServer {
         ServletContextHandler apiHandler = new ServletContextHandler(server, handler, null, servletHandler, null);
         apiHandler.setContextPath("/*");
 
+        ContextHandlerCollection handlerCollection = new ContextHandlerCollection();
+        handlerCollection.addHandler(apiHandler);
         if (webSocketServletContextHandler != null) {
-            servletHandler.setHandler(webSocketServletContextHandler);
+            handlerCollection.addHandler(webSocketServletContextHandler);
             //webSocketServletContextHandler.start();
-
         }
 
-        server.setHandler(apiHandler);
+        server.setHandler(handlerCollection);
         server.getScheduler().start();
         logger.info("== {} has ignited ...", NAME);
         if (hasCustomizedConnectors) {

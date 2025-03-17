@@ -51,7 +51,7 @@ public class WebSocketCreatorFactory {
         }
 
         @Override
-        public Object createWebSocket(JettyServerUpgradeRequest jettyServerUpgradeRequest, JettyServerUpgradeResponse jettyServerUpgradeResponse) throws Exception {
+        public Object createWebSocket(JettyServerUpgradeRequest jettyServerUpgradeRequest, JettyServerUpgradeResponse jettyServerUpgradeResponse) {
             return handler;
         }
     }

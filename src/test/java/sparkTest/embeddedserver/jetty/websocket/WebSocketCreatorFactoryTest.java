@@ -50,6 +50,7 @@ public class WebSocketCreatorFactoryTest {
     }
 
     @WebSocket
+    static
     class FailingHandler {
 
     }

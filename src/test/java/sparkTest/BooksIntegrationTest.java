@@ -12,6 +12,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -179,10 +180,10 @@ public class BooksIntegrationTest {
     }
 
     private boolean afterFilterIsSet(UrlResponse response) {
-        return response.headers.get("FOO").get(0).equals("BAR");
+        return Objects.equals(response.headers.get("FOO").getFirst(), "BAR");
     }
 
     private boolean beforeFilterIsSet(UrlResponse response) {
-        return response.headers.get("FOZ").get(0).equals("BAZ");
+        return Objects.equals(response.headers.get("FOZ").getFirst(), "BAZ");
     }
 }

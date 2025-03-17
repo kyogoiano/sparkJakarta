@@ -184,12 +184,12 @@ public class MimeParse {
         }
         Collections.sort(weightedMatches);
 
-        FitnessAndQuality lastOne = weightedMatches.get(weightedMatches.size() - 1);
+        FitnessAndQuality lastOne = weightedMatches.getLast();
         return Float.compare(lastOne.quality, 0) != 0 ? lastOne.mimeType : NO_MIME_TYPE;
     }
 
     private static boolean isBlank(String s) {
-        return s == null || "".equals(s.trim());
+        return s == null || s.trim().isEmpty();
     }
 
     private static float toFloat(final String str, final float defaultValue) {

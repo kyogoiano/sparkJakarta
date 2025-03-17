@@ -27,11 +27,11 @@ public class MultipleFiltersTest {
 
         Spark.after("/user", incrementCounter, (req, res) -> {
             int counter = req.attribute("counter");
-            assertEquals(counter, 2);
+            assertEquals(2, counter);
         });
 
         get("/user", (request, response) -> {
-            assertEquals((int) request.attribute("counter"), 1);
+            assertEquals(1, (int) request.attribute("counter"));
             return ((User) request.attribute("user")).name();
         });
 

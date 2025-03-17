@@ -110,19 +110,19 @@ public class MultipleServicesTest {
     @Test
     public void testGetAllRoutesFromBothServices(){
         for(RouteMatch routeMatch : first.routes()){
-            assertEquals(routeMatch.getAcceptType(), "*/*");
-            assertEquals(routeMatch.getHttpMethod(), HttpMethod.get);
-            assertEquals(routeMatch.getMatchUri(), "/hello");
-            assertEquals(routeMatch.getRequestURI(), "ALL_ROUTES");
+            assertEquals("*/*", routeMatch.getAcceptType());
+            assertEquals(HttpMethod.get, routeMatch.getHttpMethod());
+            assertEquals("/hello", routeMatch.getMatchUri());
+            assertEquals("ALL_ROUTES", routeMatch.getRequestURI());
             assertThat(routeMatch.getTarget(), instanceOf(RouteImpl.class));
         }
 
         for(RouteMatch routeMatch : second.routes()){
-            assertEquals(routeMatch.getAcceptType(), "*/*");
+            assertEquals("*/*", routeMatch.getAcceptType());
             assertThat(routeMatch.getHttpMethod(), instanceOf(HttpMethod.class));
             boolean isUriOnList = ("/hello/hi/uniqueforsecond").contains(routeMatch.getMatchUri());
             assertTrue(isUriOnList);
-            assertEquals(routeMatch.getRequestURI(), "ALL_ROUTES");
+            assertEquals("ALL_ROUTES", routeMatch.getRequestURI());
             assertThat(routeMatch.getTarget(), instanceOf(RouteImpl.class));
         }
     }

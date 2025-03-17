@@ -35,3 +35,5 @@ reports
 /.gradle/buildOutputCleanup/outputFiles.bin
 /.gradle/8.5/fileHashes/resourceHashesCache.bin
 /.gradle/8.5/checksums/sha1-checksums.bin
+/build/
+/.gradle/

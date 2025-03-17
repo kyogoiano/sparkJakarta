@@ -63,7 +63,7 @@ public class StaticFilesMemberTest {
         Spark.stop();
         Spark.awaitStop();
         if (tmpExternalFile != null) {
-            LOGGER.debug("tearDown().deleting: " + tmpExternalFile);
+            LOGGER.debug("tearDown().deleting: {}", tmpExternalFile);
             tmpExternalFile.delete();
         }
     }
@@ -110,7 +110,7 @@ public class StaticFilesMemberTest {
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/js/module.mjs", null);
 
         String expectedContentType = response.headers.get("Content-Type");
-        assertEquals(expectedContentType, "application/javascript");
+        assertEquals("application/javascript", expectedContentType);
 
         String body = response.body;
         assertEquals("export default function () { console.log(\"Hello, I'm a .mjs file\"); }\r\n", body);
@@ -120,7 +120,7 @@ public class StaticFilesMemberTest {
     public void testStaticFilePagesIndexHtml() throws Exception {
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/pages/index.html", null);
         assertEquals(200, response.status);
-        assertEquals("<html><body>Hello Static World!</body></html>", response.body);
+        assertEquals("<html><body>Hello Static World!</body></html>\n", response.body);
 
         testGet();
     }
@@ -129,7 +129,7 @@ public class StaticFilesMemberTest {
     public void testStaticFilePageHtml() throws Exception {
         SparkTestUtil.UrlResponse response = testUtil.doMethod("GET", "/page.html", null);
         assertEquals(200, response.status);
-        assertEquals("<html><body>Hello Static Files World!</body></html>", response.body);
+        assertEquals("<html><body>Hello Static Files World!</body></html>\n", response.body);
 
         testGet();
     }

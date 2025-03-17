@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+import org.jetbrains.annotations.NotNull;
 import spark.ssl.SslStores;
 import spark.utils.Assert;
 
@@ -60,6 +61,16 @@ public class SocketConnectorFactory {
 
         Assert.notNull(sslStores, "'sslStores' must not be null");
 
+        SslContextFactory.Server sslContextFactory = getSslContextFactory(sslStores);
+
+        HttpConnectionFactory httpConnectionFactory = createHttpConnectionFactory(trustForwardHeaders);
+
+        ServerConnector connector = new ServerConnector(server, sslContextFactory, httpConnectionFactory);
+        initializeConnector(connector, host, port);
+        return connector;
+    }
+
+    private static SslContextFactory.@NotNull Server getSslContextFactory(final SslStores sslStores) {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         if(sslStores.keyStoreType() != null) {
             sslContextFactory.setKeyStoreType(sslStores.keyStoreType());
@@ -91,12 +102,7 @@ public class SocketConnectorFactory {
             sslContextFactory.setNeedClientAuth(true);
             sslContextFactory.setWantClientAuth(true);
         }
-
-        HttpConnectionFactory httpConnectionFactory = createHttpConnectionFactory(trustForwardHeaders);
-
-        ServerConnector connector = new ServerConnector(server, sslContextFactory, httpConnectionFactory);
-        initializeConnector(connector, host, port);
-        return connector;
+        return sslContextFactory;
     }
 
     private static void initializeConnector(ServerConnector connector, String host, int port) {

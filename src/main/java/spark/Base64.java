@@ -16,7 +16,12 @@
  */
 package spark;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Base64 {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Base64.class);
 
     //CS304 Issue link:https://github.com/perwendel/spark/issues/1061
 
@@ -48,7 +53,7 @@ public class Base64 {
         try {
             buf = decoder.decode(toDecodeContent);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Decoding exception!", e);
         }
         assert buf != null;
         return new String(buf);

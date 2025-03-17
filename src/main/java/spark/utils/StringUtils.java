@@ -15,6 +15,8 @@
  */
 package spark.utils;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -22,6 +24,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 /**
  * Miscellaneous {@link String} utility methods.
@@ -104,7 +107,7 @@ public abstract class StringUtils {
      * @return {@code true} if the CharSequence is not null and has length
      */
     public static boolean hasLength(CharSequence str) {
-        return (str != null && str.length() > 0);
+        return (str != null && !str.isEmpty());
     }
 
     /**
@@ -237,6 +240,12 @@ public abstract class StringUtils {
         }
 
         final String[] pathArray = delimitedListToStringArray(pathToUse, FOLDER_SEPARATOR);
+        final List<String> pathElements = buildPathElements(pathArray);
+
+        return prefix + collectionToDelimitedString(pathElements, FOLDER_SEPARATOR);
+    }
+
+    private static @NotNull List<String> buildPathElements(final String[] pathArray) {
         final List<String> pathElements = new LinkedList<>();
         int tops = 0;
 
@@ -255,18 +264,15 @@ public abstract class StringUtils {
                         tops--;
                     } else {
                         // Normal path element found.
-                        pathElements.add(0, pathArray[i]);
+                        pathElements.addFirst(pathArray[i]);
                     }
                     break;
             }
         }
 
         // Remaining top paths need to be retained.
-        for (int i = 0; i < tops; i++) {
-            pathElements.add(0, TOP_PATH);
-        }
-
-        return prefix + collectionToDelimitedString(pathElements, FOLDER_SEPARATOR);
+        IntStream.range(0, tops).mapToObj(i -> TOP_PATH).forEach(pathElements::addFirst);
+        return pathElements;
     }
 
     /**
@@ -320,7 +326,7 @@ public abstract class StringUtils {
             return new String[] {str};
         }
         final List<String> result = new ArrayList<>();
-        if ("".equals(delimiter)) {
+        if (delimiter.isEmpty()) {
             for (int i = 0; i < str.length(); i++) {
                 result.add(deleteAny(str.substring(i, i + 1), charsToDelete));
             }
@@ -331,7 +337,7 @@ public abstract class StringUtils {
                 result.add(deleteAny(str.substring(pos, delPos), charsToDelete));
                 pos = delPos + delimiter.length();
             }
-            if (str.length() > 0 && pos <= str.length()) {
+            if (!str.isEmpty() && pos <= str.length()) {
                 // Add rest of String, but not in case of empty input.
                 result.add(deleteAny(str.substring(pos), charsToDelete));
             }

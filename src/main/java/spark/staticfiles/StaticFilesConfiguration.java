@@ -74,8 +74,7 @@ public class StaticFilesConfiguration {
             httpResponse.setStatus(400);
             httpResponse.getWriter().write("Bad request");
             httpResponse.getWriter().flush();
-            LOG.warn(directoryTraversalDetection.getMessage() + " directory traversal detection for path: "
-                             + httpRequest.getPathInfo());
+            LOG.warn("{} directory traversal detection for path: {}", directoryTraversalDetection.getMessage(), httpRequest.getPathInfo());
         }
         return false;
     }
@@ -146,7 +145,7 @@ public class StaticFilesConfiguration {
             }
 
             staticResourceHandlers.add(new ClassPathResourceHandler(folder, "index.html"));
-            LOG.info("StaticResourceHandler configured with folder = " + folder);
+            LOG.info("StaticResourceHandler configured with folder = {}", folder);
             staticResourcesSet = true;
         }
     }
@@ -171,7 +170,7 @@ public class StaticFilesConfiguration {
                     staticResourceHandlers = new ArrayList<>();
                 }
                 staticResourceHandlers.add(new ExternalResourceHandler(folder, "index.html"));
-                LOG.info("External StaticResourceHandler configured with folder = " + folder);
+                LOG.info("External StaticResourceHandler configured with folder = {}", folder);
             } catch (IOException e) {
                 LOG.error("Error when creating external StaticResourceHandler", e);
             }
