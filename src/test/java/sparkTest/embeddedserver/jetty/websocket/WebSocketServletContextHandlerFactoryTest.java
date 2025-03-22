@@ -3,11 +3,11 @@ package sparkTest.embeddedserver.jetty.websocket;
 import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.ee9.servlet.FilterHolder;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHandler;
-import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServerContainer;
-import org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHandler;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
+import org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,7 +60,7 @@ public class WebSocketServletContextHandlerFactoryTest {
         servletContextHandler.start();
 
         FilterHolder filterHolder = WebSocketUpgradeFilter.getFilter(servletContextHandler.getServletContext());
-        assertEquals("org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter", filterHolder.getName(),
+        assertEquals("org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter", filterHolder.getName(),
             "Should return a WebSocketUpgradeFilter because we configured it to have one");
 
         MatchedResource<ServletHandler.MappedServlet> mappedServlet =
@@ -97,7 +97,7 @@ public class WebSocketServletContextHandlerFactoryTest {
             timeoutDuration, container.getIdleTimeout(), "Timeout value should be the same as the timeout specified when context handler was created");
 
         FilterHolder filterHolder = WebSocketUpgradeFilter.getFilter(servletContextHandler.getServletContext());
-        assertEquals("org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter", filterHolder.getName(), "Should return a WebSocketUpgradeFilter because we configured it to have one");
+        assertEquals("org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter", filterHolder.getName(), "Should return a WebSocketUpgradeFilter because we configured it to have one");
 
         MatchedResource<ServletHandler.MappedServlet> mappedServlet =
             servletContextHandler.getServletHandler().getMatchedServlet("/websocket");

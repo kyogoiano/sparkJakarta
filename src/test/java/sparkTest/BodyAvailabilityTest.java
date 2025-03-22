@@ -73,6 +73,7 @@ public class BodyAvailabilityTest {
 
     @Test
     public void testPost() throws Exception {
+        System.setProperty("org.eclipse.jetty.LEVEL", "DEBUG");
         SparkTestUtil.UrlResponse response = testUtil.doMethod("POST", "/hello", BODY_CONTENT);
         LOGGER.info(response.body);
         assertEquals(HTTP_OK, response.status);

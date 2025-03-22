@@ -27,9 +27,9 @@ dependencies {
     testImplementation "org.slf4j:slf4j-simple:$slf4jVersion"
 
     implementation "org.eclipse.jetty:jetty-server:$jettyVersion"
-    implementation "org.eclipse.jetty.ee9:jetty-ee9-webapp:$jettyVersion"
-    implementation "org.eclipse.jetty.ee9.websocket:jetty-ee9-websocket-jetty-server:$jettyVersion"// https://mvnrepository.com/artifact/org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jakarta-server
-    implementation "org.eclipse.jetty.ee9.websocket:jetty-ee9-websocket-jakarta-server:$jettyVersion"
+    implementation "org.eclipse.jetty.ee10:jetty-ee10-webapp:$jettyVersion"
+    implementation "org.eclipse.jetty.ee10.websocket:jetty-ee10-websocket-jetty-server:$jettyVersion"// https://mvnrepository.com/artifact/org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jakarta-server
+    implementation "org.eclipse.jetty.ee10.websocket:jetty-ee10-websocket-jakarta-server:$jettyVersion"
     implementation "jakarta.websocket:jakarta.websocket-api:2.0.0"
 
     implementation "org.eclipse.jetty.websocket:jetty-websocket-jetty-api:$jettyVersion"
@@ -51,7 +51,7 @@ dependencies {
     testImplementation "org.apache.httpcomponents.client5:httpclient5:5.4.2"
     testImplementation "org.freemarker:freemarker:2.3.34"
     testImplementation "com.google.code.gson:gson:2.12.1"
-    testImplementation "org.eclipse.jetty.ee9.websocket:jetty-ee9-websocket-jetty-client:$jettyVersion"
+    testImplementation "org.eclipse.jetty.ee10.websocket:jetty-ee10-websocket-jakarta-client:$jettyVersion"
     implementation 'org.jetbrains:annotations:26.0.2'
 
 }

@@ -1,6 +1,6 @@
 package sparkTest.embeddedserver.jetty;
 
-import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -46,11 +46,15 @@ public class EmbeddedJettyFactoryTest {
         verify(jettyServerFactory, times(1)).create(100, 10, 10000);
         verifyNoMoreInteractions(jettyServerFactory);
 
-        ((ContextHandlerCollection) server.getHandler()).getHandlers().forEach(handler -> {
-            if( handler instanceof ContextHandler.CoreContextHandler){
-                Assertions.assertTrue(((ContextHandler.CoreContextHandler) handler).getContextHandler().getServletContext().getSessionCookieConfig().isHttpOnly());
+        for (final var handler : ((ContextHandlerCollection) server.getHandler()).getHandlers()) {
+            if (handler instanceof ServletContextHandler contextHandler) {
+                final var servletContext = contextHandler.getServletContext();
+                final var sessionCookieConfig = servletContext.getSessionCookieConfig();
+
+                // Validate that HttpOnly is correctly disabled
+                Assertions.assertTrue(sessionCookieConfig.isHttpOnly());
             }
-        });
+        }
     }
 
     @Test
@@ -98,21 +102,28 @@ public class EmbeddedJettyFactoryTest {
         final StaticFilesConfiguration staticFilesConfiguration = mock(StaticFilesConfiguration.class);
         final Routes routes = mock(Routes.class);
 
-        Server server = new Server();
+        final Server server = new Server();
         when(jettyServerFactory.create(100, 10, 10000)).thenReturn(server);
 
         final EmbeddedJettyFactory embeddedJettyFactory = new EmbeddedJettyFactory(jettyServerFactory).withHttpOnly(false);
-        embeddedServer = embeddedJettyFactory.create(routes, staticFilesConfiguration, new ExceptionMapper<>(),false);
+        embeddedServer = embeddedJettyFactory.create(routes, staticFilesConfiguration, new ExceptionMapper<>(), false);
         embeddedServer.trustForwardHeaders(true);
         embeddedServer.ignite("localhost", 6759, null, 100, 10, 10000);
 
         server.start();
-        ((ContextHandlerCollection) server.getHandler()).getHandlers().forEach( handler -> {
-            if( handler instanceof ContextHandler.CoreContextHandler){
-                Assertions.assertFalse(((ContextHandler.CoreContextHandler) handler).getContextHandler().getServletContext().getSessionCookieConfig().isHttpOnly());
+
+        // Jetty 12 requires obtaining ServletContext from ServletContextHandler directly
+        for (final var handler : ((ContextHandlerCollection) server.getHandler()).getHandlers()) {
+            if (handler instanceof ServletContextHandler contextHandler) {
+                final var servletContext = contextHandler.getServletContext();
+                final var sessionCookieConfig = servletContext.getSessionCookieConfig();
+
+                // Validate that HttpOnly is correctly disabled
+                Assertions.assertFalse(sessionCookieConfig.isHttpOnly());
             }
-        });
+        }
     }
+
 
     @AfterEach
     public void tearDown() {

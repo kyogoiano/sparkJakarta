@@ -15,9 +15,9 @@
  */
 package spark.embeddedserver.jetty.websocket;
 
-import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeResponse;
-import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketCreator;
 import org.eclipse.jetty.websocket.server.WebSocketCreator;
 
 import static java.util.Objects.requireNonNull;
@@ -31,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 public class WebSocketCreatorFactory {
 
     /**
-     * Creates a {@link org.eclipse.jetty.ee9.websocket.server.JettyWebSocketCreator} that uses the given handler class/instance for
+     * Creates a {@link org.eclipse.jetty.ee10.websocket.server.JettyWebSocketCreator} that uses the given handler class/instance for
      * the WebSocket connections.
      *
      * @param handlerWrapper The wrapped handler to use to manage WebSocket connections.

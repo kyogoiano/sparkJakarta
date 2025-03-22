@@ -4,7 +4,7 @@ package sparkTest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.junit.jupiter.api.*;
 import spark.ExceptionMapper;
 import spark.HaltException;

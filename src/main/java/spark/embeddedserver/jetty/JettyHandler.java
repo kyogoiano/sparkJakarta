@@ -16,41 +16,50 @@
  */
 package spark.embeddedserver.jetty;
 
-import java.io.IOException;
-
 import jakarta.servlet.Filter;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.nested.Request;
-import org.eclipse.jetty.ee9.nested.SessionHandler;
+import org.eclipse.jetty.ee10.servlet.SessionHandler;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * Simple Jetty Handler
  *
  * @author Per Wendel
  */
-public class JettyHandler extends SessionHandler {
+public class JettyHandler extends Handler.Abstract  {
 
     private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(JettyHandler.class);
     private final Filter filter;
+    private SessionHandler sessionHandler;
 
     public JettyHandler(Filter filter) {
         this.filter = filter;
     }
 
+
     @Override
-    public void doHandle(
-            String target,
-            Request baseRequest,
-            HttpServletRequest request,
-            HttpServletResponse response) throws IOException, ServletException {
-        LOG.info("do handle request: {}", request);
-        HttpRequestWrapper wrapper = new HttpRequestWrapper(request);
-        filter.doFilter(wrapper, response, null);
+    public boolean handle(Request request, Response response, Callback callback) throws Exception {
+        LOG.info("Handling request: {}", request);
 
-        baseRequest.setHandled(!wrapper.notConsumed());
+        HttpServletRequest httpRequest = (HttpServletRequest) request;
+        HttpServletResponse httpResponse = (HttpServletResponse) response;
 
+        HttpRequestWrapper wrapper = new HttpRequestWrapper(httpRequest);
+
+        filter.doFilter(wrapper, httpResponse, null);
+
+        boolean handled = response.isCommitted() || !wrapper.notConsumed();
+        LOG.info("Response committed: {}, handled: {}", response.isCommitted(), handled);
+
+        callback.succeeded(); // Signal that request processing is complete
+        return handled;
     }
 
+    public SessionHandler getSessionHandler() {
+        return sessionHandler;
+    }
 }

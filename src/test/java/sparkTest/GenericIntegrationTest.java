@@ -2,8 +2,7 @@ package sparkTest;
 
 import org.apache.hc.core5.http.ParseException;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.ee9.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
+import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -12,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.*;
 import sparkTest.embeddedserver.jetty.websocket.WebSocketTestClient;
+import sparkTest.embeddedserver.jetty.websocket.WebSocketTestClientFrameHandler;
 import sparkTest.embeddedserver.jetty.websocket.WebSocketTestHandler;
 import sparkTest.examples.exception.BaseException;
 import sparkTest.examples.exception.JWGmeligMeylingException;
@@ -470,12 +470,14 @@ public class GenericIntegrationTest {
     @Test
     public void testWebSocketConversation() throws Exception {
         String uri = "ws://localhost:4567/ws";
-        WebSocketClient client = new WebSocketClient();
+        WebSocketCoreClient client = new WebSocketCoreClient();
         WebSocketTestClient wsTest = new WebSocketTestClient();
+        WebSocketTestClientFrameHandler frameHandler = new WebSocketTestClientFrameHandler(wsTest);
 
         try {
             client.start();
-            client.connect(wsTest, URI.create(uri), new ClientUpgradeRequest());
+
+            client.connect(frameHandler, URI.create(uri));
             client.getHttpClient().POST(uri);
             wsTest.awaitClose(30, TimeUnit.SECONDS);
         } finally {
@@ -484,7 +486,7 @@ public class GenericIntegrationTest {
         }
 
         List<String> events = WebSocketTestHandler.events;
-        assertEquals(3, events.size(), 3);
+        assertEquals(3, events.size());
         assertEquals("onConnect", events.get(0));
         assertEquals("onMessage: Hi Spark!", events.get(1));
         assertEquals("onClose: 1000 Bye!", events.get(2));

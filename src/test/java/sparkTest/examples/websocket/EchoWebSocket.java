@@ -16,19 +16,20 @@
  */
 package sparkTest.examples.websocket;
 
-import java.io.IOException;
+import org.eclipse.jetty.websocket.api.Callback;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketOpen;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-import org.eclipse.jetty.ee9.websocket.api.Session;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
+import java.io.IOException;
 
 @WebSocket
 public class EchoWebSocket {
     private Session session;
 
-    @OnWebSocketConnect
+    @OnWebSocketOpen
     public void connected(Session session) {
         this.session = session;
     }
@@ -41,6 +42,6 @@ public class EchoWebSocket {
     @OnWebSocketMessage
     public void message(String message) throws IOException {
         System.out.println("Got: " + message);
-        session.getRemote().sendString(message);
+        session.sendText(message, Callback.NOOP);
     }
 }

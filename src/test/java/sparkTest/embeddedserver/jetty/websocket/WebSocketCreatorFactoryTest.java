@@ -1,8 +1,10 @@
 package sparkTest.embeddedserver.jetty.websocket;
 
-import org.eclipse.jetty.ee9.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketCreator;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.Session;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.junit.jupiter.api.Test;
 import spark.embeddedserver.jetty.websocket.WebSocketCreatorFactory;
 import spark.embeddedserver.jetty.websocket.WebSocketCreatorFactory.SparkWebSocketCreator;
@@ -61,8 +63,18 @@ public class WebSocketCreatorFactoryTest {
         }
     }
 
-    public static class ListenerHandler extends WebSocketAdapter {
+    public static class ListenerHandler extends Endpoint {
 
+        @Override
+        public void onOpen(Session session, EndpointConfig endpointConfig) {
+            // Called when a new WebSocket connection is opened.
+            // You can register message handlers here.
+            session.addMessageHandler(String.class, message -> {
+                System.out.println("Received message: " + message);
+                // Handle the message...
+            });
+            System.out.println("WebSocket opened: " + session.getId());
+        }
     }
 
     static class InvalidHandler {

@@ -17,15 +17,13 @@
 package spark.embeddedserver.jetty.websocket;
 
 import jakarta.servlet.Servlet;
-import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketCreator;
-import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServerContainer;
-import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
 
-import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,84 +39,79 @@ public class WebSocketServletContextHandlerFactory {
     private static final Logger logger = LoggerFactory.getLogger(WebSocketServletContextHandlerFactory.class);
 
     /**
-     * Creates a new websocket servlet context handler.
+     * Creates a new WebSocket servlet context handler.
      *
-     * @param webSocketHandlers          webSocketHandlers
-     * @param webSocketIdleTimeoutMillis webSocketIdleTimeoutMillis
-     * @param server jetty Server
-     * @return a new websocket servlet context handler or 'null' if creation failed.
+     * @param webSocketHandlers          Map of WebSocket handlers
+     * @param webSocketIdleTimeoutMillis WebSocket idle timeout in milliseconds
+     * @param server                     Jetty server instance
+     * @return a configured ServletContextHandler
      */
     public static ServletContextHandler create(final Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers,
                                                final Long webSocketIdleTimeoutMillis, final Server server) {
         ServletContextHandler webSocketServletContextHandler = null;
+
         if (webSocketHandlers != null) {
             try {
-                webSocketServletContextHandler = new ServletContextHandler(server, "/", true, false);
+                webSocketServletContextHandler = new ServletContextHandler("/", true, false);
 
-                for (final Map.Entry<String, WebSocketHandlerWrapper<?>> entry : webSocketHandlers.entrySet()) {
+                // Attach the context handler to the server.
+                server.setHandler(webSocketServletContextHandler);
 
-                    final JettyWebSocketCreator webSocketCreator = WebSocketCreatorFactory.create(webSocketHandlers.get(entry.getKey()));
+                // Initialize Jetty WebSocket support
+                ServletContextHandler finalWebSocketServletContextHandler = webSocketServletContextHandler;
+                JettyWebSocketServletContainerInitializer.configure(webSocketServletContextHandler, (servletContext, serverContainer) -> {
+                    if (webSocketIdleTimeoutMillis != null) {
+                        serverContainer.setIdleTimeout(Duration.ofMillis(webSocketIdleTimeoutMillis));
+                    }
 
-                    final Servlet webSocketServlet = new JettyWebSocketServlet() {
-                        @Override
-                        protected void configure(final JettyWebSocketServletFactory factory) {
-                            factory.addMapping(entry.getKey(), (req, res) -> webSocketCreator);
-                            factory.register(entry.getValue().getHandler().getClass());
-                        }
-                    };
+                    // Ensure the WebSocket container is properly set up
+                    JettyWebSocketServerContainer.ensureContainer(servletContext);
 
-                    webSocketServletContextHandler.addServlet(new ServletHolder(entry.getValue().getHandler().getClass().getSimpleName(), webSocketServlet), entry.getKey());
+                    for (final Map.Entry<String, WebSocketHandlerWrapper<?>> entry : webSocketHandlers.entrySet()) {
+                        final JettyWebSocketCreator webSocketCreator = WebSocketCreatorFactory.create(entry.getValue());
 
-
-//                    WebSocketUpgradeHandler webSocketUpgradeHandler = WebSocketUpgradeHandler.from(server, webSocketServletContextHandler.getCoreContextHandler(), container ->
-//                        container.addMapping(entry.getKey(), (serverUpgradeRequest, serverUpgradeResponse, callback) -> {
-//
-//                            logger.debug("Upgrading WebSocket method: {}", serverUpgradeRequest.getMethod());
-//
-//                            return webSocketCreator.createWebSocket((JettyServerUpgradeRequest) serverUpgradeRequest, (JettyServerUpgradeResponse) serverUpgradeResponse);
-//                        }));
-                    //Arrays.stream(webSocketServletContextHandler.getServletHandler().getServlets()).findFirst().get().getName();
-                    //MatchedResource<ServletHandler.MappedServlet> mappedServlet = webSocketServletContextHandler.getServletHandler().getMatchedServlet(entry.getValue().getHandler().getClass().getSimpleName());
-
-                    //ServerWebSocketContainer container = ServerWebSocketContainer.ensure(server);
-                    //WebSocketUpgradeHandler webSocketHandler = new WebSocketUpgradeHandler(container);
-
-
-                    JettyWebSocketServletContainerInitializer.configure(webSocketServletContextHandler, (configurator, serverContainer) -> {
-                        if(webSocketIdleTimeoutMillis != null) {
-                            serverContainer.setIdleTimeout(Duration.ofMillis(webSocketIdleTimeoutMillis));
-                        }
+                        // Register WebSocket endpoint
                         serverContainer.addMapping(entry.getKey(), webSocketCreator);
-                        JettyWebSocketServerContainer.ensureContainer(configurator);
-                        try {
-                            serverContainer.start();
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-                    //ContextHandler contextHandler = new ContextHandler(webSocketHandler, "/");
 
-//                    WebSocketComponents webSocketComponents =
-//                        WebSocketServerComponents.ensureWebSocketComponents(server, contextHandler);
+                        logger.info("WebSocket endpoint registered: {}", entry.getKey());
 
+                        // Register servlet to handle WebSocket upgrade
+                        final Servlet webSocketServlet = new WebSocketServlet(entry.getKey(), webSocketCreator);
+                        finalWebSocketServletContextHandler.addServlet(new ServletHolder(entry.getKey(), webSocketServlet), entry.getKey());
+                    }
 
-                    //webSocketComponents.start();
-
-                    //WebSocketMappings mappings = WebSocketMappings.ensureMappings(contextHandler);
-
-
-                    //logger.debug("WebSocketMappings: {}", mappings.toString());
-
-
-                }
-
+                    try {
+                        serverContainer.start();
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to start WebSocket container", e);
+                    }
+                });
 
             } catch (Exception ex) {
-                logger.error("creation of websocket context handler failed.", ex);
+                logger.error("Creation of WebSocket context handler failed.", ex);
                 webSocketServletContextHandler = null;
             }
         }
         return webSocketServletContextHandler;
+    }
+
+    /**
+     * Inner class for WebSocket Servlet handling upgrades.
+     */
+    private static class WebSocketServlet extends jakarta.servlet.http.HttpServlet {
+        private final String path;
+        private final JettyWebSocketCreator creator;
+
+        public WebSocketServlet(String path, JettyWebSocketCreator creator) {
+            this.path = path;
+            this.creator = creator;
+        }
+
+        @Override
+        protected void doGet(jakarta.servlet.http.HttpServletRequest req, jakarta.servlet.http.HttpServletResponse resp) {
+            // This method is required for servlet registration, but WebSocket upgrade is handled by Jetty
+            logger.info("WebSocket servlet handling GET request at: {}", path);
+        }
     }
 
 }

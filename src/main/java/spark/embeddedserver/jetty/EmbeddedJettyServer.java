@@ -16,14 +16,15 @@
  */
 package spark.embeddedserver.jetty;
 
-import org.eclipse.jetty.ee9.nested.SessionHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHandler;
+import org.eclipse.jetty.ee10.servlet.*;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.ThreadPool;
+import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.embeddedserver.EmbeddedServer;
@@ -46,7 +47,7 @@ public class EmbeddedJettyServer implements EmbeddedServer {
     private static final String NAME = "Spark";
 
     private final JettyServerFactory serverFactory;
-    private final SessionHandler handler;
+    private final JettyHandler handler;
     private Server server;
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -57,7 +58,7 @@ public class EmbeddedJettyServer implements EmbeddedServer {
     private ThreadPool threadPool = null;
     private boolean trustForwardHeaders = true; // true by default
 
-    public EmbeddedJettyServer(JettyServerFactory serverFactory, SessionHandler handler) {
+    public EmbeddedJettyServer(JettyServerFactory serverFactory, JettyHandler handler) {
         this.serverFactory = serverFactory;
         this.handler = handler;
     }
@@ -104,32 +105,71 @@ public class EmbeddedJettyServer implements EmbeddedServer {
             server = serverFactory.create(threadPool);
         }
 
-        try(final ServerConnector connector =
-                SocketConnectorFactory.createSecureSocketConnector(server, host, port, sslStores, trustForwardHeaders)){
+        try (final ServerConnector connector =
+                 SocketConnectorFactory.createSecureSocketConnector(server, host, port, sslStores, trustForwardHeaders)) {
+
             final Connector[] previousConnectors = server.getConnectors();
+
+            // Jetty 12: Set server explicitly instead of relying on `connector.getServer()`
             server = connector.getServer();
+
             if (previousConnectors.length != 0) {
                 server.setConnectors(previousConnectors);
                 hasCustomizedConnectors = true;
             } else {
-                server.setConnectors(new Connector[] {connector});
+                server.setConnectors(new Connector[]{connector});
             }
         }
 
         final ServletContextHandler webSocketServletContextHandler =
             WebSocketServletContextHandlerFactory.create(webSocketHandlers, webSocketIdleTimeoutMillis, server);
 
-
-        // Handle web socket routes
+        // Handle API routes
         ServletHandler servletHandler = new ServletHandler();
-        ServletContextHandler apiHandler = new ServletContextHandler(server, handler, null, servletHandler, null);
-        apiHandler.setContextPath("/*");
+
+        SessionHandler sessionHandler = new SessionHandler();
+        sessionHandler.setServer(server);
+        sessionHandler.setHandler(handler);
+
+        ServletContextHandler servletContextHandler = new ServletContextHandler(sessionHandler, null, servletHandler, null);
+        servletContextHandler.setContextPath("/*");
+        servletContextHandler.setServletHandler(servletHandler);
+
+        // Ensure handlers are properly set
+        ContextHandlerCollection handlers = new ContextHandlerCollection();
+        handlers.setHandlers(servletContextHandler);
+        server.setHandler(handlers);
 
         ContextHandlerCollection handlerCollection = new ContextHandlerCollection();
-        handlerCollection.addHandler(apiHandler);
+        handlerCollection.addHandler(servletContextHandler);
+
+
+        ResourceFactory resourceFactory = ResourceFactory.of(servletContextHandler);
+        //servletContextHandler.setBaseResource(resourceFactory.newResource(mainResourceBase));
+        ServletHolder holderAlt = new ServletHolder("static-alt", DefaultServlet.class);
+        holderAlt.setInitParameter("dirAllowed", "true");
+        holderAlt.setInitParameter("acceptRanges", "true");
+        servletContextHandler.addServlet(holderAlt, "*.js");
+        ServletHolder holderstat = new ServletHolder("static", DefaultServlet.class);
+        holderstat.setInitParameter("dirAllowed", "true");
+        holderstat setInitParameter("acceptRanges", "true");
+        holderstat.setInitParameter("cacheControl", "no-store");
+        context.addServlet(holderstat , "/index.html");
+        ServletHolder holderDef = new ServletHolder("default", DefaultServlet.class);
+        holderDef.setInitParameter("dirAllowed", "true");
+        context.addServlet(holderDef, "/");
+
         if (webSocketServletContextHandler != null) {
+
+            // WebSocket upgrade handling (Jetty 12 uses WebSocketCore)
+            WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler();
+            webSocketServletContextHandler.setHandler(wsHandler);
             handlerCollection.addHandler(webSocketServletContextHandler);
-            //webSocketServletContextHandler.start();
+        }
+
+        //webSocketServletContextHandler.start();
+        for (final Handler handler : handlerCollection.getHandlers()) {
+            logger.info("handler inside collection: {}", handler.toString());
         }
 
         server.setHandler(handlerCollection);
@@ -142,6 +182,10 @@ public class EmbeddedJettyServer implements EmbeddedServer {
         }
 
         server.start();
+
+        for (Handler h : server.getHandlers()) {
+            logger.info("Configured Handler: {}", h.getClass().getName());
+        }
         return port;
     }
 
