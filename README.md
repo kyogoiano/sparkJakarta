@@ -1,21 +1,26 @@
-# Spark Framework - Community Maintained
+# Spark Framework - Community Maintained (Jakarta EE 10 / Jetty 12)
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
 [![CI](https://github.com/sparkjava-community/spark/actions/workflows/ci.yml/badge.svg)](https://github.com/sparkjava-community/spark/actions/workflows/ci.yml)
-[![Maven Package](https://img.shields.io/badge/maven-2.9.4.1--SNAPSHOT-green)](https://github.com/sparkjava-community/spark/packages)
+[![Jakarta EE](https://img.shields.io/badge/Jakarta%20EE-10-orange)](https://jakarta.ee/specifications/platform/10/)
+[![Jetty](https://img.shields.io/badge/Jetty-12.0.40-blue)](https://eclipse.dev/jetty/)
+[![Java](https://img.shields.io/badge/Java-21%2B-red)](https://adoptium.net/)
 
-> A tiny web framework for Java - community-maintained fork
+> A tiny web framework for Java — community-maintained fork modernized for Jakarta EE 10, Jetty 12, and Java 21+
 
 ## 🚨 About This Fork
 
-**Spark Framework** was created by [Per Wendel](https://github.com/perwendel) and last updated in 2021. This is a **community-maintained fork** that provides continued maintenance for the 800+ projects still using Spark.
+**Spark Framework** was created by [Per Wendel](https://github.com/perwendel) and last updated in 2021. This is a **community-maintained fork** that modernizes Spark for the **Jakarta EE 10** ecosystem and **Eclipse Jetty 12**.
 
-### Why This Fork?
+### What's New in This Version?
 
-- ✅ **Security updates** - Updated Jetty (12.0.40) and SLF4J (2.0.20)
-- ✅ **Java 21+ compatibility** - Minimum required version is JDK 21
-- ✅ **Bug fixes** - Issues are addressed as discovered
-- ✅ **100% backward compatible** - Drop-in replacement for Spark 2.9.4
+- ✅ **Jakarta EE 10 Migration** - Migrated from `javax.servlet` to `jakarta.servlet` (Jakarta Servlet 6.0 & Jakarta WebSocket 2.1+)
+- ✅ **Eclipse Jetty 12 (`ee10`)** - Upgraded embedded server to Jetty `12.0.40` (`jetty-ee10-webapp`, `jetty-ee10-websocket`) and SLF4J `2.0.20`
+- ✅ **Java 21+ Baseline** - Requires JDK 21 or newer, leveraging modern Java language features (records, pattern matching, switch expressions)
+- ✅ **JPMS Module Support** - Includes `module-info.java` (`module sparkJakarta`)
+- ✅ **Gradle Build & JUnit 5** - Migrated build system to Gradle and test suite to JUnit Jupiter 5
+
+> **Migration Note (`javax` -> `jakarta`):** Because this release targets Jakarta EE 10 and Jetty 12, servlet and websocket types exposed via `req.raw()`, `res.raw()`, `SparkFilter`, and WebSocket handlers now use the `jakarta.servlet.*`, `jakarta.websocket.*`, and Jetty 12 `org.eclipse.jetty.websocket.api.*` packages.
 
 ### Original Project
 
@@ -27,9 +32,22 @@
 
 ## 📦 Installation
 
+### Gradle
+
+```groovy
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation 'com.github.sparkjava-community:spark:3.0.0-SNAPSHOT'
+}
+```
+
 ### Maven
 
-Add GitHub Packages repository:
+Add JitPack repository:
 
 ```xml
 <repositories>
@@ -46,7 +64,7 @@ Add dependency:
 <dependency>
     <groupId>com.github.sparkjava-community</groupId>
     <artifactId>spark</artifactId>
-    <version>2.9.4.2</version>
+    <version>3.0.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -244,7 +262,7 @@ public class JsonExample {
 }
 ```
 
-For more examples, see the [source code](https://github.com/sparkjava-community/spark/tree/main/src/test/java/spark/examples).
+For more examples, see the [source code](https://github.com/sparkjava-community/spark/tree/main/src/test/java/sparkTest/examples).
 
 ---
 
