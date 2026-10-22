@@ -12,8 +12,8 @@
 
 ### Why This Fork?
 
-- ✅ **Security updates** - Updated Jetty (9.4.54) and SLF4J (2.0.12)
-- ✅ **Java 17 compatibility** - Works with modern Java versions
+- ✅ **Security updates** - Updated Jetty (12.0.40) and SLF4J (2.0.20)
+- ✅ **Java 21+ compatibility** - Minimum required version is JDK 21
 - ✅ **Bug fixes** - Issues are addressed as discovered
 - ✅ **100% backward compatible** - Drop-in replacement for Spark 2.9.4
 
@@ -257,16 +257,16 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 ```bash
 git clone https://github.com/sparkjava-community/spark.git
 cd spark
-mvn clean install
+gradle clean build
 ```
 
 ### Running Tests
 
 ```bash
-mvn test
+gradle test
 ```
 
-**Note:** Some tests may be skipped due to Java 17+ compatibility. Core functionality is fully tested (313/318 tests pass).
+**Note:** Requires JDK 21 or newer.
 
 ---
 
