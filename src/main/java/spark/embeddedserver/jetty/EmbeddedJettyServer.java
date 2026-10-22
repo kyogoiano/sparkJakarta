@@ -16,15 +16,17 @@
  */
 package spark.embeddedserver.jetty;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.*;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.thread.ThreadPool;
-import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.embeddedserver.EmbeddedServer;
@@ -126,51 +128,21 @@ public class EmbeddedJettyServer implements EmbeddedServer {
 
         // Handle API routes
         ServletHandler servletHandler = new ServletHandler();
+        servletHandler.addServletWithMapping(new ServletHolder(new HttpServlet() {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+                handler.doHandle(req, resp);
+            }
+        }), "/*");
 
-        SessionHandler sessionHandler = new SessionHandler();
-        sessionHandler.setServer(server);
-        sessionHandler.setHandler(handler);
-
-        ServletContextHandler servletContextHandler = new ServletContextHandler(sessionHandler, null, servletHandler, null);
-        servletContextHandler.setContextPath("/*");
-        servletContextHandler.setServletHandler(servletHandler);
-
-        // Ensure handlers are properly set
-        ContextHandlerCollection handlers = new ContextHandlerCollection();
-        handlers.setHandlers(servletContextHandler);
-        server.setHandler(handlers);
+        ServletContextHandler servletContextHandler = new ServletContextHandler("/", handler, null, servletHandler, null);
 
         ContextHandlerCollection handlerCollection = new ContextHandlerCollection();
-        handlerCollection.addHandler(servletContextHandler);
-
-
-        ResourceFactory resourceFactory = ResourceFactory.of(servletContextHandler);
-        //servletContextHandler.setBaseResource(resourceFactory.newResource(mainResourceBase));
-        ServletHolder holderAlt = new ServletHolder("static-alt", DefaultServlet.class);
-        holderAlt.setInitParameter("dirAllowed", "true");
-        holderAlt.setInitParameter("acceptRanges", "true");
-        servletContextHandler.addServlet(holderAlt, "*.js");
-        ServletHolder holderstat = new ServletHolder("static", DefaultServlet.class);
-        holderstat.setInitParameter("dirAllowed", "true");
-        holderstat setInitParameter("acceptRanges", "true");
-        holderstat.setInitParameter("cacheControl", "no-store");
-        context.addServlet(holderstat , "/index.html");
-        ServletHolder holderDef = new ServletHolder("default", DefaultServlet.class);
-        holderDef.setInitParameter("dirAllowed", "true");
-        context.addServlet(holderDef, "/");
-
         if (webSocketServletContextHandler != null) {
-
-            // WebSocket upgrade handling (Jetty 12 uses WebSocketCore)
-            WebSocketUpgradeHandler wsHandler = new WebSocketUpgradeHandler();
-            webSocketServletContextHandler.setHandler(wsHandler);
+            webSocketServletContextHandler.getServletHandler().setEnsureDefaultServlet(false);
             handlerCollection.addHandler(webSocketServletContextHandler);
         }
-
-        //webSocketServletContextHandler.start();
-        for (final Handler handler : handlerCollection.getHandlers()) {
-            logger.info("handler inside collection: {}", handler.toString());
-        }
+        handlerCollection.addHandler(servletContextHandler);
 
         server.setHandler(handlerCollection);
         server.getScheduler().start();
@@ -183,9 +155,6 @@ public class EmbeddedJettyServer implements EmbeddedServer {
 
         server.start();
 
-        for (Handler h : server.getHandlers()) {
-            logger.info("Configured Handler: {}", h.getClass().getName());
-        }
         return port;
     }
 

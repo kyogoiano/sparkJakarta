@@ -53,12 +53,10 @@ public class EmbeddedJettyFactory implements EmbeddedServerFactory {
 
 
         JettyHandler handler = new JettyHandler(matcherFilter);
-
-
-        SessionHandler sessionHandler = new SessionHandler();
-        sessionHandler.setHandler(handler);
-        sessionHandler.getSessionCookieConfig().setHttpOnly(httpOnly);
-
+        final SessionCookieConfig sessionCookieConfig = handler.getSessionCookieConfig();
+        if (sessionCookieConfig != null) {
+            sessionCookieConfig.setHttpOnly(httpOnly);
+        }
         return new EmbeddedJettyServer(serverFactory, handler).withThreadPool(threadPool);
     }
 

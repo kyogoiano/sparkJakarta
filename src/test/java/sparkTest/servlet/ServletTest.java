@@ -29,6 +29,9 @@ public class ServletTest {
         LOGGER.info(">>> STOPPING EMBEDDED JETTY SERVER");
         Spark.stop();
         Spark.awaitStop();
+        if (server != null) {
+            server.stop();
+        }
 
         if (MyApp.tmpExternalFile != null) {
             LOGGER.debug("tearDown().deleting: {}", MyApp.tmpExternalFile);

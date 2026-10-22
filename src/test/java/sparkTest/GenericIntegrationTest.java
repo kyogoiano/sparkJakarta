@@ -477,8 +477,7 @@ public class GenericIntegrationTest {
         try {
             client.start();
 
-            client.connect(frameHandler, URI.create(uri));
-            client.getHttpClient().POST(uri);
+            client.connect(frameHandler, URI.create(uri)).get();
             wsTest.awaitClose(30, TimeUnit.SECONDS);
         } finally {
             client.stop();

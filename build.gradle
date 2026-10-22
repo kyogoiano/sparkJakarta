@@ -20,6 +20,10 @@ repositories {
 }
 
 
+configurations {
+    mockitoAgent
+}
+
 dependencies {
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
     implementation "org.slf4j:slf4j-simple:$slf4jVersion"
@@ -37,8 +41,9 @@ dependencies {
     // https://mvnrepository.com/artifact/org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jetty-api
     implementation "org.eclipse.jetty.websocket:jetty-websocket-core-server:$jettyVersion"
 
-    //testImplementation "net.bytebuddy:byte-buddy-agent:1.14.5"
-    //testImplementation "net.bytebuddy:byte-buddy:1.14.5"
+    testImplementation "net.bytebuddy:byte-buddy:1.18.14"
+    testImplementation "net.bytebuddy:byte-buddy-agent:1.18.14"
+    mockitoAgent("net.bytebuddy:byte-buddy-agent:1.18.14") { transitive = false }
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito:mockito-junit-jupiter:$mockitoVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
@@ -67,7 +72,7 @@ test {
     reports {
 
     }
-    //jvmArgs['-Djavaagent=byte-buddy-agent.jar']
+    jvmArgs("-javaagent:${configurations.mockitoAgent.asPath}", "-Dnet.bytebuddy.experimental=true")
     //jvmArgs['--add-modules java.se --add-exports java.base/jdk.internal.ref=EVERYONE --add-opens java.base/java.lang=EVERYONE --add-opens java.base/java.nio=EVERYONE --add-opens java.base/sun.nio.ch=EVERYONE --add-opens java.management/sun.management=EVERYONE --add-opens jdk.management/com.sun.management.internal=EVERYONE --add-opens java.base/java.lang.reflect=test']
 
 }

@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import spark.utils.ReflectionTestUtils;
 import spark.Response;
 
 import java.util.Date;
@@ -34,8 +35,8 @@ public class ResponseTest {
      */
     @Test
     public void testConstructor_whenHttpServletResponseParameter() {
-//        HttpServletResponse returnResponse = Whitebox.getInternalState(response, "response");
-//        assertSame(httpServletResponse, returnResponse);
+        HttpServletResponse returnResponse = ReflectionTestUtils.getField(response, "response");
+        assertSame(httpServletResponse, returnResponse, "Should be the same the HttpServletResponse object for httpServletResponse and returnResponse");
     }
 
     @Test
@@ -71,17 +72,17 @@ public class ResponseTest {
         final String finalBody = "Hello world!";
 
         response.body(finalBody);
-//        String returnBody = Whitebox.getInternalState(response, "body");
-//        assertEquals(finalBody, returnBody, "Should return body specified");
+        String returnBody =  ReflectionTestUtils.getField(response, "body");
+        assertEquals(finalBody, returnBody, "Should return body specified");
     }
 
     @Test
     public void testGetBody() {
         final String finalBody = "Hello world!";
 
-//        Whitebox.setInternalState(response, "body", finalBody);
-//        String returnBody = response.body();
-//        assertEquals(finalBody, returnBody, "Should return body specified");
+        ReflectionTestUtils.setField(response, "body", finalBody);
+        String returnBody = response.body();
+        assertEquals(finalBody, returnBody, "Should return body specified");
     }
 
     /**

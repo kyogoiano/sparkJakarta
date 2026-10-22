@@ -16,50 +16,41 @@
  */
 package spark.embeddedserver.jetty;
 
+import java.io.IOException;
+
 import jakarta.servlet.Filter;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Callback;
 
 /**
  * Simple Jetty Handler
  *
  * @author Per Wendel
  */
-public class JettyHandler extends Handler.Abstract  {
+public class JettyHandler extends SessionHandler {
 
     private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(JettyHandler.class);
     private final Filter filter;
-    private SessionHandler sessionHandler;
 
     public JettyHandler(Filter filter) {
         this.filter = filter;
     }
 
+    public void doHandle(
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException, ServletException {
+        LOG.debug("do handle request: {}", request);
+        HttpRequestWrapper wrapper = new HttpRequestWrapper(request);
+        filter.doFilter(wrapper, response, null);
 
-    @Override
-    public boolean handle(Request request, Response response, Callback callback) throws Exception {
-        LOG.info("Handling request: {}", request);
-
-        HttpServletRequest httpRequest = (HttpServletRequest) request;
-        HttpServletResponse httpResponse = (HttpServletResponse) response;
-
-        HttpRequestWrapper wrapper = new HttpRequestWrapper(httpRequest);
-
-        filter.doFilter(wrapper, httpResponse, null);
-
-        boolean handled = response.isCommitted() || !wrapper.notConsumed();
-        LOG.info("Response committed: {}, handled: {}", response.isCommitted(), handled);
-
-        callback.succeeded(); // Signal that request processing is complete
-        return handled;
+        if (wrapper.notConsumed()) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        }
     }
 
-    public SessionHandler getSessionHandler() {
-        return sessionHandler;
+    public Filter getFilter() {
+        return filter;
     }
 }

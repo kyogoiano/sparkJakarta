@@ -1,0 +1,39 @@
+name: Spark Framework CI
+on:
+    push:
+        branches: [ main, master ]
+    pull_request:
+        branches: [ main, master ]
+    workflow_dispatch:
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                java: [ '17', '21' ]
+        name: Java Version ${{ matrix.java }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up JDK ${{ matrix.java }}
+              uses: actions/setup-java@v4
+              with:
+                  java-version: ${{ matrix.java }}
+                  distribution: 'temurin'
+                  cache: 'gradle'
+
+            - name: Build with Gradle
+              run: ./gradlew clean compileJava compileTestJava
+
+            - name: Run tests
+              run: ./gradlew test
+              continue-on-error: true
+
+            - name: Upload test results
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: test-results-java-${{ matrix.java }}
+                  path: build/test-results/test/

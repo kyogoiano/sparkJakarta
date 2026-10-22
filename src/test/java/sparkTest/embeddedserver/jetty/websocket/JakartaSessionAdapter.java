@@ -107,7 +107,98 @@ public class JakartaSessionAdapter implements Session {
 
     @Override
     public RemoteEndpoint.Async getAsyncRemote() {
-        return null;
+        return new RemoteEndpoint.Async() {
+            @Override
+            public long getSendTimeout() {
+                return 0;
+            }
+
+            @Override
+            public void setSendTimeout(long timeoutmillis) {
+            }
+
+            @Override
+            public void sendText(String text, SendHandler handler) {
+                coreSession.sendFrame(
+                    new org.eclipse.jetty.websocket.core.Frame(org.eclipse.jetty.websocket.core.OpCode.TEXT, text),
+                    Callback.from(() -> handler.onResult(new SendResult()), t -> handler.onResult(new SendResult(t))),
+                    false
+                );
+            }
+
+            @Override
+            public java.util.concurrent.Future<Void> sendText(String text) {
+                java.util.concurrent.CompletableFuture<Void> future = new java.util.concurrent.CompletableFuture<>();
+                coreSession.sendFrame(
+                    new org.eclipse.jetty.websocket.core.Frame(org.eclipse.jetty.websocket.core.OpCode.TEXT, text),
+                    Callback.from(() -> future.complete(null), future::completeExceptionally),
+                    false
+                );
+                return future;
+            }
+
+            @Override
+            public java.util.concurrent.Future<Void> sendBinary(java.nio.ByteBuffer data) {
+                java.util.concurrent.CompletableFuture<Void> future = new java.util.concurrent.CompletableFuture<>();
+                coreSession.sendFrame(
+                    new org.eclipse.jetty.websocket.core.Frame(org.eclipse.jetty.websocket.core.OpCode.BINARY, data),
+                    Callback.from(() -> future.complete(null), future::completeExceptionally),
+                    false
+                );
+                return future;
+            }
+
+            @Override
+            public void sendBinary(java.nio.ByteBuffer data, SendHandler handler) {
+                coreSession.sendFrame(
+                    new org.eclipse.jetty.websocket.core.Frame(org.eclipse.jetty.websocket.core.OpCode.BINARY, data),
+                    Callback.from(() -> handler.onResult(new SendResult()), t -> handler.onResult(new SendResult(t))),
+                    false
+                );
+            }
+
+            @Override
+            public java.util.concurrent.Future<Void> sendObject(Object data) {
+                return sendText(String.valueOf(data));
+            }
+
+            @Override
+            public void sendObject(Object data, SendHandler handler) {
+                sendText(String.valueOf(data), handler);
+            }
+
+            @Override
+            public void setBatchingAllowed(boolean allowed) {
+            }
+
+            @Override
+            public boolean getBatchingAllowed() {
+                return false;
+            }
+
+            @Override
+            public void flushBatch() {
+                coreSession.flush(Callback.NOOP);
+            }
+
+            @Override
+            public void sendPing(java.nio.ByteBuffer applicationData) {
+                coreSession.sendFrame(
+                    new org.eclipse.jetty.websocket.core.Frame(org.eclipse.jetty.websocket.core.OpCode.PING, applicationData),
+                    Callback.NOOP,
+                    false
+                );
+            }
+
+            @Override
+            public void sendPong(java.nio.ByteBuffer applicationData) {
+                coreSession.sendFrame(
+                    new org.eclipse.jetty.websocket.core.Frame(org.eclipse.jetty.websocket.core.OpCode.PONG, applicationData),
+                    Callback.NOOP,
+                    false
+                );
+            }
+        };
     }
 
     @Override

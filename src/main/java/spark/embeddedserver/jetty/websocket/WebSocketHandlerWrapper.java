@@ -1,6 +1,7 @@
 package spark.embeddedserver.jetty.websocket;
 
 
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
@@ -18,6 +19,7 @@ public interface WebSocketHandlerWrapper <T> {
     
     static <T> void validateHandlerClass(Class<T> handlerClass) {
         boolean valid = WebSocketSessionListener.class.isAssignableFrom(handlerClass)
+                || Session.Listener.class.isAssignableFrom(handlerClass)
                 || handlerClass.isAnnotationPresent(WebSocket.class);
         if (!valid) {
             throw new IllegalArgumentException(

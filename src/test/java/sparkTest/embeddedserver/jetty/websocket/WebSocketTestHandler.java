@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Frame;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.*;
@@ -21,7 +22,7 @@ public class WebSocketTestHandler {
     @OnWebSocketOpen
     public void onWebSocketOpen(Session session)
     {
-        events.add("onWebSocketOpen");
+        events.add("onConnect");
     }
 
     @OnWebSocketClose
@@ -41,11 +42,12 @@ public class WebSocketTestHandler {
 
 
     @OnWebSocketFrame
-    public void onFrame(Frame frame) {
+    public void onFrame(Frame frame, Callback callback) {
         if (OpCode.PONG == frame.getOpCode()) {
             ByteBuffer payload = frame.getPayload() != null ? frame.getPayload() : EMPTY_PAYLOAD;
             events.add("onFrame" + frame);
         }
+        callback.succeed();
     }
 
 }

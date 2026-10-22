@@ -70,7 +70,7 @@ public class StaticFilesTestExternal {
     @BeforeAll
     public static void setup() throws IOException {
 
-        String directoryRoot = System.getProperty("java.io.tmpdir") + "sparkish";
+        String directoryRoot = new File(System.getProperty("java.io.tmpdir"), "sparkish").getAbsolutePath();
         new File(directoryRoot).mkdirs();
 
         tmpExternalFile1 = new File(directoryRoot, EXTERNAL_FILE_NAME_HTML);

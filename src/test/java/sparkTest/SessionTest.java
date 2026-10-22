@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import spark.Request;
 import spark.Session;
+import spark.utils.ReflectionTestUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,9 +62,8 @@ public class SessionTest {
     @Test
     public void testSession() {
 
-//        HttpSession internalSession = Whitebox.getInternalState(session, "session");
-//        assertEquals(
-//                httpSession, internalSession, "Internal session should be set to the http session provided during instantiation");
+        HttpSession internalSession = ReflectionTestUtils.getField(session, "session");
+        assertEquals(httpSession, internalSession, "Internal session should be set to the http session provided during instantiation");
     }
 
     @Test
