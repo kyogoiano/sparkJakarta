@@ -3,7 +3,7 @@ package spark;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.powermock.reflect.Whitebox;
+import spark.utils.ReflectionTestUtils;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
@@ -29,7 +29,7 @@ public class ResponseTest {
 
     @Test
     public void testConstructor_whenHttpServletResponseParameter() {
-        HttpServletResponse returnResponse = Whitebox.getInternalState(response, "response");
+        HttpServletResponse returnResponse = ReflectionTestUtils.getField(response, "response");
         assertSame("Should be the same the HttpServletResponse object for httpServletResponse and returnResponse", httpServletResponse, returnResponse);
     }
 
@@ -66,7 +66,7 @@ public class ResponseTest {
         final String finalBody = "Hello world!";
 
         response.body(finalBody);
-        String returnBody = Whitebox.getInternalState(response, "body");
+        String returnBody =  ReflectionTestUtils.getField(response, "body");
         assertEquals("Should return body specified", finalBody, returnBody);
     }
 
@@ -74,7 +74,7 @@ public class ResponseTest {
     public void testGetBody() {
         final String finalBody = "Hello world!";
 
-        Whitebox.setInternalState(response, "body", finalBody);
+        ReflectionTestUtils.setField(response, "body", finalBody);
         String returnBody = response.body();
         assertEquals("Should return body specified", finalBody, returnBody);
     }

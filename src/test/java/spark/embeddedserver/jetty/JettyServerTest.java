@@ -3,7 +3,7 @@ package spark.embeddedserver.jetty;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Test;
-import org.powermock.reflect.Whitebox;
+import spark.utils.ReflectionTestUtils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -15,9 +15,9 @@ public class JettyServerTest {
 
         QueuedThreadPool threadPool = (QueuedThreadPool) server.getThreadPool();
 
-        int minThreads = Whitebox.getInternalState(threadPool, "_minThreads");
-        int maxThreads = Whitebox.getInternalState(threadPool, "_maxThreads");
-        int idleTimeout = Whitebox.getInternalState(threadPool, "_idleTimeout");
+        int minThreads = ReflectionTestUtils.getField(threadPool, "_minThreads");
+        int maxThreads = ReflectionTestUtils.getField(threadPool, "_maxThreads");
+        int idleTimeout = ReflectionTestUtils.getField(threadPool, "_idleTimeout");
 
         assertEquals("Server thread pool default minThreads should be 8", 8, minThreads);
         assertEquals("Server thread pool default maxThreads should be 200", 200, maxThreads);
@@ -30,9 +30,9 @@ public class JettyServerTest {
 
         QueuedThreadPool threadPool = (QueuedThreadPool) server.getThreadPool();
 
-        int minThreads = Whitebox.getInternalState(threadPool, "_minThreads");
-        int maxThreads = Whitebox.getInternalState(threadPool, "_maxThreads");
-        int idleTimeout = Whitebox.getInternalState(threadPool, "_idleTimeout");
+        int minThreads = ReflectionTestUtils.getField(threadPool, "_minThreads");
+        int maxThreads = ReflectionTestUtils.getField(threadPool, "_maxThreads");
+        int idleTimeout = ReflectionTestUtils.getField(threadPool, "_idleTimeout");
 
         assertEquals("Server thread pool default minThreads should be 8", 8, minThreads);
         assertEquals("Server thread pool default maxThreads should be the same as specified", 9, maxThreads);

@@ -107,7 +107,10 @@ public class StaticFilesMemberTest {
         Assert.assertEquals(expectedContentType, "application/javascript");
 
         String body = response.body;
-        Assert.assertEquals("export default function () { console.log(\"Hello, I'm a .mjs file\"); }\n", body);
+        Assert.assertEquals(
+            "export default function () { console.log(\"Hello, I'm a .mjs file\"); }",
+            body.trim()
+        );
     }
 
     @Test

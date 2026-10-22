@@ -6,9 +6,8 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Test;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.reflect.Whitebox;
 import spark.ssl.SslStores;
+import spark.utils.ReflectionTestUtils;
 
 import java.util.Map;
 
@@ -50,9 +49,9 @@ public class SocketConnectorFactoryTest {
         Server server = new Server();
         ServerConnector serverConnector = SocketConnectorFactory.createSocketConnector(server, "localhost", 8888, true);
 
-        String internalHost = Whitebox.getInternalState(serverConnector, "_host");
-        int internalPort = Whitebox.getInternalState(serverConnector, "_port");
-        Server internalServerConnector = Whitebox.getInternalState(serverConnector, "_server");
+        String internalHost = ReflectionTestUtils.getField(serverConnector, "_host");
+        int internalPort = ReflectionTestUtils.getField(serverConnector, "_port");
+        Server internalServerConnector = ReflectionTestUtils.getField(serverConnector, "_server");
 
         assertEquals("Server Connector Host should be set to the specified server", host, internalHost);
         assertEquals("Server Connector Port should be set to the specified port", port, internalPort);
@@ -98,7 +97,6 @@ public class SocketConnectorFactoryTest {
 
 
     @Test
-    @PrepareForTest({ServerConnector.class})
     public void testCreateSecureSocketConnector() throws  Exception {
 
         final String host = "localhost";
@@ -115,13 +113,13 @@ public class SocketConnectorFactoryTest {
 
         ServerConnector serverConnector = SocketConnectorFactory.createSecureSocketConnector(server, host, port, sslStores, true);
 
-        String internalHost = Whitebox.getInternalState(serverConnector, "_host");
-        int internalPort = Whitebox.getInternalState(serverConnector, "_port");
+        String internalHost = ReflectionTestUtils.getField(serverConnector, "_host");
+        int internalPort = ReflectionTestUtils.getField(serverConnector, "_port");
 
         assertEquals("Server Connector Host should be set to the specified server", host, internalHost);
         assertEquals("Server Connector Port should be set to the specified port", port, internalPort);
 
-        Map<String, ConnectionFactory> factories = Whitebox.getInternalState(serverConnector, "_factories");
+        Map<String, ConnectionFactory> factories = ReflectionTestUtils.getField(serverConnector, "_factories");
 
         assertTrue("Should return true because factory for SSL should have been set",
                 factories.containsKey("ssl") && factories.get("ssl") != null);

@@ -2,7 +2,7 @@ package spark;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.powermock.reflect.Whitebox;
+import spark.utils.ReflectionTestUtils;
 
 import javax.servlet.http.HttpSession;
 import java.util.Arrays;
@@ -59,7 +59,7 @@ public class SessionTest {
     @Test
     public void testSession() {
 
-        HttpSession internalSession = Whitebox.getInternalState(session, "session");
+        HttpSession internalSession = ReflectionTestUtils.getField(session, "session");
         assertEquals("Internal session should be set to the http session provided during instantiation",
                 httpSession, internalSession);
     }

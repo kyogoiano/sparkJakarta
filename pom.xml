@@ -1,18 +1,19 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.sonatype.oss</groupId>
-        <artifactId>oss-parent</artifactId>
-        <version>7</version>
-    </parent>
-    <groupId>com.sparkjava</groupId>
+    <groupId>io.github.sparkjava-community</groupId>
     <artifactId>spark-core</artifactId>
     <packaging>bundle</packaging>
-    <version>2.9.4-SNAPSHOT</version>
-    <name>Spark</name>
-    <description>A micro framework for creating web applications in Kotlin and Java 8 with minimal effort</description>
-    <url>http://www.sparkjava.com</url>
+    <version>2.9.4.2-SNAPSHOT</version>
+
+    <name>Spark Framework (Community Fork)</name>
+    <description>
+        Community-maintained fork of Spark Framework with updated dependencies.
+        Based on the original Spark Framework by Per Wendel (https://github.com/perwendel/spark).
+    </description>
+    <url>https://github.com/sparkjava-community/spark</url>
+
+    <!-- LICENCE -->
     <licenses>
         <license>
             <name>The Apache Software License, Version 2.0</name>
@@ -20,38 +21,96 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
+    <!-- SCM -->
     <scm>
-        <connection>scm:git:git@github.com:perwendel/spark.git</connection>
-        <developerConnection>scm:git:git@github.com:perwendel/spark.git</developerConnection>
-        <url>scm:git:git@github.com:perwendel/spark.git</url>
+        <connection>scm:git:git@github.com:sparkjava-community/spark.git</connection>
+        <developerConnection>scm:git:git@github.com:sparkjava-community/spark.git</developerConnection>
+        <url>https://github.com/sparkjava-community/spark</url>
+        <tag>HEAD</tag>
     </scm>
+
+    <!-- ISSUE MANAGEMENT -->
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/sparkjava-community/spark/issues</url>
+    </issueManagement>
+
+    <!-- DEVELOPERS -->
     <developers>
+        <developer>
+            <id>kainovaii</id>
+            <name>KainoVaii</name>
+            <email>kainodev@proton.me</email>
+            <url>https://github.com/KainoVaii</url>
+            <roles>
+                <role>maintainer</role>
+            </roles>
+            <timezone>Europe/Paris</timezone>
+        </developer>
     </developers>
 
+    <!-- CONTRIBUTORS -->
+    <contributors>
+        <contributor>
+            <name>Per Wendel</name>
+            <url>https://github.com/perwendel</url>
+            <roles>
+                <role>original creator</role>
+            </roles>
+        </contributor>
+        <contributor>
+            <name>Spark Framework Contributors</name>
+            <url>https://github.com/perwendel/spark/graphs/contributors</url>
+        </contributor>
+    </contributors>
+
+    <!-- GITHUB PACKAGES -->
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub sparkjava-community Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/sparkjava-community/spark</url>
+        </repository>
+    </distributionManagement>
+
+    <!-- ========================================== -->
+    <!-- PROPERTIES - VERSIONS                      -->
+    <!-- ========================================== -->
     <properties>
-        <java.version>1.8</java.version>
-        <jetty.version>9.4.33.v20201020</jetty.version>
+        <java.version>11</java.version>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+
+        <!-- Dépendances principales -->
+        <jetty.version>9.4.54.v20240208</jetty.version>
+        <slf4j.version>2.0.12</slf4j.version>
+
+        <!-- Tests -->
+        <junit.version>4.13.2</junit.version>
+        <mockito.version>5.11.0</mockito.version>
+        <powermock.version>2.0.9</powermock.version>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <powermock.version>1.7.4</powermock.version>
-        <mockito.version>1.10.19</mockito.version>
     </properties>
 
+    <!-- DEPENDENCIES -->
     <dependencies>
-        <!-- LOGGING DEPENDENCIES -->
+        <!-- SLF4J -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.25</version>
+            <version>${slf4j.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.25</version>
+            <version>${slf4j.version}</version>
             <scope>test</scope>
         </dependency>
 
-        <!-- JETTY DEPENDENCIES -->
+        <!-- JETTY -->
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
@@ -69,55 +128,49 @@
             <artifactId>websocket-server</artifactId>
             <version>${jetty.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.eclipse.jetty.websocket</groupId>
             <artifactId>websocket-servlet</artifactId>
             <version>${jetty.version}</version>
         </dependency>
 
-        <!-- JUNIT DEPENDENCY FOR TESTING -->
+        <!-- TESTS -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-module-junit4</artifactId>
-            <version>${powermock.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-api-mockito</artifactId>
-            <version>${powermock.version}</version>
-            <scope>test</scope>
-        </dependency>
+
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
-            <version>4.5.6</version>
+            <version>4.5.14</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.freemarker</groupId>
             <artifactId>freemarker</artifactId>
-            <version>2.3.28</version>
+            <version>2.3.32</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.8.5</version>
+            <version>2.10.1</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.eclipse.jetty.websocket</groupId>
             <artifactId>websocket-client</artifactId>
@@ -126,8 +179,8 @@
         </dependency>
     </dependencies>
 
+    <!-- BUILD -->
     <build>
-
         <resources>
             <resource>
                 <filtering>false</filtering>
@@ -149,18 +202,20 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.0</version>
+                <version>3.11.0</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
+                    <release>${java.version}</release>
                     <optimize>true</optimize>
                     <debug>true</debug>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.4.1</version>
+                <version>3.4.1</version>
                 <executions>
                     <execution>
                         <id>enforce-java</id>
@@ -177,27 +232,35 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.0</version>
+                <version>3.2.5</version>
                 <configuration>
+                    <argLine>
+                        --add-opens java.base/java.lang=ALL-UNNAMED
+                        --add-opens java.base/java.util=ALL-UNNAMED
+                        --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+                    </argLine>
                     <forkCount>1</forkCount>
                     <reuseForks>false</reuseForks>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.0.1</version>
+                <version>3.6.3</version>
                 <configuration>
                     <failOnError>false</failOnError>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>3.5.1</version>
+                <version>5.1.9</version>
                 <extensions>true</extensions>
             </plugin>
         </plugins>
