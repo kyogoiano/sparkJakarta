@@ -19,6 +19,7 @@ package spark.embeddedserver;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jetbrains.annotations.Contract;
 import spark.ExceptionMapper;
 import spark.embeddedserver.jetty.EmbeddedJettyFactory;
 import spark.route.Routes;
@@ -34,7 +35,7 @@ public class EmbeddedServers {
         JETTY
     }
 
-    private static Map<Object, EmbeddedServerFactory> factories = new HashMap<>();
+    private static final Map<Object, EmbeddedServerFactory> factories = new HashMap<>();
 
     public static void initialize() {
         if (!factories.containsKey(Identifiers.JETTY)) {
@@ -42,6 +43,11 @@ public class EmbeddedServers {
         }
     }
 
+    public static void clear() {
+        factories.clear();
+    }
+
+    @Contract(pure = true)
     public static Identifiers defaultIdentifier() {
         return Identifiers.JETTY;
     }
@@ -70,7 +76,7 @@ public class EmbeddedServers {
      */
     public static EmbeddedServer create(Object identifier,
                                         Routes routeMatcher,
-                                        ExceptionMapper exceptionMapper,
+                                        ExceptionMapper<?> exceptionMapper,
                                         StaticFilesConfiguration staticFilesConfiguration,
                                         boolean multipleHandlers) {
 

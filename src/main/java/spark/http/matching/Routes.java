@@ -27,8 +27,10 @@ import spark.routematch.RouteMatch;
  */
 final class Routes {
 
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(Routes.class);
     static void execute(RouteContext context) throws Exception {
 
+        LOG.info("Executing route context:  {}", context);
         Object content = context.body().get();
 
         RouteMatch match = context.routeMatcher().find(context.httpMethod(), context.uri(), context.acceptType());
@@ -46,8 +48,7 @@ final class Routes {
         if (target != null) {
             Object result = null;
 
-            if (target instanceof RouteImpl) {
-                RouteImpl route = ((RouteImpl) target);
+            if (target instanceof RouteImpl route) {
 
                 if (context.requestWrapper().getDelegate() == null) {
                     Request request = RequestResponseFactory.create(match, context.httpRequest());
@@ -67,10 +68,9 @@ final class Routes {
             if (result != null) {
                 content = result;
 
-                if (content instanceof String) {
-                    String contentStr = (String) content;
+                if (content instanceof String contentStr) {
 
-                    if (!contentStr.equals("")) {
+                    if (!contentStr.isEmpty()) {
                         context.responseWrapper().body(contentStr);
                     }
                 }

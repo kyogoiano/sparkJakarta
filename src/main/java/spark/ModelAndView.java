@@ -22,28 +22,7 @@ package spark;
  *
  * @author alex
  */
-public class ModelAndView {
-
-    /**
-     * Model object.
-     */
-    private Object model;
-    /**
-     * View name used to render output.
-     */
-    private String viewName;
-
-    /**
-     * Constructs an instance with the provided model and view name
-     *
-     * @param model    the model
-     * @param viewName the view name
-     */
-    public ModelAndView(Object model, String viewName) {
-        super();
-        this.model = model;
-        this.viewName = viewName;
-    }
+public record ModelAndView(Object model, String viewName) {
 
     /**
      * @return the model object

@@ -30,7 +30,7 @@ public class UriPath {
      * @return path or null.
      */
     public static String canonical(String path) {
-        if (path == null || path.length() == 0) {
+        if (path == null || path.isEmpty()) {
             return path;
         }
 
@@ -68,21 +68,19 @@ public class UriPath {
 
         while (end > 0) {
             switch (end - start) {
-                case 2: // possible single dot
+                case 2 -> { // possible single dot
                     if (buf.charAt(start + 1) != '.') {
                         if (skip > 0 && --skip == 0) {
-                            delStart = start >= 0 ? start : 0;
+                            delStart = Math.max(start, 0);
                             if (delStart > 0 && delEnd == buf.length() && buf.charAt(delEnd - 1) == '.') {
                                 delStart++;
                             }
                         }
                         break;
                     }
-
                     if (start < 0 && buf.length() > 2 && buf.charAt(1) == '/' && buf.charAt(2) == '/') {
                         break;
                     }
-
                     if (delEnd < 0) {
                         delEnd = end;
                     }
@@ -97,43 +95,41 @@ public class UriPath {
                     if (end == buf.length()) {
                         delStart++;
                     }
-
                     end = start--;
                     while (start >= 0 && buf.charAt(start) != '/') {
                         start--;
                     }
                     continue;
-
-                case 3: // possible double dot
+                }
+                case 3 -> { // possible double dot
                     if (buf.charAt(start + 1) != '.' || buf.charAt(start + 2) != '.') {
                         if (skip > 0 && --skip == 0) {
-                            delStart = start >= 0 ? start : 0;
+                            delStart = Math.max(start, 0);
                             if (delStart > 0 && delEnd == buf.length() && buf.charAt(delEnd - 1) == '.') {
                                 delStart++;
                             }
                         }
                         break;
                     }
-
                     delStart = start;
                     if (delEnd < 0) {
                         delEnd = end;
                     }
-
                     skip++;
                     end = start--;
                     while (start >= 0 && buf.charAt(start) != '/') {
                         start--;
                     }
                     continue;
-
-                default:
+                }
+                default -> {
                     if (skip > 0 && --skip == 0) {
-                        delStart = start >= 0 ? start : 0;
+                        delStart = Math.max(start, 0);
                         if (delEnd == buf.length() && buf.charAt(delEnd - 1) == '.') {
                             delStart++;
                         }
                     }
+                }
             }
 
             // Do the delete

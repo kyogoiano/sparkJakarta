@@ -17,6 +17,8 @@
 //
 package spark.utils.urldecoding;
 
+import java.nio.charset.CharacterCodingException;
+
 /** UTF-8 StringBuilder.
  *
  * This class wraps a standard {@link java.lang.StringBuilder} and provides methods to append
@@ -55,7 +57,11 @@ public class Utf8StringBuilder extends Utf8Appendable
     @Override
     public String toString()
     {
-        checkState();
+        try {
+            checkState();
+        } catch (CharacterCodingException e) {
+            throw new RuntimeException(e);
+        }
         return _buffer.toString();
     }
 

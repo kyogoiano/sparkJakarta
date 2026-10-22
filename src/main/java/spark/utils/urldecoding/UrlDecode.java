@@ -36,7 +36,7 @@ public class UrlDecode {
             for (int i = offset; i < end; i++) {
                 char c = path.charAt(i);
                 switch (c) {
-                    case '%':
+                    case '%' -> {
                         if (builder == null) {
                             builder = new Utf8StringBuilder(path.length());
                             builder.append(path, offset, i - offset);
@@ -55,29 +55,24 @@ public class UrlDecode {
                         } else {
                             throw new IllegalArgumentException("Bad URI % encoding");
                         }
-
-                        break;
-
-                    case ';':
+                    }
+                    case ';' -> {
                         if (builder == null) {
                             builder = new Utf8StringBuilder(path.length());
                             builder.append(path, offset, i - offset);
                         }
-
                         while (++i < end) {
                             if (path.charAt(i) == '/') {
                                 builder.append('/');
                                 break;
                             }
                         }
-
-                        break;
-
-                    default:
+                    }
+                    default -> {
                         if (builder != null) {
                             builder.append(c);
                         }
-                        break;
+                    }
                 }
             }
 
@@ -102,7 +97,7 @@ public class UrlDecode {
         for (int i = offset; i < end; i++) {
             char c = path.charAt(i);
             switch (c) {
-                case '%':
+                case '%' -> {
                     if (builder == null) {
                         builder = new StringBuilder(path.length());
                         builder.append(path, offset, i - offset);
@@ -121,10 +116,8 @@ public class UrlDecode {
                     } else {
                         throw new IllegalArgumentException();
                     }
-
-                    break;
-
-                case ';':
+                }
+                case ';' -> {
                     if (builder == null) {
                         builder = new StringBuilder(path.length());
                         builder.append(path, offset, i - offset);
@@ -135,13 +128,12 @@ public class UrlDecode {
                             break;
                         }
                     }
-                    break;
-
-                default:
+                }
+                default -> {
                     if (builder != null) {
                         builder.append(c);
                     }
-                    break;
+                }
             }
         }
 

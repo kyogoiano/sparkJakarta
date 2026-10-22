@@ -17,7 +17,6 @@
 package spark.embeddedserver;
 
 import java.util.Map;
-import java.util.Optional;
 
 import spark.embeddedserver.jetty.websocket.WebSocketHandlerWrapper;
 import spark.ssl.SslStores;
@@ -48,7 +47,6 @@ public interface EmbeddedServer {
 
     /**
      * Must be called before ignite()
-     *
      * Must be it's own default method to maintain backwards compatibility. Move to ignite method in 3.0.
      */
     default void trustForwardHeaders(boolean trust) {
@@ -61,8 +59,8 @@ public interface EmbeddedServer {
      * @param webSocketHandlers          - web socket handlers.
      * @param webSocketIdleTimeoutMillis - Optional WebSocket idle timeout (ms).
      */
-    default void configureWebSockets(Map<String, WebSocketHandlerWrapper> webSocketHandlers,
-                                     Optional<Long> webSocketIdleTimeoutMillis) {
+    default void configureWebSockets(Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers,
+                                     Long webSocketIdleTimeoutMillis) {
 
         NotSupportedException.raise(getClass().getSimpleName(), "Web Sockets");
     }

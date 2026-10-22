@@ -30,9 +30,9 @@ public class MimeParse {
 
         @Override
         public String toString() {
-            StringBuffer s = new StringBuffer("('" + type + "', '" + subType + "', {");
-            for (String k : params.keySet()) {
-                s.append("'" + k + "':'" + params.get(k) + "',");
+            final StringBuilder s = new StringBuilder("('" + type + "', '" + subType + "', {");
+            for (final String k : params.keySet()) {
+                s.append("'").append(k).append("':'").append(params.get(k)).append("',");
             }
             return s.append("})").toString();
         }
@@ -101,9 +101,9 @@ public class MimeParse {
      * Structure for holding a fitness/quality combo
      */
     private static class FitnessAndQuality implements Comparable<FitnessAndQuality> {
-        int fitness;
+        final int fitness;
 
-        float quality;
+        final float quality;
 
         String mimeType; // optionally used
 
@@ -184,12 +184,12 @@ public class MimeParse {
         }
         Collections.sort(weightedMatches);
 
-        FitnessAndQuality lastOne = weightedMatches.get(weightedMatches.size() - 1);
+        FitnessAndQuality lastOne = weightedMatches.getLast();
         return Float.compare(lastOne.quality, 0) != 0 ? lastOne.mimeType : NO_MIME_TYPE;
     }
 
     private static boolean isBlank(String s) {
-        return s == null || "".equals(s.trim());
+        return s == null || s.trim().isEmpty();
     }
 
     private static float toFloat(final String str, final float defaultValue) {

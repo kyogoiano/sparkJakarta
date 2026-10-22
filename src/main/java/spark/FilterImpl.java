@@ -30,7 +30,7 @@ public abstract class FilterImpl implements Filter, Wrapper {
     static final String DEFAULT_ACCEPT_TYPE = "*/*";
 
     private String path;
-    private String acceptType;
+    private final String acceptType;
     private Filter delegate;
 
     /**
@@ -51,7 +51,7 @@ public abstract class FilterImpl implements Filter, Wrapper {
      * @param filter the filter
      * @return the wrapped route
      */
-    static FilterImpl create(final String path, final Filter filter) {
+    public static FilterImpl create(final String path, final Filter filter) {
         return create(path, DEFAULT_ACCEPT_TYPE, filter);
     }
 
@@ -63,7 +63,7 @@ public abstract class FilterImpl implements Filter, Wrapper {
      * @param filter     the filter
      * @return the wrapped route
      */
-    static FilterImpl create(final String path, String acceptType, final Filter filter) {
+    public static FilterImpl create(final String path, String acceptType, final Filter filter) {
         if (acceptType == null) {
             acceptType = DEFAULT_ACCEPT_TYPE;
         }

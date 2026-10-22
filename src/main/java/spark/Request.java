@@ -16,27 +16,18 @@
  */
 package spark;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import spark.routematch.RouteMatch;
 import spark.utils.IOUtils;
 import spark.utils.SparkUtils;
 import spark.utils.StringUtils;
 import spark.utils.urldecoding.UrlDecode;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 /**
  * Provides information about the HTTP request
@@ -99,7 +90,7 @@ public class Request {
      * @param match   the route match
      * @param request the servlet request
      */
-    Request(RouteMatch match, HttpServletRequest request) {
+    public Request(RouteMatch match, HttpServletRequest request) {
         this.servletRequest = request;
         this.matchedPath = match.getMatchUri();
         changeMatch(match);
@@ -119,6 +110,7 @@ public class Request {
     }
 
     protected void changeMatch(RouteMatch match) {
+        LOG.info("Change Route match: {}", match);
         List<String> requestList = SparkUtils.convertRouteToList(match.getRequestURI());
         List<String> matchedList = SparkUtils.convertRouteToList(match.getMatchUri());
 
@@ -159,7 +151,7 @@ public class Request {
      * @return an array containing the splat (wildcard) parameters
      */
     public String[] splat() {
-        return splat.toArray(new String[splat.size()]);
+        return splat.toArray(new String[0]);
     }
 
     /**
@@ -397,7 +389,7 @@ public class Request {
      */
     public Set<String> attributes() {
         Set<String> attrList = new HashSet<>();
-        Enumeration<String> attributes = (Enumeration<String>) servletRequest.getAttributeNames();
+        Enumeration<String> attributes = servletRequest.getAttributeNames();
         while (attributes.hasMoreElements()) {
             attrList.add(attributes.nextElement());
         }
@@ -526,10 +518,7 @@ public class Request {
 
                 String decodedReq = UrlDecode.path(request.get(i));
 
-                LOG.debug("matchedPart: "
-                                  + matchedPart
-                                  + " = "
-                                  + decodedReq);
+                LOG.debug("matchedPart: {} = {}", matchedPart, decodedReq);
 
                 params.put(matchedPart.toLowerCase(), decodedReq);
             }
@@ -559,11 +548,8 @@ public class Request {
                         splatParam.append(request.get(j));
                     }
                 }
-                try {
-                    String decodedSplat = URLDecoder.decode(splatParam.toString(), "UTF-8");
-                    splat.add(decodedSplat);
-                } catch (UnsupportedEncodingException e) {
-                }
+                String decodedSplat = URLDecoder.decode(splatParam.toString(), StandardCharsets.UTF_8);
+                splat.add(decodedSplat);
             }
         }
 

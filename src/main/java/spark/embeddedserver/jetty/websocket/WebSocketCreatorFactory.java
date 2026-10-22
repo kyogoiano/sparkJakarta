@@ -15,9 +15,10 @@
  */
 package spark.embeddedserver.jetty.websocket;
 
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
-import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
+import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.websocket.server.WebSocketCreator;
 
 import static java.util.Objects.requireNonNull;
 
@@ -30,31 +31,27 @@ import static java.util.Objects.requireNonNull;
 public class WebSocketCreatorFactory {
 
     /**
-     * Creates a {@link WebSocketCreator} that uses the given handler class/instance for
+     * Creates a {@link org.eclipse.jetty.ee10.websocket.server.JettyWebSocketCreator} that uses the given handler class/instance for
      * the WebSocket connections.
      *
      * @param handlerWrapper The wrapped handler to use to manage WebSocket connections.
      * @return The WebSocketCreator.
      */
-    public static WebSocketCreator create(WebSocketHandlerWrapper handlerWrapper) {
+    public static JettyWebSocketCreator create(WebSocketHandlerWrapper<?> handlerWrapper) {
         return new SparkWebSocketCreator(handlerWrapper.getHandler());
     }
 
-    // Package protected to be visible to the unit tests
-    static class SparkWebSocketCreator implements WebSocketCreator {
-        private final Object handler;
-
-        private SparkWebSocketCreator(Object handler) {
+    public record SparkWebSocketCreator(Object handler) implements JettyWebSocketCreator {
+        public SparkWebSocketCreator(Object handler) {
             this.handler = requireNonNull(handler, "handler cannot be null");
         }
 
-        @Override
-        public Object createWebSocket(ServletUpgradeRequest request,
-                                      ServletUpgradeResponse response) {
+        public Object getHandler() {
             return handler;
         }
 
-        Object getHandler() {
+        @Override
+        public Object createWebSocket(JettyServerUpgradeRequest jettyServerUpgradeRequest, JettyServerUpgradeResponse jettyServerUpgradeResponse) {
             return handler;
         }
     }

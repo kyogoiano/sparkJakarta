@@ -33,7 +33,7 @@ public class ClassPathResourceHandler extends AbstractResourceHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ClassPathResourceHandler.class);
 
     private final String baseResource;
-    private String welcomeFile;
+    private final String welcomeFile;
 
     /**
      * Constructor
@@ -90,7 +90,7 @@ public class ClassPathResourceHandler extends AbstractResourceHandler {
             throw directoryTraversalDetection;
         } catch (Exception e) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug(e.getClass().getSimpleName() + " when trying to get resource. " + e.getMessage());
+                LOG.debug("{} when trying to get resource. {}", e.getClass().getSimpleName(), e.getMessage());
             }
         }
         return null;

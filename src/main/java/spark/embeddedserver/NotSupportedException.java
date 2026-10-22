@@ -16,11 +16,14 @@
  */
 package spark.embeddedserver;
 
+import java.io.Serial;
+
 /**
  * Used to indicate that a feature is not supported for the specific embedded server.
  */
 public class NotSupportedException extends RuntimeException {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**

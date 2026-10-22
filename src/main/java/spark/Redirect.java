@@ -19,7 +19,7 @@ package spark;
 /**
  * Provides redirect utility methods.
  */
-public final class Redirect {
+public record Redirect(Routable http) {
 
     /**
      * The available redirect status codes.
@@ -35,9 +35,9 @@ public final class Redirect {
         TEMPORARY_REDIRECT(307),
         PERMANENT_REDIRECT(308);
 
-        private int intValue;
+        private final int intValue;
 
-        private Status(int intValue) {
+        Status(int intValue) {
             this.intValue = intValue;
         }
 
@@ -52,12 +52,6 @@ public final class Redirect {
     static Redirect create(Routable http) {
         return new Redirect(http);
     }
-
-    private Redirect(Routable http) {
-        this.http = http;
-    }
-
-    private Routable http;
 
     /**
      * Redirects any HTTP request of type GET, POST, PUT, DELETE on 'fromPath' to 'toPath'

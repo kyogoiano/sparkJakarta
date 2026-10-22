@@ -31,7 +31,7 @@ public class MimeType {
 
     private static volatile boolean guessingOn = true;
 
-    private static Map<String, String> mappings = new HashMap();
+    private static final Map<String, String> mappings = new HashMap<>();
 
     static {
         mappings.put("au", "audio/basic");
@@ -104,6 +104,10 @@ public class MimeType {
 
     public static void disableGuessing() {
         guessingOn = false;
+    }
+
+    public static void enableGuessing() {
+        guessingOn = true;
     }
 
     public static String fromResource(AbstractFileResolvingResource resource) {

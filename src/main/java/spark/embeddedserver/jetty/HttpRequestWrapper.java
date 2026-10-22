@@ -19,11 +19,10 @@ package spark.embeddedserver.jetty;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
-import javax.servlet.ReadListener;
-import javax.servlet.ServletInputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import spark.utils.IOUtils;
 
 /**
@@ -48,17 +47,17 @@ public class HttpRequestWrapper extends HttpServletRequestWrapper {
 
     @Override
     public ServletInputStream getInputStream() throws IOException {
-        HttpServletRequest request = (HttpServletRequest) super.getRequest();
+        final HttpServletRequest request = (HttpServletRequest) super.getRequest();
 
         // disable stream cache for chunked transfer encoding
-        String transferEncoding = request.getHeader("Transfer-Encoding");
+        final String transferEncoding = request.getHeader("Transfer-Encoding");
         if ("chunked".equals(transferEncoding)) {
             return super.getInputStream();
         }
 
         // disable stream cache for multipart/form-data file upload
         // -> upload might be very large and might lead to out-of-memory error if we try to cache the bytes
-        String contentType = request.getHeader("Content-Type");
+        final String contentType = request.getHeader("Content-Type");
         if (contentType != null && contentType.startsWith("multipart/form-data")) {
             return super.getInputStream();
         }
@@ -74,7 +73,7 @@ public class HttpRequestWrapper extends HttpServletRequestWrapper {
     }
 
     private class CachedServletInputStream extends ServletInputStream {
-        private ByteArrayInputStream byteArrayInputStream;
+        private final ByteArrayInputStream byteArrayInputStream;
 
         public CachedServletInputStream() {
             byteArrayInputStream = new ByteArrayInputStream(cachedBytes);

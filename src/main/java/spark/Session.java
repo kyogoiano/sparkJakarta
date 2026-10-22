@@ -4,30 +4,23 @@ import java.util.Enumeration;
 import java.util.Set;
 import java.util.TreeSet;
 
-import javax.servlet.http.HttpSession;
 
+import jakarta.servlet.http.HttpSession;
 import spark.utils.Assert;
 
 /**
  * Provides session information.
  */
-public class Session {
-
-    private final Request request;
-    private final HttpSession session;
+public record Session(HttpSession session, Request request) {
 
     /**
      * Creates a session with the <code>HttpSession</code>.
      *
-     * @param session
-     * @param request
      * @throws IllegalArgumentException If the session or the request is null.
      */
-    Session(HttpSession session, Request request) {
+    public Session {
         Assert.notNull(session, "session cannot be null");
         Assert.notNull(request, "request cannot be null");
-        this.session = session;
-        this.request = request;
     }
 
     /**

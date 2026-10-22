@@ -18,6 +18,7 @@
 package spark.utils.urldecoding;
 
 import java.io.IOException;
+import java.nio.charset.CharacterCodingException;
 
 /* ------------------------------------------------------------ */
 
@@ -88,7 +89,12 @@ public abstract class Utf8Appendable {
             _appendable.append(REPLACEMENT);
             int state = _state;
             _state = UTF8_ACCEPT;
-            throw new org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception("char appended in state " + state);
+            throw new CharacterCodingException()
+            {
+                {
+                    initCause(new IllegalArgumentException("Bad UTF-8 encoding, char appended in state: " + state));
+                }
+            };
         }
     }
 
@@ -130,7 +136,7 @@ public abstract class Utf8Appendable {
             int next = TRANS_TABLE[_state + type];
 
             switch (next) {
-                case UTF8_ACCEPT:
+                case UTF8_ACCEPT -> {
                     _state = next;
                     if (_codep < Character.MIN_HIGH_SURROGATE) {
                         _appendable.append((char) _codep);
@@ -138,18 +144,20 @@ public abstract class Utf8Appendable {
                         for (char c : Character.toChars(_codep))
                             _appendable.append(c);
                     }
-                    break;
-
-                case UTF8_REJECT:
+                }
+                case UTF8_REJECT -> {
                     String reason = "byte " + TypeUtil.toHexString(b) + " in state " + (_state / 12);
                     _codep = 0;
                     _state = UTF8_ACCEPT;
                     _appendable.append(REPLACEMENT);
-                    throw new org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception(reason);
-
-                default:
-                    _state = next;
-
+                    throw new CharacterCodingException()
+                    {
+                        {
+                            initCause(new IllegalArgumentException("Bad UTF-8 encoding, reason: " + reason));
+                        }
+                    };
+                }
+                default -> _state = next;
             }
         }
     }
@@ -165,7 +173,7 @@ public abstract class Utf8Appendable {
         }
     }
 
-    protected void checkState() {
+    protected void checkState() throws CharacterCodingException {
         if (!isUtf8SequenceComplete()) {
             _codep = 0;
             _state = UTF8_ACCEPT;
@@ -174,7 +182,12 @@ public abstract class Utf8Appendable {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            throw new org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception("incomplete UTF8 sequence");
+            throw new CharacterCodingException()
+            {
+                {
+                    initCause(new IllegalArgumentException("Bad UTF-8 encoding, incomplete UTF8 sequence"));
+                }
+            };
         }
     }
 

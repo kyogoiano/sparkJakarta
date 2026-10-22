@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class ServletFlag {
 
+    //IMPORTANT NOTICE: in java 12 and beyond only non final members can be re set by var handle
     private static AtomicBoolean isRunningFromServlet = new AtomicBoolean(false);
 
     /**

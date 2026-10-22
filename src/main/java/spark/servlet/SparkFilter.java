@@ -18,16 +18,11 @@ package spark.servlet;
 
 import java.io.IOException;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-
+import jakarta.servlet.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.MimeTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,12 +56,14 @@ public class SparkFilter implements Filter {
     private SparkApplication[] applications;
 
     @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
+    public void init(final FilterConfig filterConfig) throws ServletException {
+        LOG.info("init spark filter: {}", filterConfig);
         ServletFlag.runFromServlet();
-
+        filterConfig.getServletContext().setRequestCharacterEncoding(MimeTypes.UTF8);
+        filterConfig.getServletContext().setResponseCharacterEncoding(MimeTypes.UTF8);
         applications = getApplications(filterConfig);
 
-        for (SparkApplication application : applications) {
+        for (final SparkApplication application : applications) {
             application.init();
         }
 
@@ -101,8 +98,8 @@ public class SparkFilter implements Filter {
      */
     protected SparkApplication getApplication(String applicationClassName) throws ServletException {
         try {
-            Class<?> applicationClass = Class.forName(applicationClassName);
-            return (SparkApplication) applicationClass.newInstance();
+            final Class<?> applicationClass = Class.forName(applicationClassName);
+            return (SparkApplication) applicationClass.getDeclaredConstructor().newInstance();
         } catch (Exception exc) {
             throw new ServletException(exc);
         }
@@ -119,13 +116,13 @@ public class SparkFilter implements Filter {
      */
     protected SparkApplication[] getApplications(final FilterConfig filterConfig) throws ServletException {
 
-        String applications = filterConfig.getInitParameter(APPLICATION_CLASS_PARAM);
+        final String applications = filterConfig.getInitParameter(APPLICATION_CLASS_PARAM);
         SparkApplication[] solvedApplications = null;
 
         if (StringUtils.isNotBlank(applications)) {
             final String[] sparkApplications = applications.split(",");
 
-            if (sparkApplications != null && sparkApplications.length > 0) {
+            if (sparkApplications.length > 0) {
                 solvedApplications = new SparkApplication[sparkApplications.length];
 
                 for (int index = 0; index < sparkApplications.length; index++) {
@@ -143,8 +140,9 @@ public class SparkFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws
                                                                                               IOException,
                                                                                               ServletException {
-        HttpServletRequest httpRequest = (HttpServletRequest) request; // NOSONAR
-        HttpServletResponse httpResponse = (HttpServletResponse) response; // NOSONAR
+        LOG.info("spark do filter : {}", request);
+        final HttpServletRequest httpRequest = (HttpServletRequest) request; // NOSONAR
+        final HttpServletResponse httpResponse = (HttpServletResponse) response; // NOSONAR
 
         final String relativePath = FilterTools.getRelativePath(httpRequest, filterPath);
 
@@ -177,7 +175,7 @@ public class SparkFilter implements Filter {
     @Override
     public void destroy() {
         if (applications != null) {
-            for (SparkApplication sparkApplication : applications) {
+            for (final SparkApplication sparkApplication : applications) {
                 sparkApplication.destroy();
             }
         }

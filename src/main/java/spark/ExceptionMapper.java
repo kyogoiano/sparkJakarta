@@ -19,15 +19,15 @@ package spark;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ExceptionMapper {
+public class ExceptionMapper <T extends Exception> {
 
     /**
      * Holds an exception mapper instance for use in servlet mode
      */
-    private static ExceptionMapper servletInstance;
+    private static ExceptionMapper<Exception> servletInstance;
 
     @Deprecated
-    public static ExceptionMapper getInstance() {
+    public static ExceptionMapper<Exception> getInstance() {
         return getServletInstance();
     }
 
@@ -36,9 +36,9 @@ public class ExceptionMapper {
      *
      * @return servlet instance
      */
-    public synchronized static ExceptionMapper getServletInstance() {
+    public synchronized static ExceptionMapper<Exception> getServletInstance() {
         if (servletInstance == null) {
-            servletInstance = new ExceptionMapper();
+            servletInstance = new ExceptionMapper<>();
         }
         return servletInstance;
     }
@@ -46,7 +46,7 @@ public class ExceptionMapper {
     /**
      * Holds a map of Exception classes and associated handlers
      */
-    private Map<Class<? extends Exception>, ExceptionHandlerImpl> exceptionMap;
+    private final Map<Class<? extends Exception>, ExceptionHandlerImpl<? extends Exception>> exceptionMap;
 
     /**
      * Class constructor
@@ -62,7 +62,7 @@ public class ExceptionMapper {
      * @param exceptionClass Type of exception
      * @param handler        Handler to map to exception
      */
-    public void map(Class<? extends Exception> exceptionClass, ExceptionHandlerImpl handler) {
+    public void map(Class<? extends Exception> exceptionClass, ExceptionHandlerImpl<? extends Exception> handler) {
         this.exceptionMap.put(exceptionClass, handler);
     }
 
@@ -72,7 +72,7 @@ public class ExceptionMapper {
      * @param exceptionClass Type of exception
      * @return Associated handler
      */
-    public ExceptionHandlerImpl getHandler(Class<? extends Exception> exceptionClass) {
+    public ExceptionHandlerImpl<? extends Exception> getHandler(Class<? extends Exception> exceptionClass) {
         // If the exception map does not contain the provided exception class, it might
         // still be that a superclass of the exception class is.
         if (!this.exceptionMap.containsKey(exceptionClass)) {
@@ -83,7 +83,7 @@ public class ExceptionMapper {
                 if (this.exceptionMap.containsKey(superclass)) {
                     // Use the handler for the mapped superclass, and cache handler
                     // for this exception class
-                    ExceptionHandlerImpl handler = this.exceptionMap.get(superclass);
+                    final ExceptionHandlerImpl<? extends Exception> handler = this.exceptionMap.get(superclass);
                     this.exceptionMap.put(exceptionClass, handler);
                     return handler;
                 }
@@ -108,7 +108,7 @@ public class ExceptionMapper {
      * @param exception Exception that occurred
      * @return Associated handler
      */
-    public ExceptionHandlerImpl getHandler(Exception exception) {
+    public ExceptionHandlerImpl<? extends Exception> getHandler(T exception) {
         return this.getHandler(exception.getClass());
     }
 

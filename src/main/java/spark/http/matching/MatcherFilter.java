@@ -18,15 +18,9 @@ package spark.http.matching;
 
 import java.io.IOException;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import jakarta.servlet.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import spark.CustomErrorPages;
 import spark.ExceptionMapper;
 import spark.HaltException;
@@ -51,12 +45,12 @@ public class MatcherFilter implements Filter {
 
     private final StaticFilesConfiguration staticFiles;
 
-    private spark.route.Routes routeMatcher;
-    private SerializerChain serializerChain;
-    private ExceptionMapper exceptionMapper;
+    private final spark.route.Routes routeMatcher;
+    private final SerializerChain serializerChain;
+    private final ExceptionMapper<Exception> exceptionMapper;
 
-    private boolean externalContainer;
-    private boolean hasOtherHandlers;
+    private final boolean externalContainer;
+    private final boolean hasOtherHandlers;
 
     /**
      * Constructor
@@ -69,7 +63,7 @@ public class MatcherFilter implements Filter {
      */
     public MatcherFilter(spark.route.Routes routeMatcher,
                          StaticFilesConfiguration staticFiles,
-                         ExceptionMapper exceptionMapper,
+                         ExceptionMapper<Exception> exceptionMapper,
                          boolean externalContainer,
                          boolean hasOtherHandlers) {
 
@@ -90,7 +84,7 @@ public class MatcherFilter implements Filter {
     public void doFilter(ServletRequest servletRequest,
                          ServletResponse servletResponse,
                          FilterChain chain) throws IOException, ServletException {
-
+        LOG.info("Matcher do Filter: {}", servletRequest);
         HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
         HttpServletResponse httpResponse = (HttpServletResponse) servletResponse;
 
@@ -173,7 +167,7 @@ public class MatcherFilter implements Filter {
                     responseWrapper.setDelegate(RequestResponseFactory.create(httpResponse));
                     body.set(CustomErrorPages.getFor(404, requestWrapper, responseWrapper));
                 } else {
-                    body.set(String.format(CustomErrorPages.NOT_FOUND));
+                    body.set(CustomErrorPages.NOT_FOUND);
                 }
             }
         } finally {
@@ -205,10 +199,6 @@ public class MatcherFilter implements Filter {
             method = httpRequest.getMethod();
         }
         return method;
-    }
-
-    @Override
-    public void destroy() {
     }
 
 

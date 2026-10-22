@@ -127,8 +127,8 @@ public final class IOUtils {
      * @throws IOException
      *             if an I/O error occurs
      */
-    public static byte[] toByteArray(InputStream input) throws IOException {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
+    public static byte[] toByteArray(final InputStream input) throws IOException {
+        final ByteArrayOutputStream os = new ByteArrayOutputStream();
         byte[] buf = new byte[1024];
         for (int n = input.read(buf); n != -1; n = input.read(buf)) {
             os.write(buf, 0, n);
@@ -182,7 +182,7 @@ public final class IOUtils {
         throws IOException {
         byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
         long count = 0;
-        int n = 0;
+        int n;
         while (-1 != (n = input.read(buffer))) {
             output.write(buffer, 0, n);
             count += n;
@@ -257,7 +257,7 @@ public final class IOUtils {
     public static long copyLarge(Reader input, Writer output) throws IOException {
         char[] buffer = new char[DEFAULT_BUFFER_SIZE];
         long count = 0;
-        int n = 0;
+        int n;
         while (-1 != (n = input.read(buffer))) {
             output.write(buffer, 0, n);
             count += n;

@@ -16,19 +16,8 @@
  */
 package spark;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import spark.embeddedserver.EmbeddedServer;
 import spark.embeddedserver.EmbeddedServers;
 import spark.embeddedserver.jetty.websocket.WebSocketHandlerClassWrapper;
@@ -41,6 +30,11 @@ import spark.routematch.RouteMatch;
 import spark.ssl.SslStores;
 import spark.staticfiles.MimeType;
 import spark.staticfiles.StaticFilesConfiguration;
+
+import java.net.URI;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 import static spark.globalstate.ServletFlag.isRunningFromServlet;
@@ -58,25 +52,25 @@ public final class Service extends Routable {
     private static final Logger LOG = LoggerFactory.getLogger("spark.Spark");
 
     public static final int SPARK_DEFAULT_PORT = 4567;
-    protected static final String DEFAULT_ACCEPT_TYPE = "*/*";
+    static final String DEFAULT_ACCEPT_TYPE = "*/*";
 
-    protected boolean initialized = false;
+    boolean initialized = false;
 
-    protected int port = SPARK_DEFAULT_PORT;
-    protected String ipAddress = "0.0.0.0";
+    private int port = SPARK_DEFAULT_PORT;
+    private String ipAddress = "0.0.0.0";
 
-    protected SslStores sslStores;
+    private SslStores sslStores;
 
-    protected Map<String, WebSocketHandlerWrapper> webSocketHandlers = null;
+    private Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers = null;
 
-    protected int maxThreads = -1;
-    protected int minThreads = -1;
-    protected int threadIdleTimeoutMillis = -1;
-    protected Optional<Long> webSocketIdleTimeoutMillis = Optional.empty();
+    private int maxThreads = -1;
+    private int minThreads = -1;
+    private int threadIdleTimeoutMillis = -1;
+    private Long webSocketIdleTimeoutMillis;
 
-    protected EmbeddedServer server;
-    protected Deque<String> pathDeque = new ArrayDeque<>();
-    protected Routes routes;
+    public EmbeddedServer server;
+    private final Deque<String> pathDeque = new ArrayDeque<>();
+    public Routes routes;
 
     private CountDownLatch initLatch = new CountDownLatch(1);
     private CountDownLatch stopLatch = new CountDownLatch(0);
@@ -87,7 +81,11 @@ public final class Service extends Routable {
     public final StaticFiles staticFiles;
 
     private final StaticFilesConfiguration staticFilesConfiguration;
-    private final ExceptionMapper exceptionMapper = new ExceptionMapper();
+    private final ExceptionMapper<? extends Exception> exceptionMapper = new ExceptionMapper<>();
+
+    public boolean isInitialized() {
+        return initialized;
+    }
 
     // default exception handler during initialization phase
     private Consumer<Exception> initExceptionHandler = (e) -> {
@@ -202,11 +200,11 @@ public final class Service extends Routable {
      * @param truststorePassword the trust store password
      * @return the object with connection set to be secure
      */
-    public synchronized Service secure(String keystoreFile,
+    public synchronized Service secure(URI keystoreFile,
                                        String keystorePassword,
-                                       String truststoreFile,
+                                       URI truststoreFile,
                                        String truststorePassword) {
-        return secure(keystoreFile, keystorePassword, null, truststoreFile, truststorePassword, false);
+        return secure(keystoreFile, keystorePassword, "JKS", null, truststoreFile, truststorePassword, "JKS", false);
     }
 
     /**
@@ -226,12 +224,12 @@ public final class Service extends Routable {
      * @param truststorePassword the trust store password
      * @return the object with connection set to be secure
      */
-    public synchronized Service secure(String keystoreFile,
+    public synchronized Service secure(URI keystoreFile,
                                        String keystorePassword,
                                        String certAlias,
-                                       String truststoreFile,
+                                       URI truststoreFile,
                                        String truststorePassword) {
-        return secure(keystoreFile, keystorePassword, certAlias, truststoreFile, truststorePassword, false);
+        return secure(keystoreFile, keystorePassword, null, certAlias, truststoreFile, truststorePassword, null, false);
     }
 
     /**
@@ -252,12 +250,12 @@ public final class Service extends Routable {
      * @param truststorePassword the trust store password
      * @return the object with connection set to be secure
      */
-    public synchronized Service secure(String keystoreFile,
+    public synchronized Service secure(URI keystoreFile,
                                        String keystorePassword,
-                                       String truststoreFile,
+                                       URI truststoreFile,
                                        String truststorePassword,
                                        boolean needsClientCert) {
-        return secure(keystoreFile, keystorePassword, null, truststoreFile, truststorePassword, needsClientCert);
+        return secure(keystoreFile, keystorePassword, null, null, truststoreFile, truststorePassword, null, needsClientCert);
     }
 
     /**
@@ -279,11 +277,13 @@ public final class Service extends Routable {
      * @param truststorePassword the trust store password
      * @return the object with connection set to be secure
      */
-    public synchronized Service secure(String keystoreFile,
+    public synchronized Service secure(URI keystoreFile,
                                        String keystorePassword,
+                                       String keyStoreType,
                                        String certAlias,
-                                       String truststoreFile,
+                                       URI truststoreFile,
                                        String truststorePassword,
+                                       String trustStoreType,
                                        boolean needsClientCert) {
         if (initialized) {
             throwBeforeRouteMappingException();
@@ -294,7 +294,8 @@ public final class Service extends Routable {
                     "Must provide a keystore file to run secured");
         }
 
-        sslStores = SslStores.create(keystoreFile, keystorePassword, certAlias, truststoreFile, truststorePassword, needsClientCert);
+        sslStores = SslStores.create(keystoreFile, keystorePassword, keyStoreType, certAlias,
+            truststoreFile, truststorePassword, trustStoreType, needsClientCert);
         return this;
     }
 
@@ -403,8 +404,8 @@ public final class Service extends Routable {
      * @param path         the WebSocket path.
      * @param handlerClass the handler class that will manage the WebSocket connection to the given path.
      */
-    public void webSocket(String path, Class<?> handlerClass) {
-        addWebSocketHandler(path, new WebSocketHandlerClassWrapper(handlerClass));
+    public <T> void webSocket(String path, Class<T> handlerClass) {
+        addWebSocketHandler(path, new WebSocketHandlerClassWrapper<>(handlerClass));
     }
 
     /**
@@ -415,11 +416,11 @@ public final class Service extends Routable {
      * @param path    the WebSocket path.
      * @param handler the handler instance that will manage the WebSocket connection to the given path.
      */
-    public void webSocket(String path, Object handler) {
-        addWebSocketHandler(path, new WebSocketHandlerInstanceWrapper(handler));
+    public <T> void webSocket(String path, T handler) {
+        addWebSocketHandler(path, new WebSocketHandlerInstanceWrapper<>(handler));
     }
 
-    private synchronized void addWebSocketHandler(String path, WebSocketHandlerWrapper handlerWrapper) {
+    private synchronized <T> void addWebSocketHandler(String path, WebSocketHandlerWrapper<T> handlerWrapper) {
         if (initialized) {
             throwBeforeRouteMappingException();
         }
@@ -447,7 +448,7 @@ public final class Service extends Routable {
         if (isRunningFromServlet()) {
             throw new IllegalStateException("WebSockets are only supported in the embedded server");
         }
-        webSocketIdleTimeoutMillis = Optional.of(timeoutMillis);
+        webSocketIdleTimeoutMillis = timeoutMillis;
         return this;
     }
 
@@ -494,6 +495,7 @@ public final class Service extends Routable {
 
         try {
             initLatch.await();
+            LOG.debug("latch released!, current count {}", initLatch.getCount());
         } catch (InterruptedException e) {
             LOG.info("Interrupted by another thread");
             Thread.currentThread().interrupt();
@@ -541,9 +543,12 @@ public final class Service extends Routable {
                 initLatch = new CountDownLatch(1);
             }
 
-            routes.clear();
+            if(routes != null) {
+                routes.clear();
+            }
             exceptionMapper.clear();
             staticFilesConfiguration.clear();
+            sslStores = null;
             initialized = false;
             stopLatch.countDown();
         });
@@ -572,7 +577,7 @@ public final class Service extends Routable {
     }
 
     public String getPaths() {
-        return pathDeque.stream().collect(Collectors.joining(""));
+        return String.join("", pathDeque);
     }
     /**
      * @return all routes information from this service
@@ -642,6 +647,7 @@ public final class Service extends Routable {
                   }
                     try {
                         initLatch.countDown();
+                        LOG.info("counted down latch, current count {}", initLatch.getCount());
                         server.join();
                     } catch (InterruptedException e) {
                         LOG.error("server interrupted", e);
@@ -683,7 +689,7 @@ public final class Service extends Routable {
      */
     public synchronized <T extends Exception> void exception(Class<T> exceptionClass, ExceptionHandler<? super T> handler) {
         // wrap
-        ExceptionHandlerImpl wrapper = new ExceptionHandlerImpl<T>(exceptionClass) {
+        final ExceptionHandlerImpl<? extends Exception> wrapper = new ExceptionHandlerImpl<>(exceptionClass) {
             @Override
             public void handle(T exception, Request request, Response response) {
                 handler.handle(exception, request, response);
@@ -747,7 +753,7 @@ public final class Service extends Routable {
 
     /**
      * Sets Spark to trust the HTTP headers that are commonly used in reverse proxies.
-     * More info at https://www.eclipse.org/jetty/javadoc/current/org/eclipse/jetty/server/ForwardedRequestCustomizer.html
+     * More info at <a href="https://www.eclipse.org/jetty/javadoc/current/org/eclipse/jetty/server/ForwardedRequestCustomizer.html"></a>
      */
     public synchronized Service trustForwardHeaders() {
         if (initialized) {
@@ -760,7 +766,7 @@ public final class Service extends Routable {
 
     /**
      * Sets Spark to NOT trust the HTTP headers that are commonly used in reverse proxies.
-     * More info at https://www.eclipse.org/jetty/javadoc/current/org/eclipse/jetty/server/ForwardedRequestCustomizer.html
+     * More info at <a href="https://www.eclipse.org/jetty/javadoc/current/org/eclipse/jetty/server/ForwardedRequestCustomizer.html"></a>
      */
     public synchronized Service untrustForwardHeaders() {
         if (initialized) {
@@ -855,6 +861,14 @@ public final class Service extends Routable {
         public void disableMimeTypeGuessing() {
             MimeType.disableGuessing();
         }
+
+        /**
+         * Disables the automatic setting of Content-Type header made from a guess based on extension.
+         */
+        public void enableMimeTypeGuessing() {
+            MimeType.enableGuessing();
+        }
+
 
     }
 }

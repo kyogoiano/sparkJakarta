@@ -25,9 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,9 +51,9 @@ public class StaticFilesConfiguration {
     private boolean staticResourcesSet = false;
     private boolean externalStaticResourcesSet = false;
 
-    public static StaticFilesConfiguration servletInstance = new StaticFilesConfiguration();
+    public static final StaticFilesConfiguration servletInstance = new StaticFilesConfiguration();
 
-    private Map<String, String> customHeaders = new HashMap<>();
+    private final Map<String, String> customHeaders = new HashMap<>();
 
     /**
      * Attempt consuming using either static resource handlers or jar resource handlers
@@ -64,31 +63,30 @@ public class StaticFilesConfiguration {
      * @return true if consumed, false otherwise.
      * @throws IOException in case of IO error.
      */
-    public boolean consume(HttpServletRequest httpRequest,
-                           HttpServletResponse httpResponse) throws IOException {
+    public boolean consume(final HttpServletRequest httpRequest,
+                           final HttpServletResponse httpResponse) throws IOException {
         try {
             if (consumeWithFileResourceHandlers(httpRequest, httpResponse)) {
                 return true;
             }
 
-        } catch (DirectoryTraversal.DirectoryTraversalDetection directoryTraversalDetection) {
+        } catch (final DirectoryTraversal.DirectoryTraversalDetection directoryTraversalDetection) {
             httpResponse.setStatus(400);
             httpResponse.getWriter().write("Bad request");
             httpResponse.getWriter().flush();
-            LOG.warn(directoryTraversalDetection.getMessage() + " directory traversal detection for path: "
-                             + httpRequest.getPathInfo());
+            LOG.warn("{} directory traversal detection for path: {}", directoryTraversalDetection.getMessage(), httpRequest.getPathInfo());
         }
         return false;
     }
 
 
-    private boolean consumeWithFileResourceHandlers(HttpServletRequest httpRequest,
-                                                    HttpServletResponse httpResponse) throws IOException {
+    private boolean consumeWithFileResourceHandlers(final HttpServletRequest httpRequest,
+                                                    final HttpServletResponse httpResponse) throws IOException {
         if (staticResourceHandlers != null) {
 
-            for (AbstractResourceHandler staticResourceHandler : staticResourceHandlers) {
+            for (final AbstractResourceHandler staticResourceHandler : staticResourceHandlers) {
 
-                AbstractFileResolvingResource resource = staticResourceHandler.getResource(httpRequest);
+                final AbstractFileResolvingResource resource = staticResourceHandler.getResource(httpRequest);
 
                 if (resource != null && resource.isReadable()) {
 
@@ -97,8 +95,8 @@ public class StaticFilesConfiguration {
                     }
                     customHeaders.forEach(httpResponse::setHeader); //add all user-defined headers to response
 
-                    try (InputStream inputStream = resource.getInputStream();
-                         OutputStream wrappedOutputStream = GzipUtils.checkAndWrap(httpRequest, httpResponse, false)) {
+                    try (final InputStream inputStream = resource.getInputStream();
+                        final OutputStream wrappedOutputStream = GzipUtils.checkAndWrap(httpRequest, httpResponse, false)) {
                         IOUtils.copy(inputStream, wrappedOutputStream);
                     }
 
@@ -147,7 +145,7 @@ public class StaticFilesConfiguration {
             }
 
             staticResourceHandlers.add(new ClassPathResourceHandler(folder, "index.html"));
-            LOG.info("StaticResourceHandler configured with folder = " + folder);
+            LOG.info("StaticResourceHandler configured with folder = {}", folder);
             staticResourcesSet = true;
         }
     }
@@ -172,7 +170,7 @@ public class StaticFilesConfiguration {
                     staticResourceHandlers = new ArrayList<>();
                 }
                 staticResourceHandlers.add(new ExternalResourceHandler(folder, "index.html"));
-                LOG.info("External StaticResourceHandler configured with folder = " + folder);
+                LOG.info("External StaticResourceHandler configured with folder = {}", folder);
             } catch (IOException e) {
                 LOG.error("Error when creating external StaticResourceHandler", e);
             }

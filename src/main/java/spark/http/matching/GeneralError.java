@@ -16,9 +16,9 @@
  */
 package spark.http.matching;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import spark.CustomErrorPages;
 import spark.ExceptionHandlerImpl;
 import spark.ExceptionMapper;
@@ -39,10 +39,10 @@ final class GeneralError {
                        Body body,
                        RequestWrapper requestWrapper,
                        ResponseWrapper responseWrapper,
-                       ExceptionMapper exceptionMapper,
+                       ExceptionMapper<Exception> exceptionMapper,
                        Exception e) {
 
-        ExceptionHandlerImpl handler = exceptionMapper.getHandler(e);
+        final ExceptionHandlerImpl<Exception> handler = (ExceptionHandlerImpl<Exception>) exceptionMapper.getHandler(e);
 
         if (handler != null) {
             handler.handle(e, requestWrapper, responseWrapper);
