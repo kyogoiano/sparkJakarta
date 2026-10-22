@@ -294,6 +294,8 @@ gradle test
 
 **Looking for co-maintainers!** If you're interested in helping maintain Spark, please open an [issue](https://github.com/sparkjava-community/spark/issues).
 
+*** For jakarta modern fork Leandro Andrade (https://github.com/kyogoiano) is the current mantainer and feature releaser  
+
 ---
 
 ## 📜 License
