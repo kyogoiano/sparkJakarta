@@ -49,4 +49,25 @@ public class JettyServerTest {
             assertEquals("max threads (2) less than min threads (8)", expected.getMessage());
         }
     }
+
+    @Test
+    public void testCreateServer_whenCustomMaxMinAndTimeoutProvided() {
+        Server server = new JettyServer().create(50, 12, 30000);
+
+        QueuedThreadPool threadPool = (QueuedThreadPool) server.getThreadPool();
+
+        assertEquals(12, threadPool.getMinThreads());
+        assertEquals(50, threadPool.getMaxThreads());
+        assertEquals(30000, threadPool.getIdleTimeout());
+    }
+
+    @Test
+    public void testCreateServer_withSuppliedThreadPoolAndNullThreadPool() {
+        QueuedThreadPool customPool = new QueuedThreadPool(32, 4, 15000);
+        Server serverWithCustomPool = new JettyServer().create(customPool);
+        assertSame(customPool, serverWithCustomPool.getThreadPool());
+
+        Server serverWithNullPool = new JettyServer().create(null);
+        assertNotNull(serverWithNullPool.getThreadPool());
+    }
 }

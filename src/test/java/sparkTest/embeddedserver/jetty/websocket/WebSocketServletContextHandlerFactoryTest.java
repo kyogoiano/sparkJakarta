@@ -132,4 +132,13 @@ public class WebSocketServletContextHandlerFactoryTest {
         }
 
     }
+
+    @Test
+    public void testCreate_whenServerIsNull_catchesExceptionAndReturnsNull() {
+        Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers = new HashMap<>();
+        webSocketHandlers.put(webSocketPath, new WebSocketHandlerClassWrapper<>(WebSocketTestHandler.class));
+
+        ServletContextHandler result = WebSocketServletContextHandlerFactory.create(webSocketHandlers, null, null);
+        assertNull(result, "Should catch exception and return null when server is null");
+    }
 }

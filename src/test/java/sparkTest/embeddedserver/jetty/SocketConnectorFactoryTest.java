@@ -136,4 +136,67 @@ public class SocketConnectorFactoryTest {
 
     }
 
+    @Test
+    public void testCreateSocketConnector_trustForwardHeadersTrueVsFalse() {
+        Server server = new Server();
+
+        try (ServerConnector trustedConnector =
+                 SocketConnectorFactory.createSecureSocketConnector(server, "localhost", 8889, null, true);
+             ServerConnector untrustedConnector =
+                 SocketConnectorFactory.createSecureSocketConnector(server, "localhost", 8890, null, false)) {
+
+            org.eclipse.jetty.server.HttpConnectionFactory trustedHttpFactory =
+                trustedConnector.getConnectionFactory(org.eclipse.jetty.server.HttpConnectionFactory.class);
+            assertNotNull(trustedHttpFactory);
+            assertEquals("https", trustedHttpFactory.getHttpConfiguration().getSecureScheme());
+            assertTrue(
+                trustedHttpFactory.getHttpConfiguration().getCustomizers().stream()
+                    .anyMatch(c -> c instanceof org.eclipse.jetty.server.ForwardedRequestCustomizer),
+                "ForwardedRequestCustomizer should be added when trustForwardHeaders is true"
+            );
+            assertEquals(3600000L, trustedConnector.getIdleTimeout());
+
+            org.eclipse.jetty.server.HttpConnectionFactory untrustedHttpFactory =
+                untrustedConnector.getConnectionFactory(org.eclipse.jetty.server.HttpConnectionFactory.class);
+            assertNotNull(untrustedHttpFactory);
+            assertFalse(
+                untrustedHttpFactory.getHttpConfiguration().getCustomizers().stream()
+                    .anyMatch(c -> c instanceof org.eclipse.jetty.server.ForwardedRequestCustomizer),
+                "ForwardedRequestCustomizer should not be added when trustForwardHeaders is false"
+            );
+        }
+    }
+
+    @Test
+    public void testCreateSecureSocketConnector_withFullSslStoresConfiguration() throws Exception {
+        final String keystoreFile = "src/test/resources/keystore.jks";
+        SslStores sslStores = SslStores.create(
+            new URI(keystoreFile),
+            "password",
+            "JKS",
+            "my-cert-alias",
+            new URI(keystoreFile),
+            "password",
+            "JKS",
+            true
+        );
+
+        Server server = new Server();
+        try (ServerConnector serverConnector =
+                 SocketConnectorFactory.createSecureSocketConnector(server, "localhost", 8891, sslStores, false)) {
+
+            SslConnectionFactory sslConnectionFactory =
+                serverConnector.getConnectionFactory(SslConnectionFactory.class);
+            assertNotNull(sslConnectionFactory);
+
+            SslContextFactory.Server sslContextFactory = sslConnectionFactory.getSslContextFactory();
+            assertEquals("JKS", sslContextFactory.getKeyStoreType());
+            assertEquals("JKS", sslContextFactory.getTrustStoreType());
+            assertEquals("my-cert-alias", sslContextFactory.getCertAlias());
+            assertEquals("keystore.jks", sslContextFactory.getTrustStoreResource().getFileName());
+            assertTrue(sslContextFactory.getNeedClientAuth());
+            assertTrue(sslContextFactory.getWantClientAuth());
+        }
+    }
+
 }
