@@ -67,11 +67,9 @@ public class SparkTestUtil {
 //                .build();
 
 
-        final TlsStrategy tlsStrategy = ClientTlsStrategyBuilder.create().setSslContext(getSslContext())
-            .build();
         final PoolConcurrencyPolicy poolConcurrencyPolicy = PoolConcurrencyPolicy.LAX;
-        final PoolingAsyncClientConnectionManager connManager =  PoolingAsyncClientConnectionManagerBuilder.create()
-            .setTlsStrategy(tlsStrategy)
+        final PoolingAsyncClientConnectionManager connManager = PoolingAsyncClientConnectionManagerBuilder.create()
+            .setTlsStrategy(ClientTlsStrategyBuilder.create().setSslContext(getSslContext()).buildAsync())
             .setPoolConcurrencyPolicy(poolConcurrencyPolicy)
             .setConnPoolPolicy(PoolReusePolicy.LIFO)
             .setMaxConnPerRoute(5)
@@ -79,19 +77,15 @@ public class SparkTestUtil {
             .setDefaultConnectionConfig(ConnectionConfig.custom()
                 .setSocketTimeout(Timeout.ofMinutes(1))
                 .setConnectTimeout(Timeout.ofMinutes(1))
-                .setTimeToLive(TimeValue.ofMinutes(2)).setValidateAfterInactivity(TimeValue.NEG_ONE_MILLISECOND)
+                .setTimeToLive(TimeValue.ofMinutes(2)).setValidateAfterInactivity(TimeValue.ZERO_MILLISECONDS)
                 .build()).build();
 
-//        connManager.setDefaultMaxPerRoute(5);
-//        connManager.setMaxTotal(5);
-//        connManager.setDefaultSocketConfig(SocketConfig.custom().
-//            setSoTimeout(Timeout.of(5000L, TimeUnit.MILLISECONDS)).build());
-//        connManager.closeIdle(TimeValue.ofMilliseconds(0L));
-//        connManager.setConnectionConfigResolver(httpRoute ->
-//            ConnectionConfig.custom().setValidateAfterInactivity(TimeValue.NEG_ONE_MILLISECOND).build());
-        return HttpAsyncClientBuilder.create().setConnectionManager(connManager).setIOReactorConfig(IOReactorConfig.custom()
-            .setSoTimeout(Timeout.ofMinutes(1))
-            .build());
+        return HttpAsyncClientBuilder.create()
+            .setConnectionManager(connManager)
+            .setConnectionReuseStrategy((request, response, context) -> false)
+            .setIOReactorConfig(IOReactorConfig.custom()
+                .setSoTimeout(Timeout.ofMinutes(1))
+                .build());
     }
 
     public void setFollowRedirectStrategy(final Integer... codes) {

@@ -4,7 +4,7 @@ version = System.properties.getProperty('version', '0.0.0') + "-SNAPSHOT"
 buildscript {
     ext.jettyVersion = '12.0.40'
     ext.mockitoVersion = '5.16.0'
-    ext.slf4jVersion = '2.0.17'
+    ext.slf4jVersion = '2.0.20'
     ext.junitVersion = '5.12.0'
     repositories {
         mavenCentral()
@@ -41,9 +41,9 @@ dependencies {
     // https://mvnrepository.com/artifact/org.eclipse.jetty.ee9.websocket/jetty-ee9-websocket-jetty-api
     implementation "org.eclipse.jetty.websocket:jetty-websocket-core-server:$jettyVersion"
 
-    testImplementation "net.bytebuddy:byte-buddy:1.18.14"
-    testImplementation "net.bytebuddy:byte-buddy-agent:1.18.14"
-    mockitoAgent("net.bytebuddy:byte-buddy-agent:1.18.14") { transitive = false }
+    testImplementation "net.bytebuddy:byte-buddy:1.18.15"
+    testImplementation "net.bytebuddy:byte-buddy-agent:1.18.15"
+    mockitoAgent("net.bytebuddy:byte-buddy-agent:1.18.15") { transitive = false }
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito:mockito-junit-jupiter:$mockitoVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
@@ -51,13 +51,13 @@ dependencies {
     testRuntimeOnly "org.junit.platform:junit-platform-launcher:1.12.0"
 
     testImplementation 'org.hamcrest:hamcrest:3.0'
-    testImplementation 'org.apache.commons:commons-lang3:3.18.0'
+    testImplementation 'org.apache.commons:commons-lang3:3.21.0'
 
-    testImplementation 'org.apache.httpcomponents.client5:httpclient5:5.4.2'
+    testImplementation 'org.apache.httpcomponents.client5:httpclient5:5.6.5'
     testImplementation 'org.freemarker:freemarker:2.3.35'
-    testImplementation "com.google.code.gson:gson:2.12.1"
+    testImplementation "com.google.code.gson:gson:2.14.0"
     testImplementation "org.eclipse.jetty.ee10.websocket:jetty-ee10-websocket-jakarta-client:$jettyVersion"
-    implementation 'org.jetbrains:annotations:26.0.2'
+    implementation 'org.jetbrains:annotations:26.1.0'
 
 }
 
