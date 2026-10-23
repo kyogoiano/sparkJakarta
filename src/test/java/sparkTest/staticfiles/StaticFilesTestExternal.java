@@ -110,7 +110,7 @@ public class StaticFilesTestExternal {
     public void testExternalStaticFile() throws Exception {
         SparkTestUtil.UrlResponse response = doGet("/externalFile.html");
         Assertions.assertEquals(200, response.status);
-        Assertions.assertEquals("text/html", response.headers.get("Content-Type"));
+        Assertions.assertEquals("text/html;charset=utf-8", response.headers.get("Content-Type"));
         Assertions.assertEquals(CONTENT_OF_EXTERNAL_FILE, response.body);
 
         testGet();

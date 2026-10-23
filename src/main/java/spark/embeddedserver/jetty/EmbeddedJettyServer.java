@@ -20,12 +20,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.servlet.*;
+import org.eclipse.jetty.ee11.servlet.*;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +37,7 @@ import spark.ssl.SslStores;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 /**
  * Spark server implementation
@@ -59,6 +60,7 @@ public class EmbeddedJettyServer implements EmbeddedServer {
 
     private ThreadPool threadPool = null;
     private boolean trustForwardHeaders = true; // true by default
+    private boolean useVirtualThreads = false;
 
     public EmbeddedJettyServer(JettyServerFactory serverFactory, JettyHandler handler) {
         this.serverFactory = serverFactory;
@@ -76,6 +78,11 @@ public class EmbeddedJettyServer implements EmbeddedServer {
     @Override
     public void trustForwardHeaders(boolean trust) {
         this.trustForwardHeaders = trust;
+    }
+
+    @Override
+    public void configureVirtualThreads(boolean useVirtualThreads) {
+        this.useVirtualThreads = useVirtualThreads;
     }
 
     /**
@@ -105,6 +112,10 @@ public class EmbeddedJettyServer implements EmbeddedServer {
             server = serverFactory.create(maxThreads, minThreads, threadIdleTimeoutMillis);
         } else {
             server = serverFactory.create(threadPool);
+        }
+
+        if (useVirtualThreads && server != null && server.getThreadPool() instanceof QueuedThreadPool queuedThreadPool) {
+            queuedThreadPool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
         }
 
         try (final ServerConnector connector =

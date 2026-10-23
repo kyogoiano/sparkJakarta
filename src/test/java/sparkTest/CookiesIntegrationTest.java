@@ -88,6 +88,11 @@ public class CookiesIntegrationTest {
             return "";
         });
 
+        post("/setCookieWithSameSite", (request, response) -> {
+            response.cookie("strictCookie", "strictVal", 3600, true, true, "Strict");
+            return "";
+        });
+
     }
 
     @AfterAll
@@ -130,6 +135,19 @@ public class CookiesIntegrationTest {
         // now remove cookie with matching path
         httpPost("/path/removeCookieWithPath?cookieName=" + cookieName + "&cookieValue=" + cookieValue);
         httpPost("/path/assertNoCookies");
+    }
+
+    @Test
+    public void testCookieWithSameSiteHeader() throws Exception {
+        HttpPost request = new HttpPost(DEFAULT_HOST_URL + "/setCookieWithSameSite");
+        httpClient.execute(request, response -> {
+            assertEquals(200, response.getCode());
+            var setCookieHeader = response.getFirstHeader("Set-Cookie");
+            assertNotNull(setCookieHeader);
+            assertTrue(setCookieHeader.getValue().contains("SameSite=Strict"),
+                    "Set-Cookie header should contain SameSite=Strict, got: " + setCookieHeader.getValue());
+            return null;
+        });
     }
 
     private void httpPost(String relativePath) {

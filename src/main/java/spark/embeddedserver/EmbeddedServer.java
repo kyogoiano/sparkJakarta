@@ -54,6 +54,16 @@ public interface EmbeddedServer {
     }
 
     /**
+     * Configures whether the embedded server should use Java 21+ Virtual Threads.
+     * Must be called before ignite().
+     *
+     * @param useVirtualThreads true to enable virtual threads
+     */
+    default void configureVirtualThreads(boolean useVirtualThreads) {
+
+    }
+
+    /**
      * Configures the web sockets for the embedded server.
      *
      * @param webSocketHandlers          - web socket handlers.

@@ -94,14 +94,14 @@ public class StaticFilesTest {
 
     @Test
     public void testMimeTypes() throws Exception {
-        Assertions.assertEquals("text/html", doGet("/pages/index.html").headers.get("Content-Type"));
+        Assertions.assertEquals("text/html;charset=utf-8", doGet("/pages/index.html").headers.get("Content-Type"));
         Assertions.assertEquals("application/javascript", doGet("/js/scripts.js").headers.get("Content-Type"));
         Assertions.assertEquals("text/css", doGet("/css/style.css").headers.get("Content-Type"));
         Assertions.assertEquals("image/png", doGet("/img/sparklogo.png").headers.get("Content-Type"));
         Assertions.assertEquals("image/svg+xml", doGet("/img/sparklogo.svg").headers.get("Content-Type"));
         Assertions.assertEquals("application/octet-stream", doGet("/img/sparklogoPng").headers.get("Content-Type"));
         Assertions.assertEquals("application/octet-stream", doGet("/img/sparklogoSvg").headers.get("Content-Type"));
-        Assertions.assertEquals("text/html", doGet("/externalFile.html").headers.get("Content-Type"));
+        Assertions.assertEquals("text/html;charset=utf-8", doGet("/externalFile.html").headers.get("Content-Type"));
     }
 
     @Test

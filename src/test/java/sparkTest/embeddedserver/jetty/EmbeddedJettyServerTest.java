@@ -191,6 +191,30 @@ public class EmbeddedJettyServerTest {
         }
     }
 
+    @Test
+    public void testVirtualThreadsSupport() throws Exception {
+        Service service = Service.ignite();
+        service.port(0);
+        service.useVirtualThreads();
+
+        try {
+            service.get("/virtual-thread-check", (req, res) -> String.valueOf(Thread.currentThread().isVirtual()));
+            service.awaitInitialization();
+
+            int port = service.port();
+            SparkTestUtil testUtil = new SparkTestUtil(port);
+
+            SparkTestUtil.UrlResponse resp = testUtil.doMethod("GET", "/virtual-thread-check", null);
+            assertEquals(200, resp.status);
+            assertEquals("true", resp.body, "Request should be handled on a JDK 21+ Virtual Thread");
+
+            testUtil.closeClient();
+        } finally {
+            service.stop();
+            service.awaitStop();
+        }
+    }
+
     public static class EchoSessionListener implements Session.Listener {
         final CountDownLatch messageLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
@@ -214,8 +238,9 @@ public class EmbeddedJettyServerTest {
         }
 
         @Override
-        public void onWebSocketClose(int statusCode, String reason) {
+        public void onWebSocketClose(int statusCode, String reason, Callback callback) {
             closeLatch.countDown();
+            callback.succeed();
         }
     }
 }

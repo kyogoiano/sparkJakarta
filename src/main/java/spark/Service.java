@@ -94,6 +94,7 @@ public final class Service extends Routable {
     };
 
     private boolean trustForwardHeaders = true;
+    private boolean useVirtualThreads = false;
 
     /**
      * Creates a new Service (a Spark instance). This should be used instead of the static API if the user wants
@@ -326,6 +327,31 @@ public final class Service extends Routable {
         this.minThreads = minThreads;
         this.threadIdleTimeoutMillis = idleTimeoutMillis;
 
+        return this;
+    }
+
+    /**
+     * Configures the embedded web server to use Java 21+ Virtual Threads for request handling.
+     * This has to be called before any route mapping is done.
+     *
+     * @return the object with virtual threads enabled
+     */
+    public synchronized Service useVirtualThreads() {
+        return useVirtualThreads(true);
+    }
+
+    /**
+     * Configures whether the embedded web server should use Java 21+ Virtual Threads for request handling.
+     * This has to be called before any route mapping is done.
+     *
+     * @param useVirtualThreads true to enable virtual threads, false to use platform threads
+     * @return the object with virtual threads configured
+     */
+    public synchronized Service useVirtualThreads(boolean useVirtualThreads) {
+        if (initialized) {
+            throwBeforeRouteMappingException();
+        }
+        this.useVirtualThreads = useVirtualThreads;
         return this;
     }
 
@@ -634,6 +660,7 @@ public final class Service extends Routable {
 
                     server.configureWebSockets(webSocketHandlers, webSocketIdleTimeoutMillis);
                     server.trustForwardHeaders(trustForwardHeaders);
+                    server.configureVirtualThreads(useVirtualThreads);
 
                     port = server.ignite(
                             ipAddress,
