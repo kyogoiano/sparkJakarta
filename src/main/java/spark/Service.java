@@ -492,6 +492,7 @@ public final class Service extends Routable {
             throw new IllegalStateException("WebSockets are only supported in the embedded server");
         }
         requireNonNull(path, "WebSocket path cannot be null");
+        rejectDuplicateWebSocketPath(path);
         if (webSocketHandlers == null) {
             webSocketHandlers = new HashMap<>();
         }
@@ -508,6 +509,7 @@ public final class Service extends Routable {
             throw new IllegalStateException("WebSockets are only supported in the embedded server");
         }
         requireNonNull(path, "WebSocket path cannot be null");
+        rejectDuplicateWebSocketPath(path);
         if (annotatedEndpoint != null) {
             if (jakartaAnnotatedWebSocketEndpoints == null) {
                 jakartaAnnotatedWebSocketEndpoints = new HashMap<>();
@@ -597,6 +599,15 @@ public final class Service extends Routable {
                 || (jakartaConfiguredWebSocketEndpoints != null && !jakartaConfiguredWebSocketEndpoints.isEmpty());
     }
 
+    private void rejectDuplicateWebSocketPath(String path) {
+        if ((webSocketHandlers != null && webSocketHandlers.containsKey(path))
+                || (jakartaAnnotatedWebSocketEndpoints != null
+                && jakartaAnnotatedWebSocketEndpoints.containsKey(path))
+                || (jakartaConfiguredWebSocketEndpoints != null
+                && jakartaConfiguredWebSocketEndpoints.containsKey(path))) {
+            throw new IllegalArgumentException("A WebSocket endpoint is already registered at path: " + path);
+        }
+    }
 
     /**
      * Stops the Spark server and clears all routes.
@@ -959,7 +970,5 @@ public final class Service extends Routable {
         public void enableMimeTypeGuessing() {
             MimeType.enableGuessing();
         }
-
-
     }
 }
