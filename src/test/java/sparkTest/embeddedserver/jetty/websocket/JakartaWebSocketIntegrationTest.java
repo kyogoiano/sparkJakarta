@@ -3,6 +3,7 @@ package sparkTest.embeddedserver.jetty.websocket;
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.DeploymentException;
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
@@ -11,6 +12,8 @@ import jakarta.websocket.OnClose;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import org.eclipse.jetty.websocket.api.Callback;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JakartaWebSocketIntegrationTest {
@@ -53,6 +57,7 @@ class JakartaWebSocketIntegrationTest {
         service.webSocketEndpoint(BinaryEndpoint.class);
         service.webSocketEndpoint(
                 ServerEndpointConfig.Builder.create(ProgrammaticEchoEndpoint.class, "/programmatic").build());
+        service.webSocket("/jetty-native", JettyNativeEchoEndpoint.class);
         service.init();
         service.awaitInitialization();
     }
@@ -124,6 +129,36 @@ class JakartaWebSocketIntegrationTest {
             }
         }
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "All Jakarta endpoint close callbacks should run");
+    }
+
+    @Test
+    void jettyNativeAndJakartaEndpointsRoundTripOnTheSameService() throws Exception {
+        var container = ContainerProvider.getWebSocketContainer();
+        JakartaEchoClient jettyNativeClient = new JakartaEchoClient();
+        JakartaEchoClient jakartaClient = new JakartaEchoClient();
+        Session jettyNativeSession = null;
+        Session jakartaSession = null;
+
+        try {
+            jettyNativeSession = container.connectToServer(
+                    jettyNativeClient, endpointUri("/jetty-native"));
+            jakartaSession = container.connectToServer(jakartaClient, endpointUri("/annotated"));
+
+            jettyNativeSession.getBasicRemote().sendText("native round trip");
+            jakartaSession.getBasicRemote().sendText("jakarta round trip");
+
+            assertEquals("native round trip", jettyNativeClient.awaitMessage());
+            assertTrue(jakartaClient.awaitMessage().endsWith(":jakarta round trip"));
+            assertThrows(DeploymentException.class, () -> container.connectToServer(
+                    new JakartaEchoClient(), endpointUri("/unregistered")));
+        } finally {
+            if (jettyNativeSession != null && jettyNativeSession.isOpen()) {
+                jettyNativeSession.close();
+            }
+            if (jakartaSession != null && jakartaSession.isOpen()) {
+                jakartaSession.close();
+            }
+        }
     }
 
     private URI endpointUri(String path) {
@@ -208,6 +243,14 @@ class JakartaWebSocketIntegrationTest {
             String message = messages.poll(5, TimeUnit.SECONDS);
             assertNotNull(message, "Timed out waiting for a Jakarta WebSocket message");
             return message;
+        }
+    }
+
+    @org.eclipse.jetty.websocket.api.annotations.WebSocket
+    public static class JettyNativeEchoEndpoint {
+        @OnWebSocketMessage
+        public void onMessage(org.eclipse.jetty.websocket.api.Session session, String message) {
+            session.sendText(message, Callback.NOOP);
         }
     }
 }
