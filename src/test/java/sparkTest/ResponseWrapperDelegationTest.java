@@ -50,6 +50,16 @@ public class ResponseWrapperDelegationTest {
             }
         });
 
+        get("/wrapper-cookie", (q, a) -> {
+            a.cookie("wrapperCookie", "val1", 60, true, true, "Strict");
+            return "cookie-ok";
+        });
+
+        after("/wrapper-cookie", (q, a) -> {
+            a.cookie("localhost", "/wrapper-cookie", "afterCookie", "val2", 60, true, true,
+                    java.util.Map.of("SameSite", "Lax"));
+        });
+
         exception(Exception.class, (exception, q, a) -> exception.printStackTrace());
 
         Spark.awaitInitialization();
@@ -68,5 +78,13 @@ public class ResponseWrapperDelegationTest {
         assertEquals(200, response.status);
         assertEquals("{\"status\": \"ok\"}", response.body);
         assertEquals("text/plain;charset=iso-8859-1", response.headers.get("Content-Type"));
+    }
+
+    @Test
+    public void wrapper_delegates_cookie_attributes_in_routes_and_filters() throws Exception {
+        UrlResponse response = testUtil.get("/wrapper-cookie");
+        assertEquals(200, response.status);
+        assertEquals("cookie-ok", response.body);
+        assertNotNull(response.headers.get("Set-Cookie"));
     }
 }

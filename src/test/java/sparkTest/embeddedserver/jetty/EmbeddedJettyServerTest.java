@@ -192,21 +192,79 @@ public class EmbeddedJettyServerTest {
     }
 
     @Test
-    public void testVirtualThreadsSupport() throws Exception {
+    public void testVirtualThreadsSupportAndLifecycle() throws Exception {
         Service service = Service.ignite();
         service.port(0);
         service.useVirtualThreads();
 
+        AtomicReference<Boolean> beforeIsVirtual = new AtomicReference<>(false);
+        AtomicReference<Boolean> afterIsVirtual = new AtomicReference<>(false);
+        AtomicReference<Boolean> afterAfterIsVirtual = new AtomicReference<>(false);
+        AtomicReference<Boolean> exceptionIsVirtual = new AtomicReference<>(false);
+        CountDownLatch afterAfterLatch = new CountDownLatch(1);
+
         try {
+            service.before("/virtual-thread-check", (req, res) -> beforeIsVirtual.set(Thread.currentThread().isVirtual()));
             service.get("/virtual-thread-check", (req, res) -> String.valueOf(Thread.currentThread().isVirtual()));
+            service.after("/virtual-thread-check", (req, res) -> afterIsVirtual.set(Thread.currentThread().isVirtual()));
+            service.afterAfter("/virtual-thread-check", (req, res) -> {
+                afterAfterIsVirtual.set(Thread.currentThread().isVirtual());
+                afterAfterLatch.countDown();
+            });
+
+            service.get("/virtual-thread-error", (req, res) -> {
+                throw new IllegalArgumentException("boom");
+            });
+            service.exception(IllegalArgumentException.class, (ex, req, res) -> {
+                exceptionIsVirtual.set(Thread.currentThread().isVirtual());
+                res.status(422);
+                res.body("handled-on-vt:" + Thread.currentThread().isVirtual());
+            });
+
             service.awaitInitialization();
+
+            // Calling useVirtualThreads after initialization must throw IllegalStateException
+            assertThrows(IllegalStateException.class, () -> service.useVirtualThreads(false));
 
             int port = service.port();
             SparkTestUtil testUtil = new SparkTestUtil(port);
 
             SparkTestUtil.UrlResponse resp = testUtil.doMethod("GET", "/virtual-thread-check", null);
             assertEquals(200, resp.status);
-            assertEquals("true", resp.body, "Request should be handled on a JDK 21+ Virtual Thread");
+            assertEquals("true", resp.body, "Route should be handled on a JDK 21+ Virtual Thread");
+            assertTrue(beforeIsVirtual.get(), "Before filter should run on a Virtual Thread");
+            assertTrue(afterIsVirtual.get(), "After filter should run on a Virtual Thread");
+            assertTrue(afterAfterLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(afterAfterIsVirtual.get(), "AfterAfter filter should run on a Virtual Thread");
+
+            SparkTestUtil.UrlResponse errResp = testUtil.doMethod("GET", "/virtual-thread-error", null);
+            assertEquals(422, errResp.status);
+            assertEquals("handled-on-vt:true", errResp.body);
+            assertTrue(exceptionIsVirtual.get(), "Exception handler should run on a Virtual Thread");
+
+            testUtil.closeClient();
+        } finally {
+            service.stop();
+            service.awaitStop();
+        }
+    }
+
+    @Test
+    public void testPlatformThreadsWhenVirtualThreadsDisabled() throws Exception {
+        Service service = Service.ignite();
+        service.port(0);
+        service.useVirtualThreads(false);
+
+        try {
+            service.get("/platform-thread-check", (req, res) -> String.valueOf(Thread.currentThread().isVirtual()));
+            service.awaitInitialization();
+
+            int port = service.port();
+            SparkTestUtil testUtil = new SparkTestUtil(port);
+
+            SparkTestUtil.UrlResponse resp = testUtil.doMethod("GET", "/platform-thread-check", null);
+            assertEquals(200, resp.status);
+            assertEquals("false", resp.body, "Request should be handled on a platform thread when virtual threads are disabled");
 
             testUtil.closeClient();
         } finally {
