@@ -16,6 +16,7 @@
 
 - ✅ **Jakarta EE 11 Migration** - Migrated from `javax.servlet` to `jakarta.servlet` (Jakarta Servlet 6.1 & Jakarta WebSocket 2.2)
 - ✅ **Eclipse Jetty 12.1 (`ee11`)** - Upgraded embedded server to Jetty `12.1.14` (`jetty-ee11-webapp`, `jetty-ee11-websocket`) and SLF4J `2.0.20`
+- ✅ **Standard Jakarta WebSocket Endpoints** - Supports `@ServerEndpoint` classes and programmatic Jakarta `Endpoint` configurations alongside the existing Jetty-native handlers
 - ✅ **Java 21+ / JDK 25 Baseline & Virtual Threads** - Requires JDK 21 or newer (tested on JDK 21 and JDK 25) and supports Virtual Threads out of the box via `useVirtualThreads()`
 - ✅ **Optional HTTP/2 Support** - Opt-in HTTP/2 (`useHttp2()`) powered by Jetty 12.1 running side-by-side with standard HTTPS without overwriting existing TCP/TLS support
 - ✅ **Jakarta Cookie Attributes (`SameSite` & Custom Attributes)** - First-class support for `SameSite` and arbitrary cookie attributes (`Partitioned`, etc.) via `res.cookie(...)`
@@ -24,6 +25,33 @@
 - ✅ **Gradle Build & JUnit 5** - Migrated build system to Gradle and test suite to JUnit Jupiter 5
 
 > **Migration Note (`javax` -> `jakarta`):** Because this release targets Jakarta EE 11 and Jetty 12.1, servlet and websocket types exposed via `req.raw()`, `res.raw()`, `SparkFilter`, and WebSocket handlers now use the `jakarta.servlet.*`, `jakarta.websocket.*`, and Jetty 12 `org.eclipse.jetty.websocket.api.*` packages.
+
+### WebSockets
+
+The existing `webSocket(path, handler)` methods continue to register Jetty-native WebSocket handlers. A handler class is instantiated once per connection; an explicitly supplied handler instance is shared across connections and must be safe for concurrent use.
+
+For standard Jakarta WebSocket endpoints, register an annotated class (path comes from `@ServerEndpoint`) or a programmatic endpoint configuration:
+
+```java
+service.webSocketEndpoint(EchoEndpoint.class);
+service.webSocketEndpoint(
+    ServerEndpointConfig.Builder.create(ProgrammaticEndpoint.class, "/programmatic").build());
+```
+
+Jetty controls callback execution; applications should not assume callbacks run on a particular thread. Jakarta endpoints are managed by the Jakarta WebSocket container. The existing `useVirtualThreads()` option configures Jetty's server-wide executor; Spark does not create per-endpoint executors. Virtual threads do not by themselves bound pending messages or provide backpressure.
+
+Spark does not wrap sends in a queue. Use the native APIs and handle completion/failure: Jakarta `RemoteEndpoint.Async` provides callbacks or `Future`s and `setSendTimeout(...)`; Jetty send methods accept a completion `Callback`. Keep any application-owned outbound queue bounded and decide explicitly what to do when it fills. For Jetty `Session.Listener` handlers, `Session.demand()` provides pull-based inbound flow control; Jakarta endpoints should bound any work they enqueue from message callbacks.
+
+`webSocketIdleTimeoutMillis(...)` supplies the global idle-timeout default for both endpoint APIs. To override it for one connection, set the session timeout in the endpoint's open callback:
+
+```java
+@OnOpen
+public void onOpen(Session session) {
+    session.setMaxIdleTimeout(30_000);
+}
+```
+
+For Jetty-native handlers, do the equivalent in `onWebSocketOpen` with `session.setIdleTimeout(Duration.ofSeconds(30))`. A timeout of zero disables the idle timeout. Spark does not currently expose a registration-time per-endpoint timeout option.
 
 ### Original Project
 

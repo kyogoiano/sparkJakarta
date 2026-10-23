@@ -1,144 +1,104 @@
 package sparkTest.embeddedserver.jetty.websocket;
 
-import org.eclipse.jetty.http.pathmap.MatchedResource;
-import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.server.Server;
+import jakarta.websocket.server.ServerContainer;
+import jakarta.websocket.server.ServerEndpoint;
 import org.eclipse.jetty.ee11.servlet.FilterHolder;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee11.servlet.ServletHandler;
+import org.eclipse.jetty.ee11.websocket.jakarta.server.JakartaWebSocketServerContainer;
 import org.eclipse.jetty.ee11.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.ee11.websocket.servlet.WebSocketUpgradeFilter;
+import org.eclipse.jetty.server.Server;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 import spark.embeddedserver.jetty.websocket.WebSocketHandlerClassWrapper;
 import spark.embeddedserver.jetty.websocket.WebSocketHandlerWrapper;
 import spark.embeddedserver.jetty.websocket.WebSocketServletContextHandlerFactory;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(MockitoExtension.class)
 public class WebSocketServletContextHandlerFactoryTest {
 
-    final String webSocketPath = "/websocket";
+    private static final String WEB_SOCKET_PATH = "/websocket";
+    private static final long TIMEOUT_MILLIS = 1000L;
+
+    private Server server;
     private ServletContextHandler servletContextHandler;
-    private final static Server server = new Server();
-    private final static long timeout = 1000L;
-    private Duration timeoutDuration;
 
     @BeforeEach
-    public void setup(){
-         timeoutDuration = ChronoUnit.SECONDS.getDuration();
+    public void setup() {
+        server = new Server();
+    }
+
+    @AfterEach
+    public void tearDown() throws Exception {
+        if (servletContextHandler != null) {
+            if (servletContextHandler.isRunning()) {
+                servletContextHandler.stop();
+            }
+            servletContextHandler.destroy();
+        }
+        if (server.getScheduler().isStarted()) {
+            server.getScheduler().stop();
+        }
+        server.destroy();
     }
 
     @Test
-    public void testCreate_whenWebSocketHandlersIsNull_thenReturnNull() {
-
-        servletContextHandler = WebSocketServletContextHandlerFactory.create(null, null, server);
-
-        assertNull(servletContextHandler, "Should return null because no WebSocket Handlers were passed");
-
+    public void createWithoutEndpointsReturnsNull() {
+        assertNull(WebSocketServletContextHandlerFactory.create(null, null, server));
     }
 
     @Test
-    public void testCreate_whenNoIdleTimeoutIsPresent() throws Exception {
-
+    public void factoryLeavesServerHandlerInstallationToItsCaller() throws Exception {
         Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers = new HashMap<>();
-
-        webSocketHandlers.put(webSocketPath, new WebSocketHandlerClassWrapper<>(WebSocketTestHandler.class));
+        webSocketHandlers.put(WEB_SOCKET_PATH, new WebSocketHandlerClassWrapper<>(WebSocketTestHandler.class));
 
         servletContextHandler = WebSocketServletContextHandlerFactory.create(webSocketHandlers, null, server);
+
+        assertNotNull(servletContextHandler);
+        assertNull(server.getHandler());
+        server.setHandler(servletContextHandler);
         server.getScheduler().start();
         servletContextHandler.start();
 
         FilterHolder filterHolder = WebSocketUpgradeFilter.getFilter(servletContextHandler.getServletContext());
-        assertEquals("org.eclipse.jetty.ee11.websocket.servlet.WebSocketUpgradeFilter", filterHolder.getName(),
-            "Should return a WebSocketUpgradeFilter because we configured it to have one");
-
-        MatchedResource<ServletHandler.MappedServlet> mappedServlet =
-            servletContextHandler.getServletHandler().getMatchedServlet("/websocket");
-
-        PathSpec pathSpec = mappedServlet.getPathSpec();
-
-        assertEquals(
-                webSocketPath, pathSpec.getDeclaration(), "Should return the WebSocket path specified when context handler was created");
-        servletContextHandler.stop();
-        servletContextHandler.destroy();
-        // Because spark works on a non-initialized / non-started ServletContextHandler and WebSocketUpgradeFilter
-        // the stored WebSocketCreator is wrapped for persistence through the start/stop of those contexts.
-        // You cannot unwrap or cast to that WebSocketTestHandler this way.
-        // Only websockets that are added during a live context can be cast this way.
-        // WebSocketCreator sc = mappedResource.getResource();
-        // assertTrue("Should return true because handler should be an instance of the one we passed when it was created",
-        //        sc.getHandler() instanceof WebSocketTestHandler);
+        assertNotNull(filterHolder);
+        assertEquals("org.eclipse.jetty.ee11.websocket.servlet.WebSocketUpgradeFilter", filterHolder.getName());
+        var servletMapping = servletContextHandler.getServletHandler().getMatchedServlet(WEB_SOCKET_PATH);
+        assertNotNull(servletMapping);
+        assertNotEquals(WEB_SOCKET_PATH, servletMapping.getPathSpec().getDeclaration(),
+                "The endpoint must not be registered to a dedicated no-op servlet");
     }
 
     @Test
-    public void testCreate_whenTimeoutIsPresent() throws Exception {
-
+    public void globalIdleTimeoutIsAppliedToBothWebSocketContainers() throws Exception {
         Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers = new HashMap<>();
+        webSocketHandlers.put(WEB_SOCKET_PATH, new WebSocketHandlerClassWrapper<>(WebSocketTestHandler.class));
+        Map<String, Class<?>> jakartaEndpoints = Map.of("/jakarta", JakartaAnnotatedEndpoint.class);
 
-        webSocketHandlers.put(webSocketPath, new WebSocketHandlerClassWrapper<>(WebSocketTestHandler.class));
-
-        servletContextHandler = WebSocketServletContextHandlerFactory.create(webSocketHandlers, timeout, server);
+        servletContextHandler = WebSocketServletContextHandlerFactory.create(
+                webSocketHandlers, jakartaEndpoints, null, TIMEOUT_MILLIS);
+        server.setHandler(servletContextHandler);
         server.getScheduler().start();
         servletContextHandler.start();
-        JettyWebSocketServerContainer container = JettyWebSocketServerContainer.getContainer(servletContextHandler.getServletContext());
 
-        assertEquals(
-            timeoutDuration, container.getIdleTimeout(), "Timeout value should be the same as the timeout specified when context handler was created");
+        JettyWebSocketServerContainer jettyContainer =
+                JettyWebSocketServerContainer.getContainer(servletContextHandler.getServletContext());
+        ServerContainer jakartaContainer =
+                (ServerContainer) servletContextHandler.getServletContext().getAttribute(ServerContainer.class.getName());
 
-        FilterHolder filterHolder = WebSocketUpgradeFilter.getFilter(servletContextHandler.getServletContext());
-        assertEquals("org.eclipse.jetty.ee11.websocket.servlet.WebSocketUpgradeFilter", filterHolder.getName(), "Should return a WebSocketUpgradeFilter because we configured it to have one");
-
-        MatchedResource<ServletHandler.MappedServlet> mappedServlet =
-            servletContextHandler.getServletHandler().getMatchedServlet("/websocket");
-
-        PathSpec pathSpec = mappedServlet.getPathSpec();
-
-        assertEquals(
-                webSocketPath, pathSpec.getDeclaration(), "Should return the WebSocket path specified when context handler was created");
-        servletContextHandler.stop();
-        servletContextHandler.destroy();
-        // Because spark works on a non-initialized / non-started ServletContextHandler and WebSocketUpgradeFilter
-        // the stored WebSocketCreator is wrapped for persistence through the start/stop of those contexts.
-        // You cannot unwrap or cast to that WebSocketTestHandler this way.
-        // Only websockets that are added during a live context can be cast this way.
-        // WebSocketCreator sc = mappedResource.getResource();
-        // assertTrue("Should return true because handler should be an instance of the one we passed when it was created",
-        //        sc.getHandler() instanceof WebSocketTestHandler);
+        assertEquals(Duration.ofMillis(TIMEOUT_MILLIS), jettyContainer.getIdleTimeout());
+        assertNotNull(jakartaContainer);
+        assertEquals(TIMEOUT_MILLIS, jakartaContainer.getDefaultMaxSessionIdleTimeout());
+        assertNotNull(JakartaWebSocketServerContainer.getContainer(servletContextHandler.getServletContext()));
     }
 
-    @Test
-    public void testCreate_whenWebSocketContextHandlerCreationFails_thenThrowException() {
-
-        Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers = new HashMap<>();
-
-        webSocketHandlers.put(webSocketPath, new WebSocketHandlerClassWrapper<>(WebSocketTestHandler.class));
-
-        try (MockedStatic<WebSocketServletContextHandlerFactory> servletContextHandler = Mockito.mockStatic(WebSocketServletContextHandlerFactory.class)) {
-            servletContextHandler.when(() -> WebSocketServletContextHandlerFactory.create(webSocketHandlers, null, server))
-                .thenReturn(null);
-
-            assertNull(WebSocketServletContextHandlerFactory.create(webSocketHandlers, null, server), "Should be null because Websocket context handler was not created");
-        }
-
-    }
-
-    @Test
-    public void testCreate_whenServerIsNull_catchesExceptionAndReturnsNull() {
-        Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers = new HashMap<>();
-        webSocketHandlers.put(webSocketPath, new WebSocketHandlerClassWrapper<>(WebSocketTestHandler.class));
-
-        ServletContextHandler result = WebSocketServletContextHandlerFactory.create(webSocketHandlers, null, null);
-        assertNull(result, "Should catch exception and return null when server is null");
+    @ServerEndpoint("/jakarta")
+    public static class JakartaAnnotatedEndpoint {
     }
 }

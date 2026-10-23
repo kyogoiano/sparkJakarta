@@ -9,6 +9,9 @@ public record WebSocketHandlerInstanceWrapper<T>(T handler) implements WebSocket
         WebSocketHandlerWrapper.validateHandlerClass(handler.getClass());
     }
 
+    /**
+     * Returns the shared handler instance supplied by the application.
+     */
     @Override
     public T getHandler() {
         return handler;

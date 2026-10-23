@@ -18,6 +18,7 @@ package spark.embeddedserver;
 
 import java.util.Map;
 
+import jakarta.websocket.server.ServerEndpointConfig;
 import spark.embeddedserver.jetty.websocket.WebSocketHandlerWrapper;
 import spark.ssl.SslStores;
 
@@ -78,6 +79,20 @@ public interface EmbeddedServer {
                                      Long webSocketIdleTimeoutMillis) {
 
         NotSupportedException.raise(getClass().getSimpleName(), "Web Sockets");
+    }
+
+    /**
+     * Configures standard Jakarta WebSocket endpoints for the embedded server.
+     *
+     * @param annotatedEndpoints endpoint classes annotated with {@code @ServerEndpoint}, keyed by path
+     * @param configuredEndpoints programmatic endpoint configurations, keyed by path
+     */
+    default void configureJakartaWebSockets(Map<String, Class<?>> annotatedEndpoints,
+                                            Map<String, ServerEndpointConfig> configuredEndpoints) {
+        if ((annotatedEndpoints != null && !annotatedEndpoints.isEmpty())
+                || (configuredEndpoints != null && !configuredEndpoints.isEmpty())) {
+            NotSupportedException.raise(getClass().getSimpleName(), "Jakarta Web Sockets");
+        }
     }
 
     /**

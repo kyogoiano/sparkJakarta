@@ -24,6 +24,7 @@ import sparkTest.util.SparkTestUtil;
 
 import java.net.ServerSocket;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -182,6 +183,10 @@ public class EmbeddedJettyServerTest {
             assertTrue(clientEndpoint.awaitClose(5, TimeUnit.SECONDS), "Client should complete WebSocket lifecycle");
             assertTrue(wsListener.messageLatch.await(5, TimeUnit.SECONDS), "WebSocket listener should receive text message");
             assertEquals("Hi Spark!", wsListener.receivedMessage.get());
+            assertEquals(Duration.ofSeconds(7), wsListener.idleTimeout);
+            assertTrue(wsListener.sendCompletionLatch.await(5, TimeUnit.SECONDS),
+                    "Jetty async send completion callback should run");
+            assertNull(wsListener.sendFailure.get());
             assertTrue(wsListener.closeLatch.await(5, TimeUnit.SECONDS), "WebSocket listener should receive close event");
 
             testUtil.closeClient();
@@ -327,12 +332,17 @@ public class EmbeddedJettyServerTest {
     public static class EchoSessionListener implements Session.Listener {
         final CountDownLatch messageLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
+        final CountDownLatch sendCompletionLatch = new CountDownLatch(1);
         final AtomicReference<String> receivedMessage = new AtomicReference<>();
+        final AtomicReference<Throwable> sendFailure = new AtomicReference<>();
+        private Duration idleTimeout;
         private Session session;
 
         @Override
         public void onWebSocketOpen(Session session) {
             this.session = session;
+            session.setIdleTimeout(Duration.ofSeconds(7));
+            idleTimeout = session.getIdleTimeout();
             session.demand();
         }
 
@@ -341,7 +351,18 @@ public class EmbeddedJettyServerTest {
             receivedMessage.set(message);
             messageLatch.countDown();
             if (session != null && session.isOpen()) {
-                session.sendText("echo:" + message, Callback.NOOP);
+                session.sendText("echo:" + message, new Callback() {
+                    @Override
+                    public void succeed() {
+                        sendCompletionLatch.countDown();
+                    }
+
+                    @Override
+                    public void fail(Throwable failure) {
+                        sendFailure.set(failure);
+                        sendCompletionLatch.countDown();
+                    }
+                });
                 session.demand();
             }
         }

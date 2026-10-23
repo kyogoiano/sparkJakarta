@@ -16,6 +16,7 @@
  */
 package spark.embeddedserver.jetty;
 
+import jakarta.websocket.server.ServerEndpointConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -57,6 +58,8 @@ public class EmbeddedJettyServer implements EmbeddedServer {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers;
+    private Map<String, Class<?>> jakartaAnnotatedWebSocketEndpoints;
+    private Map<String, ServerEndpointConfig> jakartaConfiguredWebSocketEndpoints;
     private Long webSocketIdleTimeoutMillis;
 
     private ThreadPool threadPool = null;
@@ -75,6 +78,13 @@ public class EmbeddedJettyServer implements EmbeddedServer {
 
         this.webSocketHandlers = webSocketHandlers;
         this.webSocketIdleTimeoutMillis = webSocketIdleTimeoutMillis;
+    }
+
+    @Override
+    public void configureJakartaWebSockets(Map<String, Class<?>> annotatedEndpoints,
+                                           Map<String, ServerEndpointConfig> configuredEndpoints) {
+        this.jakartaAnnotatedWebSocketEndpoints = annotatedEndpoints;
+        this.jakartaConfiguredWebSocketEndpoints = configuredEndpoints;
     }
 
     @Override
@@ -145,9 +155,6 @@ public class EmbeddedJettyServer implements EmbeddedServer {
             server.setConnectors(new Connector[]{connector});
         }
 
-        final ServletContextHandler webSocketServletContextHandler =
-            WebSocketServletContextHandlerFactory.create(webSocketHandlers, webSocketIdleTimeoutMillis, server);
-
         // Handle API routes
         ServletHandler servletHandler = new ServletHandler();
         servletHandler.addServletWithMapping(new ServletHolder(new HttpServlet() {
@@ -159,13 +166,21 @@ public class EmbeddedJettyServer implements EmbeddedServer {
 
         ServletContextHandler servletContextHandler = new ServletContextHandler("/", handler, null, servletHandler, null);
 
-        ContextHandlerCollection handlerCollection = new ContextHandlerCollection();
-        if (webSocketServletContextHandler != null) {
-            webSocketServletContextHandler.getServletHandler().setEnsureDefaultServlet(false);
-            handlerCollection.addHandler(webSocketServletContextHandler);
+        boolean hasWebSocketEndpoints = (webSocketHandlers != null && !webSocketHandlers.isEmpty())
+                || (jakartaAnnotatedWebSocketEndpoints != null && !jakartaAnnotatedWebSocketEndpoints.isEmpty())
+                || (jakartaConfiguredWebSocketEndpoints != null && !jakartaConfiguredWebSocketEndpoints.isEmpty());
+        if (hasWebSocketEndpoints) {
+            servletContextHandler.getServletHandler().setEnsureDefaultServlet(false);
+            WebSocketServletContextHandlerFactory.configure(
+                    servletContextHandler,
+                    webSocketHandlers,
+                    jakartaAnnotatedWebSocketEndpoints,
+                    jakartaConfiguredWebSocketEndpoints,
+                    webSocketIdleTimeoutMillis);
         }
-        handlerCollection.addHandler(servletContextHandler);
 
+        ContextHandlerCollection handlerCollection = new ContextHandlerCollection();
+        handlerCollection.addHandler(servletContextHandler);
         server.setHandler(handlerCollection);
         server.getScheduler().start();
         logger.info("== {} has ignited ...", NAME);
