@@ -68,7 +68,6 @@ public class SocketConnectorFactory {
     /**
      * Creates an HTTPS connector supporting HTTP/2 over TLS with HTTP/1.1 fallback.
      * SSL configuration is mandatory.
-     *
      * HTTP/2 is negotiated using ALPN. Clients that do not negotiate HTTP/2
      * fall back to HTTP/1.1.
      *

@@ -37,7 +37,6 @@ import spark.utils.Assert;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
