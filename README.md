@@ -38,7 +38,20 @@ service.webSocketEndpoint(
     ServerEndpointConfig.Builder.create(ProgrammaticEndpoint.class, "/programmatic").build());
 ```
 
-Jetty controls callback execution; applications should not assume callbacks run on a particular thread. Jakarta endpoints are managed by the Jakarta WebSocket container. Async sends and their completion callbacks use the respective WebSocket API, and Spark does not add a separate backpressure layer. `webSocketIdleTimeoutMillis(...)` sets the global idle timeout for both endpoint APIs; per-endpoint timeouts are not currently exposed.
+Jetty controls callback execution; applications should not assume callbacks run on a particular thread. Jakarta endpoints are managed by the Jakarta WebSocket container. The existing `useVirtualThreads()` option configures Jetty's server-wide executor; Spark does not create per-endpoint executors. Virtual threads do not by themselves bound pending messages or provide backpressure.
+
+Spark does not wrap sends in a queue. Use the native APIs and handle completion/failure: Jakarta `RemoteEndpoint.Async` provides callbacks or `Future`s and `setSendTimeout(...)`; Jetty send methods accept a completion `Callback`. Keep any application-owned outbound queue bounded and decide explicitly what to do when it fills. For Jetty `Session.Listener` handlers, `Session.demand()` provides pull-based inbound flow control; Jakarta endpoints should bound any work they enqueue from message callbacks.
+
+`webSocketIdleTimeoutMillis(...)` supplies the global idle-timeout default for both endpoint APIs. To override it for one connection, set the session timeout in the endpoint's open callback:
+
+```java
+@OnOpen
+public void onOpen(Session session) {
+    session.setMaxIdleTimeout(30_000);
+}
+```
+
+For Jetty-native handlers, do the equivalent in `onWebSocketOpen` with `session.setIdleTimeout(Duration.ofSeconds(30))`. A timeout of zero disables the idle timeout. Spark does not currently expose a registration-time per-endpoint timeout option.
 
 ### Original Project
 

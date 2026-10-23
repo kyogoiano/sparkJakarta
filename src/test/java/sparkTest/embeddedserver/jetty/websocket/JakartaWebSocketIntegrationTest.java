@@ -8,6 +8,7 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Session;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnClose;
+import jakarta.websocket.OnOpen;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.junit.jupiter.api.AfterEach;
@@ -23,16 +24,19 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JakartaWebSocketIntegrationTest {
 
     private static volatile CountDownLatch closeLatch = new CountDownLatch(0);
     private static volatile CountDownLatch asyncSendCompletion = new CountDownLatch(0);
+    private static volatile AtomicReference<Throwable> asyncSendFailure = new AtomicReference<>();
 
     private Service service;
 
@@ -40,9 +44,11 @@ class JakartaWebSocketIntegrationTest {
     void startServer() {
         closeLatch = new CountDownLatch(4);
         asyncSendCompletion = new CountDownLatch(1);
+        asyncSendFailure = new AtomicReference<>();
         service = Service.ignite();
         service.ipAddress("127.0.0.1");
         service.port(0);
+        service.webSocketIdleTimeoutMillis(1000L);
         service.webSocketEndpoint(AnnotatedEchoEndpoint.class);
         service.webSocketEndpoint(BinaryEndpoint.class);
         service.webSocketEndpoint(
@@ -74,11 +80,14 @@ class JakartaWebSocketIntegrationTest {
                     annotatedClient, endpointUri("/annotated"));
             annotatedSession.getBasicRemote().sendText("hello");
             String firstAnnotatedResponse = annotatedClient.awaitMessage();
+            assertEquals("5000", firstAnnotatedResponse.split(":")[1],
+                    "Annotated endpoint should override the global idle timeout");
 
             secondAnnotatedSession = container.connectToServer(
                     secondAnnotatedClient, endpointUri("/annotated"));
             secondAnnotatedSession.getBasicRemote().sendText("again");
             String secondAnnotatedResponse = secondAnnotatedClient.awaitMessage();
+            assertEquals("5000", secondAnnotatedResponse.split(":")[1]);
             assertNotEquals(
                     firstAnnotatedResponse.substring(0, firstAnnotatedResponse.indexOf(':')),
                     secondAnnotatedResponse.substring(0, secondAnnotatedResponse.indexOf(':')),
@@ -87,9 +96,10 @@ class JakartaWebSocketIntegrationTest {
             programmaticSession = container.connectToServer(
                     programmaticClient, endpointUri("/programmatic"));
             programmaticSession.getBasicRemote().sendText("hello");
-            assertEquals("programmatic:hello", programmaticClient.awaitMessage());
+            assertEquals("programmatic:6000:hello", programmaticClient.awaitMessage());
             assertTrue(asyncSendCompletion.await(5, TimeUnit.SECONDS),
                     "Jakarta asynchronous send completion callback should run");
+            assertNull(asyncSendFailure.get(), "Jakarta asynchronous send should complete without failure");
 
             binarySession = container.connectToServer(binaryClient, endpointUri("/binary"));
             binarySession.getBasicRemote().sendBinary(
@@ -123,10 +133,17 @@ class JakartaWebSocketIntegrationTest {
     @ServerEndpoint("/annotated")
     public static class AnnotatedEchoEndpoint {
         private final String instanceId = UUID.randomUUID().toString();
+        private long idleTimeoutMillis;
+
+        @OnOpen
+        public void onOpen(Session session) {
+            session.setMaxIdleTimeout(5000L);
+            idleTimeoutMillis = session.getMaxIdleTimeout();
+        }
 
         @OnMessage
         public String echo(String message) {
-            return instanceId + ":" + message;
+            return instanceId + ":" + idleTimeoutMillis + ":" + message;
         }
 
         @OnClose
@@ -160,11 +177,15 @@ class JakartaWebSocketIntegrationTest {
     public static class ProgrammaticEchoEndpoint extends Endpoint {
         @Override
         public void onOpen(Session session, EndpointConfig config) {
+            session.setMaxIdleTimeout(6000L);
+            session.getAsyncRemote().setSendTimeout(5000L);
             session.addMessageHandler(String.class, (String message) ->
-                    session.getAsyncRemote().sendText("programmatic:" + message, result -> {
-                        if (result.isOK()) {
-                            asyncSendCompletion.countDown();
+                    session.getAsyncRemote().sendText(
+                            "programmatic:" + session.getMaxIdleTimeout() + ":" + message, result -> {
+                        if (!result.isOK()) {
+                            asyncSendFailure.set(result.getException());
                         }
+                        asyncSendCompletion.countDown();
                     }));
         }
 
