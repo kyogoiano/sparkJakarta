@@ -4,6 +4,8 @@ module sparkJakarta {
     requires org.eclipse.jetty.ee11.websocket.jetty.server;
     requires org.eclipse.jetty.ee11.websocket.jakarta.server;
     requires org.eclipse.jetty.websocket.server;
+    requires org.eclipse.jetty.http2.server;
+    requires org.eclipse.jetty.alpn.server;
     exports spark;
     opens spark;
     exports spark.utils;

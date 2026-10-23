@@ -18,11 +18,9 @@ package spark.embeddedserver.jetty;
 
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.server.ForwardedRequestCustomizer;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import org.jetbrains.annotations.NotNull;
@@ -44,14 +42,11 @@ public class SocketConnectorFactory {
      * @param port      port
      * @return a ssl socket jetty
      */
-    public static ServerConnector createSecureSocketConnector(Server server,
-                                                              String host,
+    public static ServerConnector createSecureSocketConnector(@NotNull Server server,
+                                                              @NotNull String host,
                                                               int port,
                                                               SslStores sslStores,
                                                               boolean trustForwardHeaders) {
-        Assert.notNull(server, "'server' must not be null");
-        Assert.notNull(host, "'host' must not be null");
-
         if(sslStores == null){
             final HttpConnectionFactory httpConnectionFactory = createHttpConnectionFactory(trustForwardHeaders);
             final ServerConnector connector = new ServerConnector(server, httpConnectionFactory);
@@ -70,6 +65,72 @@ public class SocketConnectorFactory {
         return connector;
     }
 
+    /**
+     * Creates an HTTPS connector supporting HTTP/2 over TLS with HTTP/1.1 fallback.
+     * SSL configuration is mandatory.
+     *
+     * HTTP/2 is negotiated using ALPN. Clients that do not negotiate HTTP/2
+     * fall back to HTTP/1.1.
+     *
+     * @param server              Jetty server
+     * @param host                host
+     * @param port                TCP port
+     * @param sslStores           security SSL stores (must not be null)
+     * @param trustForwardHeaders whether to trust forward headers
+     * @return a configured ServerConnector supporting HTTP/2 and HTTP/1.1
+     */
+    public static ServerConnector createHttp2Connector(
+        Server server,
+        String host,
+        int port,
+        SslStores sslStores,
+        boolean trustForwardHeaders) {
+
+        Assert.notNull(server, "'server' must not be null");
+        Assert.notNull(host, "'host' must not be null");
+        Assert.notNull(sslStores, "'sslStores' must not be null for HTTPS");
+
+        SslContextFactory.Server sslContextFactory =
+            getSslContextFactory(sslStores);
+
+        HttpConfiguration httpConfig =
+            createHttpConfiguration(trustForwardHeaders);
+
+        // HTTP/1.1 connection factory.
+        HttpConnectionFactory http11ConnectionFactory =
+            new HttpConnectionFactory(httpConfig);
+
+        // HTTP/2 connection factory.
+        HTTP2ServerConnectionFactory http2ConnectionFactory =
+            new HTTP2ServerConnectionFactory(httpConfig);
+
+        // Negotiate the application protocol during the TLS handshake.
+        ALPNServerConnectionFactory alpnConnectionFactory =
+            new ALPNServerConnectionFactory();
+
+        // Fall back to HTTP/1.1 when HTTP/2 is not negotiated.
+        alpnConnectionFactory.setDefaultProtocol(
+            http11ConnectionFactory.getProtocol());
+
+        // TLS delegates protocol negotiation to ALPN.
+        SslConnectionFactory sslConnectionFactory =
+            new SslConnectionFactory(
+                sslContextFactory,
+                alpnConnectionFactory.getProtocol());
+
+        // Both HTTP/2 and HTTP/1.1 share the same TLS connector.
+        ServerConnector connector = new ServerConnector(
+            server,
+            sslConnectionFactory,
+            alpnConnectionFactory,
+            http2ConnectionFactory,
+            http11ConnectionFactory
+        );
+
+        initializeConnector(connector, host, port);
+
+        return connector;
+    }
     private static SslContextFactory.@NotNull Server getSslContextFactory(final SslStores sslStores) {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         if(sslStores.keyStoreType() != null) {
@@ -105,7 +166,7 @@ public class SocketConnectorFactory {
         return sslContextFactory;
     }
 
-    private static void initializeConnector(ServerConnector connector, String host, int port) {
+    private static void initializeConnector(AbstractNetworkConnector connector, String host, int port) {
         // Set some timeout options to make debugging easier.
         connector.setIdleTimeout(TimeUnit.HOURS.toMillis(1));
         connector.setHost(host);
@@ -113,11 +174,15 @@ public class SocketConnectorFactory {
     }
 
     private static HttpConnectionFactory createHttpConnectionFactory(boolean trustForwardHeaders) {
+        return new HttpConnectionFactory(createHttpConfiguration(trustForwardHeaders));
+    }
+
+    private static HttpConfiguration createHttpConfiguration(boolean trustForwardHeaders) {
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.setSecureScheme("https");
         if(trustForwardHeaders)
             httpConfig.addCustomizer(new ForwardedRequestCustomizer());
-        return new HttpConnectionFactory(httpConfig);
+        return httpConfig;
     }
 
 }

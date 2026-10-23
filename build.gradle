@@ -1,5 +1,5 @@
 group = 'com.sparkjava'
-version = System.properties.getProperty('version', '3.0.0') + "-SNAPSHOT"
+version = System.properties.getProperty('version', '3.1.0') + "-SNAPSHOT"
 
 buildscript {
     ext.jettyVersion = '12.1.14'
@@ -44,6 +44,9 @@ dependencies {
     implementation "org.eclipse.jetty.websocket:jetty-websocket-jetty-server:$jettyVersion"
     implementation "org.eclipse.jetty.websocket:jetty-websocket-core-server:$jettyVersion"
 
+    implementation "org.eclipse.jetty.http2:jetty-http2-server:$jettyVersion"
+    implementation "org.eclipse.jetty:jetty-alpn-java-server:$jettyVersion"
+
     testImplementation "net.bytebuddy:byte-buddy:1.18.15"
     testImplementation "net.bytebuddy:byte-buddy-agent:1.18.15"
     mockitoAgent("net.bytebuddy:byte-buddy-agent:1.18.15") { transitive = false }
@@ -60,6 +63,8 @@ dependencies {
     testImplementation 'org.freemarker:freemarker:2.3.35'
     testImplementation "com.google.code.gson:gson:2.14.0"
     testImplementation "org.eclipse.jetty.ee11.websocket:jetty-ee11-websocket-jakarta-client:$jettyVersion"
+    testImplementation "org.eclipse.jetty.http2:jetty-http2-client:$jettyVersion"
+    testImplementation "org.eclipse.jetty.http2:jetty-http2-client-transport:$jettyVersion"
     implementation 'org.jetbrains:annotations:26.1.0'
 
 }
@@ -75,7 +80,7 @@ test {
     reports {
 
     }
-    jvmArgs("-javaagent:${configurations.mockitoAgent.asPath}", "-Dnet.bytebuddy.experimental=true")
+    jvmArgs("-javaagent:${configurations.mockitoAgent.asPath}", "-Dnet.bytebuddy.experimental=true", "--enable-native-access=ALL-UNNAMED")
     //jvmArgs['--add-modules java.se --add-exports java.base/jdk.internal.ref=EVERYONE --add-opens java.base/java.lang=EVERYONE --add-opens java.base/java.nio=EVERYONE --add-opens java.base/sun.nio.ch=EVERYONE --add-opens java.management/sun.management=EVERYONE --add-opens jdk.management/com.sun.management.internal=EVERYONE --add-opens java.base/java.lang.reflect=test']
 
 }

@@ -273,6 +273,57 @@ public class EmbeddedJettyServerTest {
         }
     }
 
+    @Test
+    public void testHttp2RequiresSslStores() {
+        Routes routes = Routes.create();
+        StaticFilesConfiguration staticFilesConfig = StaticFilesConfiguration.create();
+        ExceptionMapper<Exception> exceptionMapper = new ExceptionMapper<>();
+        MatcherFilter matcherFilter = new MatcherFilter(routes, staticFilesConfig, exceptionMapper, false, false);
+        JettyHandler jettyHandler = new JettyHandler(matcherFilter);
+
+        EmbeddedJettyServer server = new EmbeddedJettyServer(new JettyServer(), jettyHandler);
+        server.configureHttp2(true);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> server.ignite("localhost", 0, null, 0, 0, 0));
+        assertTrue(ex.getMessage().contains("HTTP/2 requires SSL"));
+    }
+
+    @Test
+    public void testHttp2() throws Exception {
+        Service service = Service.ignite();
+        service.ipAddress("127.0.0.1");
+        service.port(0);
+        service.secure(
+                SparkTestUtil.getKeyStoreLocation(),
+                SparkTestUtil.getKeystorePassword(),
+                null,
+                null
+        );
+        service.useHttp2(true);
+        service.useVirtualThreads();
+
+        try {
+            service.get("/protocol", (req, res) -> req.protocol() + "|vt=" + Thread.currentThread().isVirtual());
+            service.post("/echo", (req, res) -> "h3-echo:" + req.body());
+            service.awaitInitialization();
+
+            assertThrows(IllegalStateException.class, () -> service.useHttp2(false));
+
+            int port = service.port();
+
+            SparkTestUtil httpsUtil = new SparkTestUtil(port);
+            SparkTestUtil.UrlResponse httpsResp = httpsUtil.doMethodSecure("GET", "/protocol", null);
+            assertEquals(200, httpsResp.status);
+            assertEquals("HTTP/2.0|vt=true", httpsResp.body);
+            httpsUtil.closeClient();
+
+        } finally {
+            service.stop();
+            service.awaitStop();
+        }
+    }
+
     public static class EchoSessionListener implements Session.Listener {
         final CountDownLatch messageLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);

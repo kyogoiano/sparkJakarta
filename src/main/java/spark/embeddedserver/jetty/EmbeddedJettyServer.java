@@ -33,9 +33,11 @@ import spark.embeddedserver.EmbeddedServer;
 import spark.embeddedserver.jetty.websocket.WebSocketHandlerWrapper;
 import spark.embeddedserver.jetty.websocket.WebSocketServletContextHandlerFactory;
 import spark.ssl.SslStores;
+import spark.utils.Assert;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
@@ -61,6 +63,7 @@ public class EmbeddedJettyServer implements EmbeddedServer {
     private ThreadPool threadPool = null;
     private boolean trustForwardHeaders = true; // true by default
     private boolean useVirtualThreads = false;
+    private boolean useHttp2 = false;
 
     public EmbeddedJettyServer(JettyServerFactory serverFactory, JettyHandler handler) {
         this.serverFactory = serverFactory;
@@ -85,6 +88,11 @@ public class EmbeddedJettyServer implements EmbeddedServer {
         this.useVirtualThreads = useVirtualThreads;
     }
 
+    @Override
+    public void configureHttp2(boolean useHttp2) {
+        this.useHttp2 = useHttp2;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -95,6 +103,10 @@ public class EmbeddedJettyServer implements EmbeddedServer {
                       int maxThreads,
                       int minThreads,
                       int threadIdleTimeoutMillis) throws Exception {
+
+        if (useHttp2 && sslStores == null) {
+            throw new IllegalStateException("HTTP/2 requires SSL configuration via secure(...)");
+        }
 
         boolean hasCustomizedConnectors = false;
 
@@ -118,20 +130,20 @@ public class EmbeddedJettyServer implements EmbeddedServer {
             queuedThreadPool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
         }
 
-        try (final ServerConnector connector =
-                 SocketConnectorFactory.createSecureSocketConnector(server, host, port, sslStores, trustForwardHeaders)) {
+        Assert.notNull(server, "'server' must not be null");
+        Assert.notNull(host, "'host' must not be null");
+        final Connector[] previousConnectors = server.getConnectors();
 
-            final Connector[] previousConnectors = server.getConnectors();
+        if (previousConnectors.length != 0) {
+            hasCustomizedConnectors = true;
+        } else {
+            ServerConnector connector = useHttp2
+                ? SocketConnectorFactory.createHttp2Connector(
+                server, host, port, sslStores, trustForwardHeaders)
+                : SocketConnectorFactory.createSecureSocketConnector(
+                server, host, port, sslStores, trustForwardHeaders);
 
-            // Jetty 12: Set server explicitly instead of relying on `connector.getServer()`
-            server = connector.getServer();
-
-            if (previousConnectors.length != 0) {
-                server.setConnectors(previousConnectors);
-                hasCustomizedConnectors = true;
-            } else {
-                server.setConnectors(new Connector[]{connector});
-            }
+            server.setConnectors(new Connector[]{connector});
         }
 
         final ServletContextHandler webSocketServletContextHandler =

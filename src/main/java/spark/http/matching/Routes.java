@@ -30,7 +30,7 @@ final class Routes {
     private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(Routes.class);
     static void execute(RouteContext context) throws Exception {
 
-        LOG.info("Executing route context:  {}", context);
+        LOG.info("Executing route context:  {}", context.toString());
         Object content = context.body().get();
 
         RouteMatch match = context.routeMatcher().find(context.httpMethod(), context.uri(), context.acceptType());

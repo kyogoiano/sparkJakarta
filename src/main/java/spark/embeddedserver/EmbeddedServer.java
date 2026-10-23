@@ -63,6 +63,11 @@ public interface EmbeddedServer {
 
     }
 
+
+    default void configureHttp2(boolean useHttp2) {
+
+    }
+
     /**
      * Configures the web sockets for the embedded server.
      *

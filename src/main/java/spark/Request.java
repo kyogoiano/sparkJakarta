@@ -110,7 +110,7 @@ public class Request {
     }
 
     protected void changeMatch(RouteMatch match) {
-        LOG.info("Change Route match: {}", match);
+        LOG.info("Change Route match: {}", match.toString());
         List<String> requestList = SparkUtils.convertRouteToList(match.getRequestURI());
         List<String> matchedList = SparkUtils.convertRouteToList(match.getMatchUri());
 

@@ -16,7 +16,8 @@
 
 - ✅ **Jakarta EE 11 Migration** - Migrated from `javax.servlet` to `jakarta.servlet` (Jakarta Servlet 6.1 & Jakarta WebSocket 2.2)
 - ✅ **Eclipse Jetty 12.1 (`ee11`)** - Upgraded embedded server to Jetty `12.1.14` (`jetty-ee11-webapp`, `jetty-ee11-websocket`) and SLF4J `2.0.20`
-- ✅ **Java 21+ Baseline & Virtual Threads** - Requires JDK 21 or newer and supports Virtual Threads out of the box via `useVirtualThreads()`
+- ✅ **Java 21+ / JDK 25 Baseline & Virtual Threads** - Requires JDK 21 or newer (tested on JDK 21 and JDK 25) and supports Virtual Threads out of the box via `useVirtualThreads()`
+- ✅ **Optional HTTP/2 Support** - Opt-in HTTP/2 (`useHttp2()`) powered by Jetty 12.1 running side-by-side with standard HTTPS without overwriting existing TCP/TLS support
 - ✅ **Jakarta Cookie Attributes (`SameSite` & Custom Attributes)** - First-class support for `SameSite` and arbitrary cookie attributes (`Partitioned`, etc.) via `res.cookie(...)`
 - ✅ **Servlet 6.1 Redirects & `103 Early Hints`** - Native `HttpServletResponse.sendRedirect(location, statusCode)` and `res.sendEarlyHints()` support
 - ✅ **JPMS Module Support** - Includes `module-info.java` (`module sparkJakarta`)
@@ -43,7 +44,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.sparkjava-community:spark:3.0.0-SNAPSHOT'
+    implementation 'com.github.sparkjava-community:spark:3.1.0-SNAPSHOT'
 }
 ```
 
@@ -66,7 +67,7 @@ Add dependency:
 <dependency>
     <groupId>com.github.sparkjava-community</groupId>
     <artifactId>spark</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -259,6 +260,32 @@ public class JsonExample {
     public static void main(String[] args) {
         get("/hello", "application/json", (req, res) -> 
             "{\"message\": \"Hello World\"}"
+        );
+    }
+}
+```
+
+### Virtual Threads & Optional HTTP/2 
+
+HTTP/2 is completely optional (`useHttp2()`)
+
+```java
+import java.net.URI;
+import static spark.Spark.*;
+
+public class Http2AndVirtualThreadsExample {
+    public static void main(String[] args) {
+        port(8443);
+        secure(URI.create("keystore.jks"), "password", null, null);
+
+        // Enable Java 21+ Virtual Threads
+        useVirtualThreads();
+
+        // Enable optional HTTP/2
+        useHttp2();
+
+        get("/hello", (req, res) ->
+            "Protocol: " + req.protocol() + " | Virtual Thread: " + Thread.currentThread().isVirtual()
         );
     }
 }

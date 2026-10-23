@@ -80,4 +80,14 @@ public class RouteMatch {
     }
 
 
+    @Override
+    public String toString() {
+        return "RouteMatch{" +
+            "target=" + target +
+            ", matchUri='" + matchUri + '\'' +
+            ", requestURI='" + requestURI + '\'' +
+            ", acceptType='" + acceptType + '\'' +
+            ", httpMethod=" + httpMethod +
+            '}';
+    }
 }

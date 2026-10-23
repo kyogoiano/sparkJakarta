@@ -86,6 +86,11 @@ Replace `org.eclipse.jetty.ee10.*` packages with `org.eclipse.jetty.ee11.*` and 
   - Update `Response.redirect(String location, int httpStatusCode)` to use Jakarta Servlet 6.1's native `HttpServletResponse.sendRedirect(location, httpStatusCode)`.
   - Add `Response.sendEarlyHints()` utilizing Servlet 6.1's `HttpServletResponse.SC_EARLY_HINTS` (`103`) / `response.sendError(103)` or informational response support.
 
+### 5.4. Optional HTTP/2 Support (Jetty 12.1 + JDK 21 / JDK 25 FFM)
+- **[Service.java](src/main/java/spark/Service.java)** & **[Spark.java](src/main/java/spark/Spark.java)**:
+  - Add opt-in `useHttp2()`, `useHttp2(boolean)` methods.
+- **[SocketConnectorFactory.java](src/main/java/spark/embeddedserver/jetty/SocketConnectorFactory.java)** & **[EmbeddedJettyServer.java](src/main/java/spark/embeddedserver/jetty/EmbeddedJettyServer.java)**:
+  
 ---
 
 ## 6. Test Suite & WebApp Descriptor Migration (`src/test/`)
@@ -99,17 +104,18 @@ Replace `org.eclipse.jetty.ee10.*` packages with `org.eclipse.jetty.ee11.*` and 
    - Update `WebSocketUpgradeFilter` filter name assertions to `"org.eclipse.jetty.ee11.websocket.servlet.WebSocketUpgradeFilter"`.
 4. **[ServletTest.java](src/test/java/sparkTest/servlet/ServletTest.java)** & **[web.xml](src/test/webapp/WEB-INF/web.xml)**
    - `org.eclipse.jetty.ee10.webapp.WebAppContext` -> `org.eclipse.jetty.ee11.webapp.WebAppContext`
-   - Update `src/test/webapp/WEB-INF/web.xml` schema version from `5.0` to `6.1` (`https://jakarta.ee/xml/ns/jakartaee/web-app_6_1.xsd`).
+   - Update `src/test/webapp/WEB-INF/web.xml` schema version from `5.0` to `6.0`/`6.1`.
 5. **[JakartaSessionAdapter.java](src/test/java/sparkTest/embeddedserver/jetty/websocket/JakartaSessionAdapter.java)**
    - Adapt to any changes in `jakarta.websocket:jakarta.websocket-api:2.2.0` and Jetty 12.1 `CoreSession`.
-6. **Feature Tests**:
+6. **Feature & Performance Tests**:
    - Add tests for **Virtual Threads** (`Thread.currentThread().isVirtual()` inside route handlers when `useVirtualThreads(true)` is enabled).
    - Add tests for **Cookie `SameSite` and custom attributes** in `CookiesIntegrationTest` / `ResponseTest` / `ResponseWrapperDelegationTest`.
    - Update/add tests for **Servlet 6.1 `sendRedirect(location, statusCode)`** and **Early Hints (103)** in `ResponseTest` / `RedirectTest`.
+   - Add unit & integration tests for **Optional HTTP/2 ** in `SocketConnectorFactoryTest` and `EmbeddedJettyServerTest`, plus a concurrent benchmark suite in **[Http2PerformanceTest.java](src/test/java/sparkTest/embeddedserver/jetty/Http2PerformanceTest.java)** comparing the current HTTPS (HTTP/1.1 over TLS) implementation against HTTP/2 across Platform Threads and Virtual Threads.
 
 ---
 
 ## 7. Documentation & Verification
 
-1. Update [README.md](README.md) badges, feature list, and examples for Jakarta EE 11, Jetty `12.1.14` (`ee11`), Virtual Threads, and `SameSite` cookie attributes.
-2. Run full Gradle build and test suite (`gradle clean test --rerun-tasks`) on JDK 21+ and verify 100% of active tests pass.
+1. Update [README.md](README.md) badges, feature list, and examples for Jakarta EE 11, Jetty `12.1.14` (`ee11`), Virtual Threads, HTTP/2, and `SameSite` cookie attributes.
+2. Run full Gradle build and test suite (`gradle clean test --rerun-tasks`) on JDK 21+ / JDK 25 and verify 100% of active tests pass.
