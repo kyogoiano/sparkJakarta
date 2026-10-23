@@ -11,6 +11,9 @@ public record WebSocketHandlerClassWrapper<T>(Class<T> handlerClass) implements 
         WebSocketHandlerWrapper.validateHandlerClass(handlerClass);
     }
 
+    /**
+     * Creates a handler for a single WebSocket connection.
+     */
     @Override
     public T getHandler() {
         try {

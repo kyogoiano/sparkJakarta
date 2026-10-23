@@ -16,6 +16,8 @@
  */
 package spark;
 
+import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.embeddedserver.EmbeddedServer;
@@ -62,6 +64,8 @@ public final class Service extends Routable {
     private SslStores sslStores;
 
     private Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers = null;
+    private Map<String, Class<?>> jakartaAnnotatedWebSocketEndpoints;
+    private Map<String, ServerEndpointConfig> jakartaConfiguredWebSocketEndpoints;
 
     private int maxThreads = -1;
     private int minThreads = -1;
@@ -455,6 +459,31 @@ public final class Service extends Routable {
         addWebSocketHandler(path, new WebSocketHandlerInstanceWrapper<>(handler));
     }
 
+    /**
+     * Registers a Jakarta WebSocket endpoint annotated with {@link ServerEndpoint}.
+     * The endpoint path is taken from the annotation.
+     *
+     * @param endpointClass the annotated endpoint class
+     */
+    public synchronized void webSocketEndpoint(Class<?> endpointClass) {
+        requireNonNull(endpointClass, "WebSocket endpoint class cannot be null");
+        ServerEndpoint endpoint = endpointClass.getAnnotation(ServerEndpoint.class);
+        if (endpoint == null) {
+            throw new IllegalArgumentException("WebSocket endpoint class must be annotated with '@ServerEndpoint'");
+        }
+        addJakartaWebSocketEndpoint(endpoint.value(), endpointClass, null);
+    }
+
+    /**
+     * Registers a programmatic Jakarta WebSocket endpoint using its standard endpoint configuration.
+     *
+     * @param endpointConfig the Jakarta WebSocket endpoint configuration
+     */
+    public synchronized void webSocketEndpoint(ServerEndpointConfig endpointConfig) {
+        requireNonNull(endpointConfig, "WebSocket endpoint configuration cannot be null");
+        addJakartaWebSocketEndpoint(endpointConfig.getPath(), null, endpointConfig);
+    }
+
     private synchronized <T> void addWebSocketHandler(String path, WebSocketHandlerWrapper<T> handlerWrapper) {
         if (initialized) {
             throwBeforeRouteMappingException();
@@ -468,6 +497,28 @@ public final class Service extends Routable {
         }
 
         webSocketHandlers.put(path, handlerWrapper);
+    }
+
+    private synchronized void addJakartaWebSocketEndpoint(
+            String path, Class<?> annotatedEndpoint, ServerEndpointConfig endpointConfig) {
+        if (initialized) {
+            throwBeforeRouteMappingException();
+        }
+        if (isRunningFromServlet()) {
+            throw new IllegalStateException("WebSockets are only supported in the embedded server");
+        }
+        requireNonNull(path, "WebSocket path cannot be null");
+        if (annotatedEndpoint != null) {
+            if (jakartaAnnotatedWebSocketEndpoints == null) {
+                jakartaAnnotatedWebSocketEndpoints = new HashMap<>();
+            }
+            jakartaAnnotatedWebSocketEndpoints.put(path, annotatedEndpoint);
+        } else {
+            if (jakartaConfiguredWebSocketEndpoints == null) {
+                jakartaConfiguredWebSocketEndpoints = new HashMap<>();
+            }
+            jakartaConfiguredWebSocketEndpoints.put(path, endpointConfig);
+        }
     }
 
     /**
@@ -541,7 +592,9 @@ public final class Service extends Routable {
     }
 
     private boolean hasMultipleHandlers() {
-        return webSocketHandlers != null;
+        return (webSocketHandlers != null && !webSocketHandlers.isEmpty())
+                || (jakartaAnnotatedWebSocketEndpoints != null && !jakartaAnnotatedWebSocketEndpoints.isEmpty())
+                || (jakartaConfiguredWebSocketEndpoints != null && !jakartaConfiguredWebSocketEndpoints.isEmpty());
     }
 
 
@@ -667,6 +720,8 @@ public final class Service extends Routable {
                                                     hasMultipleHandlers());
 
                     server.configureWebSockets(webSocketHandlers, webSocketIdleTimeoutMillis);
+                    server.configureJakartaWebSockets(
+                            jakartaAnnotatedWebSocketEndpoints, jakartaConfiguredWebSocketEndpoints);
                     server.trustForwardHeaders(trustForwardHeaders);
                     server.configureVirtualThreads(useVirtualThreads);
                     server.configureHttp2(useHttp2);

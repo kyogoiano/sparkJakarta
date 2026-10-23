@@ -16,6 +16,7 @@
  */
 package spark;
 
+import jakarta.websocket.server.ServerEndpointConfig;
 import org.jetbrains.annotations.Contract;
 import spark.routematch.RouteMatch;
 
@@ -1273,6 +1274,24 @@ public class Spark {
 
     public static <T> void webSocket(String path, T handler) {
         getInstance().webSocket(path, handler);
+    }
+
+    /**
+     * Registers a Jakarta WebSocket endpoint annotated with {@code @ServerEndpoint}.
+     *
+     * @param endpointClass the annotated endpoint class
+     */
+    public static void webSocketEndpoint(Class<?> endpointClass) {
+        getInstance().webSocketEndpoint(endpointClass);
+    }
+
+    /**
+     * Registers a programmatic Jakarta WebSocket endpoint using its standard endpoint configuration.
+     *
+     * @param endpointConfig the Jakarta WebSocket endpoint configuration
+     */
+    public static void webSocketEndpoint(ServerEndpointConfig endpointConfig) {
+        getInstance().webSocketEndpoint(endpointConfig);
     }
 
     /**

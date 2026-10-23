@@ -38,21 +38,35 @@ public class WebSocketCreatorFactory {
      * @return The WebSocketCreator.
      */
     public static JettyWebSocketCreator create(WebSocketHandlerWrapper<?> handlerWrapper) {
-        return new SparkWebSocketCreator(handlerWrapper.getHandler());
+        return new SparkWebSocketCreator(handlerWrapper);
     }
 
-    public record SparkWebSocketCreator(Object handler) implements JettyWebSocketCreator {
+    public static class SparkWebSocketCreator implements JettyWebSocketCreator {
+
+        private final Object handler;
+        private final WebSocketHandlerWrapper<?> handlerWrapper;
+
         public SparkWebSocketCreator(Object handler) {
             this.handler = requireNonNull(handler, "handler cannot be null");
+            this.handlerWrapper = null;
+        }
+
+        private SparkWebSocketCreator(WebSocketHandlerWrapper<?> handlerWrapper) {
+            this.handler = null;
+            this.handlerWrapper = requireNonNull(handlerWrapper, "handlerWrapper cannot be null");
         }
 
         public Object getHandler() {
-            return handler;
+            return handlerWrapper == null ? handler : handlerWrapper.getHandler();
+        }
+
+        public Object handler() {
+            return getHandler();
         }
 
         @Override
         public Object createWebSocket(JettyServerUpgradeRequest jettyServerUpgradeRequest, JettyServerUpgradeResponse jettyServerUpgradeResponse) {
-            return handler;
+            return getHandler();
         }
     }
 }

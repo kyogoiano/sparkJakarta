@@ -19,29 +19,39 @@ public class WebSocketCreatorFactoryTest {
         JettyWebSocketCreator annotated =
                 WebSocketCreatorFactory.create(new WebSocketHandlerClassWrapper<>(AnnotatedHandler.class));
         assertInstanceOf(SparkWebSocketCreator.class, annotated);
-        assertInstanceOf(AnnotatedHandler.class, ((SparkWebSocketCreator) annotated).getHandler());
-        assertSame(((SparkWebSocketCreator) annotated).getHandler(), annotated.createWebSocket(null, null));
+        Object firstAnnotatedHandler = annotated.createWebSocket(null, null);
+        Object secondAnnotatedHandler = annotated.createWebSocket(null, null);
+        assertInstanceOf(AnnotatedHandler.class, firstAnnotatedHandler);
+        assertInstanceOf(AnnotatedHandler.class, secondAnnotatedHandler);
+        assertNotSame(firstAnnotatedHandler, secondAnnotatedHandler);
 
         JettyWebSocketCreator listener =
                 WebSocketCreatorFactory.create(new WebSocketHandlerClassWrapper<>(ListenerHandler.class));
         assertInstanceOf(SparkWebSocketCreator.class, listener);
-        assertInstanceOf(ListenerHandler.class, ((SparkWebSocketCreator) listener).getHandler());
-        assertSame(((SparkWebSocketCreator) listener).getHandler(), listener.createWebSocket(null, null));
+        Object firstListener = listener.createWebSocket(null, null);
+        Object secondListener = listener.createWebSocket(null, null);
+        assertInstanceOf(ListenerHandler.class, firstListener);
+        assertInstanceOf(ListenerHandler.class, secondListener);
+        assertNotSame(firstListener, secondListener);
     }
 
     @Test
-    public void testCreateWebSocketHandlerFromInstanceWrapper() {
+    public void testCreateWebSocketHandlerFromInstanceWrapper() throws Exception {
         AnnotatedHandler annotatedInstance = new AnnotatedHandler();
         JettyWebSocketCreator annotated =
                 WebSocketCreatorFactory.create(new WebSocketHandlerInstanceWrapper(annotatedInstance));
         assertInstanceOf(SparkWebSocketCreator.class, annotated);
         assertSame(annotatedInstance, ((SparkWebSocketCreator) annotated).getHandler());
+        assertSame(annotatedInstance, annotated.createWebSocket(null, null));
+        assertSame(annotatedInstance, annotated.createWebSocket(null, null));
 
         ListenerHandler listenerInstance = new ListenerHandler();
         JettyWebSocketCreator listener =
                 WebSocketCreatorFactory.create(new WebSocketHandlerInstanceWrapper(listenerInstance));
         assertInstanceOf(SparkWebSocketCreator.class, listener);
         assertSame(listenerInstance, ((SparkWebSocketCreator) listener).getHandler());
+        assertSame(listenerInstance, listener.createWebSocket(null, null));
+        assertSame(listenerInstance, listener.createWebSocket(null, null));
     }
 
     @Test
@@ -74,13 +84,11 @@ public class WebSocketCreatorFactoryTest {
 
     @Test
     public void testCreate_whenInstantiationException() {
-        try {
-            WebSocketCreatorFactory.create(new WebSocketHandlerClassWrapper<>(FailingHandler.class));
-            fail("Handler creation should have thrown a RunTimeException");
-        } catch(RuntimeException ex) {
-            assertEquals("Could not instantiate websocket handler", ex.getMessage());
-        }
-
+        JettyWebSocketCreator creator =
+                WebSocketCreatorFactory.create(new WebSocketHandlerClassWrapper<>(FailingHandler.class));
+        RuntimeException exception = assertThrows(
+                RuntimeException.class, () -> creator.createWebSocket(null, null));
+        assertEquals("Could not instantiate websocket handler", exception.getMessage());
     }
 
     @WebSocket
