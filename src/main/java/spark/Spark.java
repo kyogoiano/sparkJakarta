@@ -989,7 +989,7 @@ public class Spark {
     /**
      * Set the default response transformer. All requests not using a custom transformer will use this one
      *
-     * @param transformer
+     * @param transformer response transformer
      */
     public static void defaultResponseTransformer(ResponseTransformer transformer) {
         getInstance().defaultResponseTransformer(transformer);
@@ -1183,6 +1183,33 @@ public class Spark {
     }
 
     /**
+     * Configures the embedded web server to use Java 21+ Virtual Threads for request handling.
+     * This has to be called before any route mapping is done.
+     */
+    public static void useVirtualThreads() {
+        getInstance().useVirtualThreads();
+    }
+
+    /**
+     * Configures whether the embedded web server should use Java 21+ Virtual Threads for request handling.
+     * This has to be called before any route mapping is done.
+     *
+     * @param useVirtualThreads true to enable virtual threads, false to use platform threads
+     */
+    public static void useVirtualThreads(boolean useVirtualThreads) {
+        getInstance().useVirtualThreads(useVirtualThreads);
+    }
+
+
+    public static void useHttp2() {
+        getInstance().useHttp2();
+    }
+
+    public static void useHttp2(boolean useHttp2) {
+        getInstance().useHttp2(useHttp2);
+    }
+
+    /**
      * Sets the folder in classpath serving static files. Observe: this method
      * must be called before all other methods.
      * -
@@ -1290,7 +1317,7 @@ public class Spark {
 
     /**
      * Sets Spark to trust Forwarded, X-Forwarded-Host, X-Forwarded-Server, X-Forwarded-For, X-Forwarded-Proto, X-Proxied-Https headers
-     * as defined at https://www.eclipse.org/jetty/javadoc/current/org/eclipse/jetty/server/ForwardedRequestCustomizer.html
+     * as defined at <a href="https://www.eclipse.org/jetty/javadoc/current/org/eclipse/jetty/server/ForwardedRequestCustomizer.html">...</a>
      */
     public static void trustForwardHeaders() {
         getInstance().trustForwardHeaders();
@@ -1298,7 +1325,7 @@ public class Spark {
 
     /**
      * Sets Spark to NOT trust Forwarded, X-Forwarded-Host, X-Forwarded-Server, X-Forwarded-For, X-Forwarded-Proto, X-Proxied-Https headers
-     * as defined at https://www.eclipse.org/jetty/javadoc/current/org/eclipse/jetty/server/ForwardedRequestCustomizer.html
+     * as defined at <a href="https://www.eclipse.org/jetty/javadoc/current/org/eclipse/jetty/server/ForwardedRequestCustomizer.html">...</a>
      */
     public static void untrustForwardHeaders() {
         getInstance().untrustForwardHeaders();

@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * Provides functionality for modifying the response
@@ -136,13 +137,28 @@ public class Response {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Redirecting ({} to {}", httpStatusCode, location);
         }
-        response.setStatus(httpStatusCode);
-        response.setHeader("Location", location);
-        response.setHeader("Connection", "close");
         try {
-            response.sendError(httpStatusCode);
+            response.sendRedirect(location, httpStatusCode);
         } catch (IOException e) {
             LOG.warn("Exception when trying to redirect permanently", e);
+        }
+    }
+
+    /**
+     * HTTP 103 Early Hints status code.
+     */
+    public static final int SC_EARLY_HINTS = 103;
+
+    /**
+     * Sends a 103 Early Hints informational response using the current response headers
+     * (such as {@code Link} headers added via {@link #header(String, String)}).
+     */
+    public void sendEarlyHints() {
+        response.setStatus(SC_EARLY_HINTS);
+        try {
+            response.flushBuffer();
+        } catch (IOException e) {
+            LOG.warn("Exception when trying to send early hints", e);
         }
     }
 
@@ -245,6 +261,20 @@ public class Response {
     }
 
     /**
+     * Adds cookie to the response with a SameSite attribute. Can be invoked multiple times to insert more than one cookie.
+     *
+     * @param name     name of the cookie
+     * @param value    value of the cookie
+     * @param maxAge   max age of the cookie in seconds (negative for the not persistent cookie, zero - deletes the cookie)
+     * @param secured  if true : cookie will be secured
+     * @param httpOnly if true: cookie will be marked as http only
+     * @param sameSite the SameSite attribute value (e.g. "Strict", "Lax", "None")
+     */
+    public void cookie(String name, String value, int maxAge, boolean secured, boolean httpOnly, String sameSite) {
+        cookie("", "", name, value, maxAge, secured, httpOnly, sameSite);
+    }
+
+    /**
      * Adds cookie to the response. Can be invoked multiple times to insert more than one cookie.
      *
      * @param path    path of the cookie
@@ -272,6 +302,21 @@ public class Response {
     }
 
     /**
+     * Adds cookie to the response with a SameSite attribute. Can be invoked multiple times to insert more than one cookie.
+     *
+     * @param path     path of the cookie
+     * @param name     name of the cookie
+     * @param value    value of the cookie
+     * @param maxAge   max age of the cookie in seconds (negative for the not persistent cookie, zero - deletes the cookie)
+     * @param secured  if true : cookie will be secured
+     * @param httpOnly if true: cookie will be marked as http only
+     * @param sameSite the SameSite attribute value (e.g. "Strict", "Lax", "None")
+     */
+    public void cookie(String path, String name, String value, int maxAge, boolean secured, boolean httpOnly, String sameSite) {
+        cookie("", path, name, value, maxAge, secured, httpOnly, sameSite);
+    }
+
+    /**
      * Adds cookie to the response. Can be invoked multiple times to insert more than one cookie.
      *
      * @param domain   domain of the cookie
@@ -283,12 +328,48 @@ public class Response {
      * @param httpOnly if true: cookie will be marked as http only
      */
     public void cookie(String domain, String path, String name, String value, int maxAge, boolean secured, boolean httpOnly) {
+        cookie(domain, path, name, value, maxAge, secured, httpOnly, (Map<String, String>) null);
+    }
+
+    /**
+     * Adds cookie to the response with a SameSite attribute. Can be invoked multiple times to insert more than one cookie.
+     *
+     * @param domain   domain of the cookie
+     * @param path     path of the cookie
+     * @param name     name of the cookie
+     * @param value    value of the cookie
+     * @param maxAge   max age of the cookie in seconds (negative for the not persistent cookie, zero - deletes the cookie)
+     * @param secured  if true : cookie will be secured
+     * @param httpOnly if true: cookie will be marked as http only
+     * @param sameSite the SameSite attribute value (e.g. "Strict", "Lax", "None")
+     */
+    public void cookie(String domain, String path, String name, String value, int maxAge, boolean secured, boolean httpOnly, String sameSite) {
+        cookie(domain, path, name, value, maxAge, secured, httpOnly, sameSite != null ? Map.of("SameSite", sameSite) : null);
+    }
+
+    /**
+     * Adds cookie to the response with custom Jakarta Cookie attributes (e.g. SameSite, Partitioned).
+     * Can be invoked multiple times to insert more than one cookie.
+     *
+     * @param domain     domain of the cookie
+     * @param path       path of the cookie
+     * @param name       name of the cookie
+     * @param value      value of the cookie
+     * @param maxAge     max age of the cookie in seconds (negative for the not persistent cookie, zero - deletes the cookie)
+     * @param secured    if true : cookie will be secured
+     * @param httpOnly   if true: cookie will be marked as http only
+     * @param attributes map of custom cookie attributes to set via {@link Cookie#setAttribute(String, String)}
+     */
+    public void cookie(String domain, String path, String name, String value, int maxAge, boolean secured, boolean httpOnly, Map<String, String> attributes) {
         Cookie cookie = new Cookie(name, value);
         cookie.setPath(path);
         cookie.setDomain(domain);
         cookie.setMaxAge(maxAge);
         cookie.setSecure(secured);
         cookie.setHttpOnly(httpOnly);
+        if (attributes != null) {
+            attributes.forEach(cookie::setAttribute);
+        }
         response.addCookie(cookie);
     }
 

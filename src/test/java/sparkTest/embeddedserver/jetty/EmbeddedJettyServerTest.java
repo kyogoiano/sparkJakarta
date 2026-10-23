@@ -191,6 +191,139 @@ public class EmbeddedJettyServerTest {
         }
     }
 
+    @Test
+    public void testVirtualThreadsSupportAndLifecycle() throws Exception {
+        Service service = Service.ignite();
+        service.port(0);
+        service.useVirtualThreads();
+
+        AtomicReference<Boolean> beforeIsVirtual = new AtomicReference<>(false);
+        AtomicReference<Boolean> afterIsVirtual = new AtomicReference<>(false);
+        AtomicReference<Boolean> afterAfterIsVirtual = new AtomicReference<>(false);
+        AtomicReference<Boolean> exceptionIsVirtual = new AtomicReference<>(false);
+        CountDownLatch afterAfterLatch = new CountDownLatch(1);
+
+        try {
+            service.before("/virtual-thread-check", (req, res) -> beforeIsVirtual.set(Thread.currentThread().isVirtual()));
+            service.get("/virtual-thread-check", (req, res) -> String.valueOf(Thread.currentThread().isVirtual()));
+            service.after("/virtual-thread-check", (req, res) -> afterIsVirtual.set(Thread.currentThread().isVirtual()));
+            service.afterAfter("/virtual-thread-check", (req, res) -> {
+                afterAfterIsVirtual.set(Thread.currentThread().isVirtual());
+                afterAfterLatch.countDown();
+            });
+
+            service.get("/virtual-thread-error", (req, res) -> {
+                throw new IllegalArgumentException("boom");
+            });
+            service.exception(IllegalArgumentException.class, (ex, req, res) -> {
+                exceptionIsVirtual.set(Thread.currentThread().isVirtual());
+                res.status(422);
+                res.body("handled-on-vt:" + Thread.currentThread().isVirtual());
+            });
+
+            service.awaitInitialization();
+
+            // Calling useVirtualThreads after initialization must throw IllegalStateException
+            assertThrows(IllegalStateException.class, () -> service.useVirtualThreads(false));
+
+            int port = service.port();
+            SparkTestUtil testUtil = new SparkTestUtil(port);
+
+            SparkTestUtil.UrlResponse resp = testUtil.doMethod("GET", "/virtual-thread-check", null);
+            assertEquals(200, resp.status);
+            assertEquals("true", resp.body, "Route should be handled on a JDK 21+ Virtual Thread");
+            assertTrue(beforeIsVirtual.get(), "Before filter should run on a Virtual Thread");
+            assertTrue(afterIsVirtual.get(), "After filter should run on a Virtual Thread");
+            assertTrue(afterAfterLatch.await(5, TimeUnit.SECONDS));
+            assertTrue(afterAfterIsVirtual.get(), "AfterAfter filter should run on a Virtual Thread");
+
+            SparkTestUtil.UrlResponse errResp = testUtil.doMethod("GET", "/virtual-thread-error", null);
+            assertEquals(422, errResp.status);
+            assertEquals("handled-on-vt:true", errResp.body);
+            assertTrue(exceptionIsVirtual.get(), "Exception handler should run on a Virtual Thread");
+
+            testUtil.closeClient();
+        } finally {
+            service.stop();
+            service.awaitStop();
+        }
+    }
+
+    @Test
+    public void testPlatformThreadsWhenVirtualThreadsDisabled() throws Exception {
+        Service service = Service.ignite();
+        service.port(0);
+        service.useVirtualThreads(false);
+
+        try {
+            service.get("/platform-thread-check", (req, res) -> String.valueOf(Thread.currentThread().isVirtual()));
+            service.awaitInitialization();
+
+            int port = service.port();
+            SparkTestUtil testUtil = new SparkTestUtil(port);
+
+            SparkTestUtil.UrlResponse resp = testUtil.doMethod("GET", "/platform-thread-check", null);
+            assertEquals(200, resp.status);
+            assertEquals("false", resp.body, "Request should be handled on a platform thread when virtual threads are disabled");
+
+            testUtil.closeClient();
+        } finally {
+            service.stop();
+            service.awaitStop();
+        }
+    }
+
+    @Test
+    public void testHttp2RequiresSslStores() {
+        Routes routes = Routes.create();
+        StaticFilesConfiguration staticFilesConfig = StaticFilesConfiguration.create();
+        ExceptionMapper<Exception> exceptionMapper = new ExceptionMapper<>();
+        MatcherFilter matcherFilter = new MatcherFilter(routes, staticFilesConfig, exceptionMapper, false, false);
+        JettyHandler jettyHandler = new JettyHandler(matcherFilter);
+
+        EmbeddedJettyServer server = new EmbeddedJettyServer(new JettyServer(), jettyHandler);
+        server.configureHttp2(true);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> server.ignite("localhost", 0, null, 0, 0, 0));
+        assertTrue(ex.getMessage().contains("HTTP/2 requires SSL"));
+    }
+
+    @Test
+    public void testHttp2() throws Exception {
+        Service service = Service.ignite();
+        service.ipAddress("127.0.0.1");
+        service.port(0);
+        service.secure(
+                SparkTestUtil.getKeyStoreLocation(),
+                SparkTestUtil.getKeystorePassword(),
+                null,
+                null
+        );
+        service.useHttp2(true);
+        service.useVirtualThreads();
+
+        try {
+            service.get("/protocol", (req, res) -> req.protocol() + "|vt=" + Thread.currentThread().isVirtual());
+            service.post("/echo", (req, res) -> "h3-echo:" + req.body());
+            service.awaitInitialization();
+
+            assertThrows(IllegalStateException.class, () -> service.useHttp2(false));
+
+            int port = service.port();
+
+            SparkTestUtil httpsUtil = new SparkTestUtil(port);
+            SparkTestUtil.UrlResponse httpsResp = httpsUtil.doMethodSecure("GET", "/protocol", null);
+            assertEquals(200, httpsResp.status);
+            assertEquals("HTTP/2.0|vt=true", httpsResp.body);
+            httpsUtil.closeClient();
+
+        } finally {
+            service.stop();
+            service.awaitStop();
+        }
+    }
+
     public static class EchoSessionListener implements Session.Listener {
         final CountDownLatch messageLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
@@ -214,8 +347,9 @@ public class EmbeddedJettyServerTest {
         }
 
         @Override
-        public void onWebSocketClose(int statusCode, String reason) {
+        public void onWebSocketClose(int statusCode, String reason, Callback callback) {
             closeLatch.countDown();
+            callback.succeed();
         }
     }
 }

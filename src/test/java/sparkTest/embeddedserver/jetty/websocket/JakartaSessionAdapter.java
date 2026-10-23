@@ -6,9 +6,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.security.Principal;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
+import org.eclipse.jetty.websocket.core.Frame;
+import org.eclipse.jetty.websocket.core.OpCode;
 
 public class JakartaSessionAdapter implements Session {
 
@@ -120,17 +124,17 @@ public class JakartaSessionAdapter implements Session {
             @Override
             public void sendText(String text, SendHandler handler) {
                 coreSession.sendFrame(
-                    new org.eclipse.jetty.websocket.core.Frame(org.eclipse.jetty.websocket.core.OpCode.TEXT, text),
+                    new Frame(OpCode.TEXT, text),
                     Callback.from(() -> handler.onResult(new SendResult()), t -> handler.onResult(new SendResult(t))),
                     false
                 );
             }
 
             @Override
-            public java.util.concurrent.Future<Void> sendText(String text) {
-                java.util.concurrent.CompletableFuture<Void> future = new java.util.concurrent.CompletableFuture<>();
+            public Future<Void> sendText(String text) {
+                CompletableFuture<Void> future = new CompletableFuture<>();
                 coreSession.sendFrame(
-                    new org.eclipse.jetty.websocket.core.Frame(org.eclipse.jetty.websocket.core.OpCode.TEXT, text),
+                    new Frame(OpCode.TEXT, text),
                     Callback.from(() -> future.complete(null), future::completeExceptionally),
                     false
                 );
@@ -138,10 +142,10 @@ public class JakartaSessionAdapter implements Session {
             }
 
             @Override
-            public java.util.concurrent.Future<Void> sendBinary(java.nio.ByteBuffer data) {
-                java.util.concurrent.CompletableFuture<Void> future = new java.util.concurrent.CompletableFuture<>();
+            public Future<Void> sendBinary(java.nio.ByteBuffer data) {
+                CompletableFuture<Void> future = new CompletableFuture<>();
                 coreSession.sendFrame(
-                    new org.eclipse.jetty.websocket.core.Frame(org.eclipse.jetty.websocket.core.OpCode.BINARY, data),
+                    new Frame(OpCode.BINARY, data),
                     Callback.from(() -> future.complete(null), future::completeExceptionally),
                     false
                 );
@@ -151,14 +155,14 @@ public class JakartaSessionAdapter implements Session {
             @Override
             public void sendBinary(java.nio.ByteBuffer data, SendHandler handler) {
                 coreSession.sendFrame(
-                    new org.eclipse.jetty.websocket.core.Frame(org.eclipse.jetty.websocket.core.OpCode.BINARY, data),
+                    new Frame(OpCode.BINARY, data),
                     Callback.from(() -> handler.onResult(new SendResult()), t -> handler.onResult(new SendResult(t))),
                     false
                 );
             }
 
             @Override
-            public java.util.concurrent.Future<Void> sendObject(Object data) {
+            public Future<Void> sendObject(Object data) {
                 return sendText(String.valueOf(data));
             }
 
@@ -184,7 +188,7 @@ public class JakartaSessionAdapter implements Session {
             @Override
             public void sendPing(java.nio.ByteBuffer applicationData) {
                 coreSession.sendFrame(
-                    new org.eclipse.jetty.websocket.core.Frame(org.eclipse.jetty.websocket.core.OpCode.PING, applicationData),
+                    new Frame(OpCode.PING, applicationData),
                     Callback.NOOP,
                     false
                 );
@@ -193,7 +197,7 @@ public class JakartaSessionAdapter implements Session {
             @Override
             public void sendPong(java.nio.ByteBuffer applicationData) {
                 coreSession.sendFrame(
-                    new org.eclipse.jetty.websocket.core.Frame(org.eclipse.jetty.websocket.core.OpCode.PONG, applicationData),
+                    new Frame(OpCode.PONG, applicationData),
                     Callback.NOOP,
                     false
                 );

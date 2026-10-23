@@ -52,7 +52,7 @@ final class GeneralError {
                 body.set(bodyAfterFilter);
             }
         } else {
-            LOG.error("", e);
+            LOG.error("modifying exception: ", e);
 
             httpResponse.setStatus(500);
 

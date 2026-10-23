@@ -59,6 +59,15 @@ public class RedirectTest {
         redirect.delete("/hiagain", "/hello", Redirect.Status.USE_PROXY);
         redirect.any("/anyagain", "/hello", Redirect.Status.USE_PROXY);
 
+        get("/redirect307", (request, response) -> {
+            response.redirect("/hello", Redirect.Status.TEMPORARY_REDIRECT.intValue());
+            return null;
+        });
+
+        get("/redirect308", (request, response) -> {
+            response.redirect("/hello", Redirect.Status.PERMANENT_REDIRECT.intValue());
+            return null;
+        });
 
         Spark.awaitInitialization();
     }
@@ -172,6 +181,37 @@ public class RedirectTest {
     public void testRedirectAnyDeleteWithSpecificCode() throws Exception {
         SparkTestUtil.UrlResponse response = testUtil.doMethod("DELETE", "/anyagain", null);
         assertEquals(Redirect.Status.USE_PROXY.intValue(), response.status);
+    }
+
+    @Test
+    public void testServlet61NativeRedirect307And308WithLocationHeader() throws Exception {
+        // 1. Verify Apache HttpClient follows Servlet 6.1 native 307 and 308 redirects to /hello
+        SparkTestUtil.UrlResponse followed307 = testUtil.doMethod("GET", "/redirect307", null);
+        assertEquals(200, followed307.status);
+        assertEquals(REDIRECTED, followed307.body);
+
+        SparkTestUtil.UrlResponse followed308 = testUtil.doMethod("GET", "/redirect308", null);
+        assertEquals(200, followed308.status);
+        assertEquals(REDIRECTED, followed308.body);
+
+        // 2. Verify raw 307 and 308 status codes and Location header with redirect handling disabled
+        try (var noRedirectClient = org.apache.hc.client5.http.impl.classic.HttpClientBuilder.create()
+                .disableRedirectHandling()
+                .build()) {
+            noRedirectClient.execute(new org.apache.hc.client5.http.classic.methods.HttpGet("http://localhost:4567/redirect307"), resp -> {
+                assertEquals(307, resp.getCode());
+                assertNotNull(resp.getFirstHeader("Location"));
+                assertTrue(resp.getFirstHeader("Location").getValue().endsWith("/hello"));
+                return null;
+            });
+
+            noRedirectClient.execute(new org.apache.hc.client5.http.classic.methods.HttpGet("http://localhost:4567/redirect308"), resp -> {
+                assertEquals(308, resp.getCode());
+                assertNotNull(resp.getFirstHeader("Location"));
+                assertTrue(resp.getFirstHeader("Location").getValue().endsWith("/hello"));
+                return null;
+            });
+        }
     }
 
 }

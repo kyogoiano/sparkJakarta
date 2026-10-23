@@ -20,6 +20,8 @@ package spark.http.matching;
 import jakarta.servlet.http.HttpServletResponse;
 import spark.Response;
 
+import java.util.Map;
+
 class ResponseWrapper extends Response {
 
     static ResponseWrapper create() {
@@ -89,6 +91,11 @@ class ResponseWrapper extends Response {
         delegate.redirect(location, httpStatusCode);
     }
 
+    @Override
+    public void sendEarlyHints() {
+        delegate.sendEarlyHints();
+    }
+
     /**
      * @return true if redirected has been done
      */
@@ -132,6 +139,16 @@ class ResponseWrapper extends Response {
     }
 
     @Override
+    public void cookie(String name, String value, int maxAge, boolean secured, boolean httpOnly) {
+        delegate.cookie(name, value, maxAge, secured, httpOnly);
+    }
+
+    @Override
+    public void cookie(String name, String value, int maxAge, boolean secured, boolean httpOnly, String sameSite) {
+        delegate.cookie(name, value, maxAge, secured, httpOnly, sameSite);
+    }
+
+    @Override
     public void cookie(String path, String name, String value, int maxAge, boolean secured) {
         delegate.cookie(path, name, value, maxAge, secured);
     }
@@ -142,8 +159,23 @@ class ResponseWrapper extends Response {
     }
 
     @Override
+    public void cookie(String path, String name, String value, int maxAge, boolean secured, boolean httpOnly, String sameSite) {
+        delegate.cookie(path, name, value, maxAge, secured, httpOnly, sameSite);
+    }
+
+    @Override
     public void cookie(String domain, String path, String name, String value, int maxAge, boolean secured, boolean httpOnly) {
         delegate.cookie(domain, path, name, value, maxAge, secured, httpOnly);
+    }
+
+    @Override
+    public void cookie(String domain, String path, String name, String value, int maxAge, boolean secured, boolean httpOnly, String sameSite) {
+        delegate.cookie(domain, path, name, value, maxAge, secured, httpOnly, sameSite);
+    }
+
+    @Override
+    public void cookie(String domain, String path, String name, String value, int maxAge, boolean secured, boolean httpOnly, Map<String, String> attributes) {
+        delegate.cookie(domain, path, name, value, maxAge, secured, httpOnly, attributes);
     }
 
     @Override

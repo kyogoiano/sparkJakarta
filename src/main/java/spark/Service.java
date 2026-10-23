@@ -94,6 +94,8 @@ public final class Service extends Routable {
     };
 
     private boolean trustForwardHeaders = true;
+    private boolean useVirtualThreads = false;
+    private boolean useHttp2 = false;
 
     /**
      * Creates a new Service (a Spark instance). This should be used instead of the static API if the user wants
@@ -143,15 +145,13 @@ public final class Service extends Routable {
      * done.
      *
      * @param ipAddress The ipAddress
-     * @return the object with IP address set
      */
-    public synchronized Service ipAddress(String ipAddress) {
+    public synchronized void ipAddress(String ipAddress) {
         if (initialized) {
             throwBeforeRouteMappingException();
         }
         this.ipAddress = ipAddress;
 
-        return this;
     }
 
     /**
@@ -330,6 +330,43 @@ public final class Service extends Routable {
     }
 
     /**
+     * Configures the embedded web server to use Java 21+ Virtual Threads for request handling.
+     * This has to be called before any route mapping is done.
+     */
+    public synchronized void useVirtualThreads() {
+        useVirtualThreads(true);
+    }
+
+    /**
+     * Configures whether the embedded web server should use Java 21+ Virtual Threads for request handling.
+     * This has to be called before any route mapping is done.
+     *
+     * @param useVirtualThreads true to enable virtual threads, false to use platform threads
+     */
+    public synchronized void useVirtualThreads(boolean useVirtualThreads) {
+        if (initialized) {
+            throwBeforeRouteMappingException();
+        }
+        this.useVirtualThreads = useVirtualThreads;
+    }
+
+
+    public synchronized void useHttp2(boolean useHttp2) {
+        if (initialized) {
+            throwBeforeRouteMappingException();
+        }
+        this.useHttp2 = useHttp2;
+    }
+
+
+    public synchronized void useHttp2() {
+        if (initialized) {
+            throwBeforeRouteMappingException();
+        }
+        this.useHttp2 = true;
+    }
+
+    /**
      * Sets the folder in classpath serving static files. Observe: this method
      * must be called before all other methods.
      *
@@ -354,9 +391,8 @@ public final class Service extends Routable {
      * must be called before all other methods.</b>
      *
      * @param externalFolder the external folder serving static files.
-     * @return the object with external folder set
      */
-    public synchronized Service externalStaticFileLocation(String externalFolder) {
+    public synchronized void externalStaticFileLocation(String externalFolder) {
         if (initialized && !isRunningFromServlet()) {
             throwBeforeRouteMappingException();
         }
@@ -366,7 +402,6 @@ public final class Service extends Routable {
         } else {
             LOG.warn("External static file location has already been set");
         }
-        return this;
     }
 
     /**
@@ -439,9 +474,8 @@ public final class Service extends Routable {
      * Sets the max idle timeout in milliseconds for WebSocket connections.
      *
      * @param timeoutMillis The max idle timeout in milliseconds.
-     * @return the object with max idle timeout set for WebSocket connections
      */
-    public synchronized Service webSocketIdleTimeoutMillis(long timeoutMillis) {
+    public synchronized void webSocketIdleTimeoutMillis(long timeoutMillis) {
         if (initialized) {
             throwBeforeRouteMappingException();
         }
@@ -449,7 +483,6 @@ public final class Service extends Routable {
             throw new IllegalStateException("WebSockets are only supported in the embedded server");
         }
         webSocketIdleTimeoutMillis = timeoutMillis;
-        return this;
     }
 
     /**
@@ -549,6 +582,7 @@ public final class Service extends Routable {
             exceptionMapper.clear();
             staticFilesConfiguration.clear();
             sslStores = null;
+            useHttp2 = false;
             initialized = false;
             stopLatch.countDown();
         });
@@ -634,6 +668,8 @@ public final class Service extends Routable {
 
                     server.configureWebSockets(webSocketHandlers, webSocketIdleTimeoutMillis);
                     server.trustForwardHeaders(trustForwardHeaders);
+                    server.configureVirtualThreads(useVirtualThreads);
+                    server.configureHttp2(useHttp2);
 
                     port = server.ignite(
                             ipAddress,

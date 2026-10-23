@@ -20,12 +20,12 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.servlet.*;
+import org.eclipse.jetty.ee11.servlet.*;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,10 +33,12 @@ import spark.embeddedserver.EmbeddedServer;
 import spark.embeddedserver.jetty.websocket.WebSocketHandlerWrapper;
 import spark.embeddedserver.jetty.websocket.WebSocketServletContextHandlerFactory;
 import spark.ssl.SslStores;
+import spark.utils.Assert;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 /**
  * Spark server implementation
@@ -59,6 +61,8 @@ public class EmbeddedJettyServer implements EmbeddedServer {
 
     private ThreadPool threadPool = null;
     private boolean trustForwardHeaders = true; // true by default
+    private boolean useVirtualThreads = false;
+    private boolean useHttp2 = false;
 
     public EmbeddedJettyServer(JettyServerFactory serverFactory, JettyHandler handler) {
         this.serverFactory = serverFactory;
@@ -78,6 +82,16 @@ public class EmbeddedJettyServer implements EmbeddedServer {
         this.trustForwardHeaders = trust;
     }
 
+    @Override
+    public void configureVirtualThreads(boolean useVirtualThreads) {
+        this.useVirtualThreads = useVirtualThreads;
+    }
+
+    @Override
+    public void configureHttp2(boolean useHttp2) {
+        this.useHttp2 = useHttp2;
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -88,6 +102,10 @@ public class EmbeddedJettyServer implements EmbeddedServer {
                       int maxThreads,
                       int minThreads,
                       int threadIdleTimeoutMillis) throws Exception {
+
+        if (useHttp2 && sslStores == null) {
+            throw new IllegalStateException("HTTP/2 requires SSL configuration via secure(...)");
+        }
 
         boolean hasCustomizedConnectors = false;
 
@@ -107,20 +125,24 @@ public class EmbeddedJettyServer implements EmbeddedServer {
             server = serverFactory.create(threadPool);
         }
 
-        try (final ServerConnector connector =
-                 SocketConnectorFactory.createSecureSocketConnector(server, host, port, sslStores, trustForwardHeaders)) {
+        if (useVirtualThreads && server != null && server.getThreadPool() instanceof QueuedThreadPool queuedThreadPool) {
+            queuedThreadPool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
+        }
 
-            final Connector[] previousConnectors = server.getConnectors();
+        Assert.notNull(server, "'server' must not be null");
+        Assert.notNull(host, "'host' must not be null");
+        final Connector[] previousConnectors = server.getConnectors();
 
-            // Jetty 12: Set server explicitly instead of relying on `connector.getServer()`
-            server = connector.getServer();
+        if (previousConnectors.length != 0) {
+            hasCustomizedConnectors = true;
+        } else {
+            ServerConnector connector = useHttp2
+                ? SocketConnectorFactory.createHttp2Connector(
+                server, host, port, sslStores, trustForwardHeaders)
+                : SocketConnectorFactory.createSecureSocketConnector(
+                server, host, port, sslStores, trustForwardHeaders);
 
-            if (previousConnectors.length != 0) {
-                server.setConnectors(previousConnectors);
-                hasCustomizedConnectors = true;
-            } else {
-                server.setConnectors(new Connector[]{connector});
-            }
+            server.setConnectors(new Connector[]{connector});
         }
 
         final ServletContextHandler webSocketServletContextHandler =

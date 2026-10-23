@@ -1,9 +1,11 @@
 module sparkJakarta {
     requires org.jetbrains.annotations;
-    requires org.eclipse.jetty.ee10.servlet;
-    requires org.eclipse.jetty.ee10.websocket.jetty.server;
-    requires org.eclipse.jetty.ee10.websocket.jakarta.server;
+    requires org.eclipse.jetty.ee11.servlet;
+    requires org.eclipse.jetty.ee11.websocket.jetty.server;
+    requires org.eclipse.jetty.ee11.websocket.jakarta.server;
     requires org.eclipse.jetty.websocket.server;
+    requires org.eclipse.jetty.http2.server;
+    requires org.eclipse.jetty.alpn.server;
     exports spark;
     opens spark;
     exports spark.utils;

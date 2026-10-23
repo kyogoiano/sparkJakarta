@@ -84,7 +84,7 @@ public class MatcherFilter implements Filter {
     public void doFilter(ServletRequest servletRequest,
                          ServletResponse servletResponse,
                          FilterChain chain) throws IOException, ServletException {
-        LOG.info("Matcher do Filter: {}", servletRequest);
+        LOG.info("Matcher do Filter servlet request id: {}", servletRequest.getRequestId());
         HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
         HttpServletResponse httpResponse = (HttpServletResponse) servletResponse;
 
@@ -129,11 +129,11 @@ public class MatcherFilter implements Filter {
                 AfterFilters.execute(context);
 
             } catch (HaltException halt) {
-
+                LOG.error("Halting route exception: ", halt.getCause());
                 Halt.modify(httpResponse, body, halt);
 
             } catch (Exception generalException) {
-
+                LOG.error(generalException.getMessage(), generalException);
                 GeneralError.modify(
                         httpRequest,
                         httpResponse,

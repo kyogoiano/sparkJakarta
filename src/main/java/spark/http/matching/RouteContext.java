@@ -128,4 +128,16 @@ final class RouteContext {
         return httpMethod;
     }
 
+    @Override
+    public String toString() {
+        return "RouteContext{" +
+            "routeMatcher=" + routeMatcher +
+            ", httpRequest=" + httpRequest +
+            ", uri='" + uri + '\'' +
+            ", acceptType='" + acceptType + '\'' +
+            ", body=" + body +
+            ", response=" + response +
+            ", httpMethod=" + httpMethod +
+            '}';
+    }
 }

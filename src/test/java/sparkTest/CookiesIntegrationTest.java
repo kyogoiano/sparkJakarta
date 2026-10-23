@@ -88,6 +88,27 @@ public class CookiesIntegrationTest {
             return "";
         });
 
+        post("/setCookieWithSameSite", (request, response) -> {
+            response.cookie("strictCookie", "strictVal", 3600, true, true, "Strict");
+            return "";
+        });
+
+        post("/setCookieWithPathAndSameSite", (request, response) -> {
+            response.cookie("/api", "laxCookie", "laxVal", 1800, false, true, "Lax");
+            return "";
+        });
+
+        post("/setCookieWithDomainPathAndSameSite", (request, response) -> {
+            response.cookie("localhost", "/api", "noneCookie", "noneVal", 3600, true, true, "None");
+            return "";
+        });
+
+        post("/setCookieWithCustomAttributes", (request, response) -> {
+            response.cookie("localhost", "/api", "partitionedCookie", "partVal", 3600, true, true,
+                    java.util.Map.of("SameSite", "None", "Partitioned", ""));
+            return "";
+        });
+
     }
 
     @AfterAll
@@ -130,6 +151,71 @@ public class CookiesIntegrationTest {
         // now remove cookie with matching path
         httpPost("/path/removeCookieWithPath?cookieName=" + cookieName + "&cookieValue=" + cookieValue);
         httpPost("/path/assertNoCookies");
+    }
+
+    @Test
+    public void testCookieWithSameSiteHeader() throws Exception {
+        HttpPost request = new HttpPost(DEFAULT_HOST_URL + "/setCookieWithSameSite");
+        httpClient.execute(request, response -> {
+            assertEquals(200, response.getCode());
+            var setCookieHeader = response.getFirstHeader("Set-Cookie");
+            assertNotNull(setCookieHeader);
+            String headerVal = setCookieHeader.getValue();
+            assertTrue(headerVal.contains("strictCookie=strictVal"), "Got: " + headerVal);
+            assertTrue(headerVal.contains("SameSite=Strict"), "Got: " + headerVal);
+            assertTrue(headerVal.contains("Secure"), "Got: " + headerVal);
+            assertTrue(headerVal.contains("HttpOnly"), "Got: " + headerVal);
+            return null;
+        });
+    }
+
+    @Test
+    public void testCookieWithPathAndSameSiteHeader() throws Exception {
+        HttpPost request = new HttpPost(DEFAULT_HOST_URL + "/setCookieWithPathAndSameSite");
+        httpClient.execute(request, response -> {
+            assertEquals(200, response.getCode());
+            var setCookieHeader = response.getFirstHeader("Set-Cookie");
+            assertNotNull(setCookieHeader);
+            String headerVal = setCookieHeader.getValue();
+            assertTrue(headerVal.contains("laxCookie=laxVal"), "Got: " + headerVal);
+            assertTrue(headerVal.contains("Path=/api"), "Got: " + headerVal);
+            assertTrue(headerVal.contains("HttpOnly"), "Got: " + headerVal);
+            assertTrue(headerVal.contains("SameSite=Lax"), "Got: " + headerVal);
+            return null;
+        });
+    }
+
+    @Test
+    public void testCookieWithDomainPathAndSameSiteHeader() throws Exception {
+        HttpPost request = new HttpPost(DEFAULT_HOST_URL + "/setCookieWithDomainPathAndSameSite");
+        httpClient.execute(request, response -> {
+            assertEquals(200, response.getCode());
+            var setCookieHeader = response.getFirstHeader("Set-Cookie");
+            assertNotNull(setCookieHeader);
+            String headerVal = setCookieHeader.getValue();
+            assertTrue(headerVal.contains("noneCookie=noneVal"), "Got: " + headerVal);
+            assertTrue(headerVal.contains("Domain=localhost"), "Got: " + headerVal);
+            assertTrue(headerVal.contains("Path=/api"), "Got: " + headerVal);
+            assertTrue(headerVal.contains("Secure"), "Got: " + headerVal);
+            assertTrue(headerVal.contains("HttpOnly"), "Got: " + headerVal);
+            assertTrue(headerVal.contains("SameSite=None"), "Got: " + headerVal);
+            return null;
+        });
+    }
+
+    @Test
+    public void testCookieWithCustomAttributesMapHeader() throws Exception {
+        HttpPost request = new HttpPost(DEFAULT_HOST_URL + "/setCookieWithCustomAttributes");
+        httpClient.execute(request, response -> {
+            assertEquals(200, response.getCode());
+            var setCookieHeader = response.getFirstHeader("Set-Cookie");
+            assertNotNull(setCookieHeader);
+            String headerVal = setCookieHeader.getValue();
+            assertTrue(headerVal.contains("partitionedCookie=partVal"), "Got: " + headerVal);
+            assertTrue(headerVal.contains("SameSite=None"), "Got: " + headerVal);
+            assertTrue(headerVal.contains("Partitioned"), "Got: " + headerVal);
+            return null;
+        });
     }
 
     private void httpPost(String relativePath) {

@@ -17,8 +17,6 @@
 package spark.embeddedserver.jetty;
 
 import jakarta.servlet.SessionCookieConfig;
-import org.eclipse.jetty.ee10.servlet.SessionHandler;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 import spark.ExceptionMapper;

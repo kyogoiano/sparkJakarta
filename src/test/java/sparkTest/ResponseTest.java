@@ -9,6 +9,7 @@ import spark.utils.ReflectionTestUtils;
 import spark.Response;
 
 import java.util.Date;
+import java.util.Map;
 
 import static org.mockito.Mockito.*;
 
@@ -260,6 +261,48 @@ public class ResponseTest {
     }
 
     @Test
+    public void testCookie_withSameSiteAttribute_shouldSetSameSiteSuccessfully() {
+        response.cookie("session_id", "abc123", 3600, true, true, "Strict");
+
+        verify(httpServletResponse).addCookie(cookieArgumentCaptor.capture());
+        Cookie cookie = cookieArgumentCaptor.getValue();
+        validateCookieContent(cookie, "", "", "abc123", 3600, true, true);
+        assertEquals("Strict", cookie.getAttribute("SameSite"));
+    }
+
+    @Test
+    public void testCookie_withPathAndSameSiteAttribute_shouldSetSameSiteSuccessfully() {
+        response.cookie("/api", "session_id", "abc123", 3600, true, true, "Lax");
+
+        verify(httpServletResponse).addCookie(cookieArgumentCaptor.capture());
+        Cookie cookie = cookieArgumentCaptor.getValue();
+        validateCookieContent(cookie, "", "/api", "abc123", 3600, true, true);
+        assertEquals("Lax", cookie.getAttribute("SameSite"));
+    }
+
+    @Test
+    public void testCookie_withDomainPathAndSameSiteAttribute_shouldSetSameSiteSuccessfully() {
+        response.cookie("example.com", "/api", "session_id", "abc123", 3600, true, true, "None");
+
+        verify(httpServletResponse).addCookie(cookieArgumentCaptor.capture());
+        Cookie cookie = cookieArgumentCaptor.getValue();
+        validateCookieContent(cookie, "example.com", "/api", "abc123", 3600, true, true);
+        assertEquals("None", cookie.getAttribute("SameSite"));
+    }
+
+    @Test
+    public void testCookie_withCustomAttributesMap_shouldSetAttributesSuccessfully() {
+        Map<String, String> attributes = Map.of("SameSite", "None", "Partitioned", "");
+        response.cookie("example.com", "/api", "session_id", "abc123", 3600, true, true, attributes);
+
+        verify(httpServletResponse).addCookie(cookieArgumentCaptor.capture());
+        Cookie cookie = cookieArgumentCaptor.getValue();
+        validateCookieContent(cookie, "example.com", "/api", "abc123", 3600, true, true);
+        assertEquals("None", cookie.getAttribute("SameSite"));
+        assertEquals("", cookie.getAttribute("Partitioned"));
+    }
+
+    @Test
     public void testRemoveCookie_shouldModifyPropertiesFromCookieSuccessfully() {
         final String finalPath = "/cookie/SetCookie";
         final String finalName = "cookie_name";
@@ -289,13 +332,20 @@ public class ResponseTest {
     public void testRedirect_whenLocationAndHttpStatusCodeParameters_shouldModifyStatusCodeSuccessfully() throws
                                                                                                           Exception { // NOSONAR
         final String finalLocation = "/test";
-        int finalStatusCode = HttpServletResponse.SC_BAD_GATEWAY;
+        int finalStatusCode = HttpServletResponse.SC_MOVED_PERMANENTLY;
 
         response.redirect(finalLocation, finalStatusCode);
 
-        verify(httpServletResponse).setStatus(finalStatusCode);
-        verify(httpServletResponse).setHeader("Location", finalLocation);
-        verify(httpServletResponse).setHeader("Connection", "close");
-        verify(httpServletResponse).sendError(finalStatusCode);
+        verify(httpServletResponse).sendRedirect(finalLocation, finalStatusCode);
+    }
+
+    @Test
+    public void testSendEarlyHints_shouldSet103StatusAndFlushBuffer() throws Exception {
+        response.header("Link", "</style.css>; rel=preload; as=style");
+        response.sendEarlyHints();
+
+        verify(httpServletResponse).addHeader("Link", "</style.css>; rel=preload; as=style");
+        verify(httpServletResponse).setStatus(Response.SC_EARLY_HINTS);
+        verify(httpServletResponse).flushBuffer();
     }
 }

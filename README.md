@@ -1,26 +1,29 @@
-# Spark Framework - Community Maintained (Jakarta EE 10 / Jetty 12)
+# Spark Framework - Community Maintained (Jakarta EE 11 / Jetty 12.1)
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
 [![CI](https://github.com/sparkjava-community/spark/actions/workflows/ci.yml/badge.svg)](https://github.com/sparkjava-community/spark/actions/workflows/ci.yml)
-[![Jakarta EE](https://img.shields.io/badge/Jakarta%20EE-10-orange)](https://jakarta.ee/specifications/platform/10/)
-[![Jetty](https://img.shields.io/badge/Jetty-12.0.40-blue)](https://eclipse.dev/jetty/)
+[![Jakarta EE](https://img.shields.io/badge/Jakarta%20EE-11-orange)](https://jakarta.ee/specifications/platform/11/)
+[![Jetty](https://img.shields.io/badge/Jetty-12.1.14-blue)](https://eclipse.dev/jetty/)
 [![Java](https://img.shields.io/badge/Java-21%2B-red)](https://adoptium.net/)
 
-> A tiny web framework for Java — community-maintained fork modernized for Jakarta EE 10, Jetty 12, and Java 21+
+> A tiny web framework for Java — community-maintained fork modernized for Jakarta EE 11, Jetty 12.1, and Java 21+
 
 ## 🚨 About This Fork
 
-**Spark Framework** was created by [Per Wendel](https://github.com/perwendel) and last updated in 2021. This is a **community-maintained fork** that modernizes Spark for the **Jakarta EE 10** ecosystem and **Eclipse Jetty 12**.
+**Spark Framework** was created by [Per Wendel](https://github.com/perwendel) and last updated in 2021. This is a **community-maintained fork** that modernizes Spark for the **Jakarta EE 11** ecosystem and **Eclipse Jetty 12.1**.
 
 ### What's New in This Version?
 
-- ✅ **Jakarta EE 10 Migration** - Migrated from `javax.servlet` to `jakarta.servlet` (Jakarta Servlet 6.0 & Jakarta WebSocket 2.1+)
-- ✅ **Eclipse Jetty 12 (`ee10`)** - Upgraded embedded server to Jetty `12.0.40` (`jetty-ee10-webapp`, `jetty-ee10-websocket`) and SLF4J `2.0.20`
-- ✅ **Java 21+ Baseline** - Requires JDK 21 or newer, leveraging modern Java language features (records, pattern matching, switch expressions)
+- ✅ **Jakarta EE 11 Migration** - Migrated from `javax.servlet` to `jakarta.servlet` (Jakarta Servlet 6.1 & Jakarta WebSocket 2.2)
+- ✅ **Eclipse Jetty 12.1 (`ee11`)** - Upgraded embedded server to Jetty `12.1.14` (`jetty-ee11-webapp`, `jetty-ee11-websocket`) and SLF4J `2.0.20`
+- ✅ **Java 21+ / JDK 25 Baseline & Virtual Threads** - Requires JDK 21 or newer (tested on JDK 21 and JDK 25) and supports Virtual Threads out of the box via `useVirtualThreads()`
+- ✅ **Optional HTTP/2 Support** - Opt-in HTTP/2 (`useHttp2()`) powered by Jetty 12.1 running side-by-side with standard HTTPS without overwriting existing TCP/TLS support
+- ✅ **Jakarta Cookie Attributes (`SameSite` & Custom Attributes)** - First-class support for `SameSite` and arbitrary cookie attributes (`Partitioned`, etc.) via `res.cookie(...)`
+- ✅ **Servlet 6.1 Redirects & `103 Early Hints`** - Native `HttpServletResponse.sendRedirect(location, statusCode)` and `res.sendEarlyHints()` support
 - ✅ **JPMS Module Support** - Includes `module-info.java` (`module sparkJakarta`)
 - ✅ **Gradle Build & JUnit 5** - Migrated build system to Gradle and test suite to JUnit Jupiter 5
 
-> **Migration Note (`javax` -> `jakarta`):** Because this release targets Jakarta EE 10 and Jetty 12, servlet and websocket types exposed via `req.raw()`, `res.raw()`, `SparkFilter`, and WebSocket handlers now use the `jakarta.servlet.*`, `jakarta.websocket.*`, and Jetty 12 `org.eclipse.jetty.websocket.api.*` packages.
+> **Migration Note (`javax` -> `jakarta`):** Because this release targets Jakarta EE 11 and Jetty 12.1, servlet and websocket types exposed via `req.raw()`, `res.raw()`, `SparkFilter`, and WebSocket handlers now use the `jakarta.servlet.*`, `jakarta.websocket.*`, and Jetty 12 `org.eclipse.jetty.websocket.api.*` packages.
 
 ### Original Project
 
@@ -41,7 +44,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.sparkjava-community:spark:3.0.0-SNAPSHOT'
+    implementation 'com.github.sparkjava-community:spark:3.1.0-SNAPSHOT'
 }
 ```
 
@@ -64,7 +67,7 @@ Add dependency:
 <dependency>
     <groupId>com.github.sparkjava-community</groupId>
     <artifactId>spark</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -257,6 +260,32 @@ public class JsonExample {
     public static void main(String[] args) {
         get("/hello", "application/json", (req, res) -> 
             "{\"message\": \"Hello World\"}"
+        );
+    }
+}
+```
+
+### Virtual Threads & Optional HTTP/2 
+
+HTTP/2 is completely optional (`useHttp2()`)
+
+```java
+import java.net.URI;
+import static spark.Spark.*;
+
+public class Http2AndVirtualThreadsExample {
+    public static void main(String[] args) {
+        port(8443);
+        secure(URI.create("keystore.jks"), "password", null, null);
+
+        // Enable Java 21+ Virtual Threads
+        useVirtualThreads();
+
+        // Enable optional HTTP/2
+        useHttp2();
+
+        get("/hello", (req, res) ->
+            "Protocol: " + req.protocol() + " | Virtual Thread: " + Thread.currentThread().isVirtual()
         );
     }
 }
