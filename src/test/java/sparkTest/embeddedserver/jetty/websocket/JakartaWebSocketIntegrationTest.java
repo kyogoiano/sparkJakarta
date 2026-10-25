@@ -14,12 +14,15 @@ import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import spark.Service;
+import spark.embeddedserver.jetty.EmbeddedJettyServer;
 
 import java.io.ByteArrayOutputStream;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -198,7 +201,7 @@ class JakartaWebSocketIntegrationTest {
     }
 
     @Test
-    void invalidJakartaEndpointProducesVisibleStartupFailure() {
+    void invalidJakartaEndpointProducesVisibleStartupFailure() throws Exception {
         Service invalidService = Service.ignite();
         AtomicReference<Exception> startupFailure = new AtomicReference<>();
         invalidService.ipAddress("127.0.0.1");
@@ -210,11 +213,50 @@ class JakartaWebSocketIntegrationTest {
             invalidService.init();
             invalidService.awaitInitialization();
 
-            assertNotNull(startupFailure.get(), "Invalid endpoint deployment failure should be reported");
+            Exception failure = startupFailure.get();
+            assertNotNull(failure, "Invalid endpoint deployment failure should be reported");
+            assertTrue(hasCause(failure, jakarta.websocket.DeploymentException.class),
+                    "The initialization failure should retain the Jakarta deployment exception");
+            assertFalse(invalidService.isInitialized(),
+                    "A service with a failed endpoint deployment must not be reported as initialized");
+            assertNotNull(invalidService.server);
+            Field jettyServerField = EmbeddedJettyServer.class.getDeclaredField("server");
+            jettyServerField.setAccessible(true);
+            Server jettyServer = (Server) jettyServerField.get(invalidService.server);
+            assertTrue(jettyServer.isStopped(), "A failed deployment must stop the partially initialized server");
+            assertFalse(jettyServer.getScheduler().isStarted(),
+                    "A failed deployment must stop the Jetty scheduler");
+
+            Service recoveryService = Service.ignite();
+            recoveryService.ipAddress("127.0.0.1");
+            recoveryService.port(0);
+            recoveryService.get("/healthy", (request, response) -> "healthy");
+            try {
+                recoveryService.awaitInitialization();
+                assertTrue(recoveryService.isInitialized());
+                HttpResponse<String> response = HttpClient.newHttpClient().send(
+                        HttpRequest.newBuilder(URI.create(
+                                "http://127.0.0.1:" + recoveryService.port() + "/healthy")).GET().build(),
+                        HttpResponse.BodyHandlers.ofString());
+                assertEquals(200, response.statusCode());
+                assertEquals("healthy", response.body());
+            } finally {
+                recoveryService.stop();
+                recoveryService.awaitStop();
+            }
         } finally {
             invalidService.stop();
             invalidService.awaitStop();
         }
+    }
+
+    private boolean hasCause(Throwable failure, Class<? extends Throwable> expectedType) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (expectedType.isInstance(cause)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private URI endpointUri(String path) {
