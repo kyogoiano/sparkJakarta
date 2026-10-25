@@ -2,6 +2,8 @@ package sparkTest;
 
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.websocket.server.ServerEndpoint;
+import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -204,6 +206,34 @@ public class ServiceTest {
     }
 
     @Test
+    public void testWebSocketRejectsNativeAndAnnotatedEndpointPathCollision() {
+        service.webSocket("/collision", DummyWebSocketListener.class);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> service.webSocketEndpoint(JakartaCollisionEndpoint.class));
+
+        assertEquals("A WebSocket endpoint is already registered at path: /collision",
+                exception.getMessage());
+    }
+
+    @Test
+    public void testWebSocketRejectsAnnotatedAndConfiguredEndpointPathCollision() {
+        service.webSocketEndpoint(JakartaCollisionEndpoint.class);
+
+        assertThrows(IllegalArgumentException.class, () -> service.webSocketEndpoint(
+                ServerEndpointConfig.Builder.create(JakartaCollisionEndpoint.class, "/collision").build()));
+    }
+
+    @Test
+    public void testWebSocketRejectsConfiguredAndNativeEndpointPathCollision() {
+        service.webSocketEndpoint(
+                ServerEndpointConfig.Builder.create(JakartaCollisionEndpoint.class, "/collision").build());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.webSocket("/collision", DummyWebSocketListener.class));
+    }
+
+    @Test
     @Timeout(value = 300, unit = TimeUnit.MILLISECONDS)
     public void stopExtinguishesServer() {
         final Routes routes = Routes.create();
@@ -238,5 +268,9 @@ public class ServiceTest {
 
     @WebSocket
     protected static class DummyWebSocketListener {
+    }
+
+    @ServerEndpoint("/collision")
+    public static class JakartaCollisionEndpoint {
     }
 }
