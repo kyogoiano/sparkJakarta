@@ -60,17 +60,27 @@ SSE is a unidirectional event stream over HTTP, separate from the bidirectional 
 
 ```java
 service.sse("/events", (request, response, emitter) -> {
-    emitter.send(SseEvent.builder("ready")
-        .event("status")
-        .id("1")
-        .build());
-    emitter.complete();
+    emitter.send("ready"); // plain text data event
+    emitter.send(SseEvent.builder("connected")
+        .event("status").id("1").build());
+
+    // An application-owned executor can keep sending after this route returns.
+    eventExecutor.execute(() -> {
+        try {
+            emitter.send(SseEvent.builder("still connected").event("status").build());
+        } catch (IllegalStateException rejected) {
+            // The bounded queue is full, or the client has disconnected/completed.
+            // Apply the application's retry or drop policy.
+        } finally {
+            emitter.complete();
+        }
+    });
 });
 ```
 
 `emitter.send(String)` sends a text data event. `SseEvent` supports text data, event names, IDs, and retry intervals. The default limits are 256 queued events and 1 MiB of encoded queued event data per connection. These limits bound the emitter's pending queue, not all memory associated with a connection; they exclude caller-owned event strings, servlet/container and socket buffers, and data already handed to the output stream. A single event larger than the byte limit is rejected. The emitter checks character length before encoding, then enforces the actual UTF-8 byte limit, so non-ASCII events may require temporary encoding memory before rejection. `send` throws `IllegalStateException` when an event is too large, the buffer is full, or completion/disconnection has begun, so producers can apply their own retry or drop policy. `complete()` sends queued events before closing the stream. A comment heartbeat is sent every 15 seconds to keep idle connections alive and detect disconnected clients; async write failures close the emitter and discard pending events.
 
-Use the overload with `maxBufferedEvents` and `maxBufferedBytes` to tune limits for a route:
+Use the overload with `maxBufferedEvents` and `maxBufferedBytes` to tune per-connection queue limits for a route:
 
 ```java
 service.sse("/events", 64, 256 * 1024, (request, response, emitter) -> {
