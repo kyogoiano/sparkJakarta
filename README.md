@@ -17,6 +17,7 @@
 - ✅ **Jakarta EE 11 Migration** - Migrated from `javax.servlet` to `jakarta.servlet` (Jakarta Servlet 6.1 & Jakarta WebSocket 2.2)
 - ✅ **Eclipse Jetty 12.1 (`ee11`)** - Upgraded embedded server to Jetty `12.1.14` (`jetty-ee11-webapp`, `jetty-ee11-websocket`) and SLF4J `2.0.20`
 - ✅ **Standard Jakarta WebSocket Endpoints** - Supports `@ServerEndpoint` classes and programmatic Jakarta `Endpoint` configurations alongside the existing Jetty-native handlers
+- ✅ **Server-Sent Events** - Provides bounded text-event streams over asynchronous HTTP responses on the existing server
 - ✅ **Java 21+ / JDK 25 Baseline & Virtual Threads** - Requires JDK 21 or newer (tested on JDK 21 and JDK 25) and supports Virtual Threads out of the box via `useVirtualThreads()`
 - ✅ **Optional HTTP/2 Support** - Opt-in HTTP/2 (`useHttp2()`) powered by Jetty 12.1 running side-by-side with standard HTTPS without overwriting existing TCP/TLS support
 - ✅ **Jakarta Cookie Attributes (`SameSite` & Custom Attributes)** - First-class support for `SameSite` and arbitrary cookie attributes (`Partitioned`, etc.) via `res.cookie(...)`
@@ -52,6 +53,34 @@ public void onOpen(Session session) {
 ```
 
 For Jetty-native handlers, do the equivalent in `onWebSocketOpen` with `session.setIdleTimeout(Duration.ofSeconds(30))`. A timeout of zero disables the idle timeout. Spark does not currently expose a registration-time per-endpoint timeout option.
+
+### Server-Sent Events
+
+SSE is a unidirectional event stream over HTTP, separate from the bidirectional WebSocket APIs. It uses the existing Spark listener, including its TLS and HTTP/2 configuration, and does not require another port:
+
+```java
+service.sse("/events", (request, response, emitter) -> {
+    emitter.send(SseEvent.builder("ready")
+        .event("status")
+        .id("1")
+        .build());
+    emitter.complete();
+});
+```
+
+`emitter.send(String)` sends a text data event. `SseEvent` supports text data, event names, IDs, and retry intervals. The emitter buffers up to 256 events and 1 MiB per connection; `send` throws `IllegalStateException` when the buffer is full, so producers can apply their own retry or drop policy. `complete()` sends queued events before closing the stream. A comment heartbeat is sent every 15 seconds to keep idle connections alive and detect disconnected clients; async write failures close the emitter and discard pending events.
+
+Use the overload with `maxBufferedEvents` and `maxBufferedBytes` to tune limits for a route:
+
+```java
+service.sse("/events", 64, 256 * 1024, (request, response, emitter) -> {
+    emitter.send("ready");
+});
+```
+
+Both custom limits must be positive and apply per connection.
+
+Embedded Jetty enables asynchronous responses automatically. When deploying through `SparkFilter` in a servlet container, configure the filter as async-supported in the container (for example, `<async-supported>true</async-supported>` in `web.xml`).
 
 ### Original Project
 

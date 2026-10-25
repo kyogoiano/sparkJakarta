@@ -80,7 +80,7 @@ test {
     reports {
 
     }
-    jvmArgs("-javaagent:${configurations.mockitoAgent.asPath}", "-Dnet.bytebuddy.experimental=true", "--enable-native-access=ALL-UNNAMED")
+    jvmArgs("-javaagent:${configurations.mockitoAgent.asPath}", "-Dnet.bytebuddy.experimental=true", "--enable-native-access=ALL-UNNAMED", "-XX:NativeMemoryTracking=summary")
     //jvmArgs['--add-modules java.se --add-exports java.base/jdk.internal.ref=EVERYONE --add-opens java.base/java.lang=EVERYONE --add-opens java.base/java.nio=EVERYONE --add-opens java.base/sun.nio.ch=EVERYONE --add-opens java.management/sun.management=EVERYONE --add-opens jdk.management/com.sun.management.internal=EVERYONE --add-opens java.base/java.lang.reflect=test']
 
 }
