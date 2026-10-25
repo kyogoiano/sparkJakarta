@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -83,6 +84,10 @@ class SseIntegrationTest {
         service.sse("/live", (request, response, emitter) -> {
             emitterRef.set(emitter);
             emitter.send("initial");
+        });
+        service.sse("/active-race", 50_000, 5 * 1024 * 1024, (request, response, emitter) -> {
+            emitterRef.set(emitter);
+            emitter.send("ready");
         });
         service.sse("/disconnect", (request, response, emitter) -> {
             emitterRef.set(emitter);
@@ -334,6 +339,106 @@ class SseIntegrationTest {
             concurrentRouteRelease.countDown();
             requestExecutor.shutdownNow();
             producerExecutor.shutdownNow();
+        }
+    }
+
+    @Test
+    @Timeout(value = 40, unit = TimeUnit.SECONDS)
+    void concurrentProducersRaceWithCompletionWhileDrainIsActive() throws Exception {
+        int repetitions = 5;
+        int producerCount = 4;
+        int sendsPerProducer = 1_000_000;
+        ExecutorService producerExecutor = Executors.newFixedThreadPool(producerCount + 1);
+        ExecutorService readerExecutor = Executors.newSingleThreadExecutor();
+
+        try {
+            for (int repetition = 0; repetition < repetitions; repetition++) {
+                int currentRepetition = repetition;
+                HttpResponse<java.io.InputStream> response = request("/active-race");
+                assertEquals(200, response.statusCode());
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(response.body(), StandardCharsets.UTF_8));
+                assertEquals("data:ready", reader.readLine());
+                assertEquals("", reader.readLine(), "Reading the first event confirms the stream is active");
+
+                SseEmitter emitter = emitterRef.get();
+                Set<String> acceptedEvents = ConcurrentHashMap.newKeySet();
+                Set<String> deliveredEvents = ConcurrentHashMap.newKeySet();
+                AtomicInteger activeProducers = new AtomicInteger();
+                AtomicInteger successfulSends = new AtomicInteger();
+                AtomicInteger rejectedSends = new AtomicInteger();
+                CountDownLatch allProducersReady = new CountDownLatch(producerCount);
+                CountDownLatch startProducers = new CountDownLatch(1);
+
+                Future<?> readerFuture = readerExecutor.submit(() -> {
+                    try (reader) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            if (line.startsWith("data:")) {
+                                assertTrue(
+                                        deliveredEvents.add(line.substring("data:".length())),
+                                        "An accepted event must not be delivered more than once");
+                            }
+                        }
+                    } catch (java.io.IOException failure) {
+                        throw new RuntimeException(failure);
+                    }
+                });
+
+                CompletableFuture<?>[] producers = new CompletableFuture<?>[producerCount];
+                for (int producer = 0; producer < producerCount; producer++) {
+                    int producerId = producer;
+                    producers[producer] = CompletableFuture.runAsync(() -> {
+                        activeProducers.incrementAndGet();
+                        allProducersReady.countDown();
+                        await(startProducers);
+                        try {
+                            for (int sequence = 0; sequence < sendsPerProducer; sequence++) {
+                                String event = currentRepetition + "-" + producerId + "-" + sequence;
+                                try {
+                                    emitter.send(event);
+                                    acceptedEvents.add(event);
+                                    successfulSends.incrementAndGet();
+                                } catch (IllegalStateException completionOrOverflowWon) {
+                                    rejectedSends.incrementAndGet();
+                                    break;
+                                }
+                            }
+                        } finally {
+                            activeProducers.decrementAndGet();
+                        }
+                    }, producerExecutor);
+                }
+
+                CompletableFuture<Boolean> completion = CompletableFuture.supplyAsync(() -> {
+                    await(startProducers);
+                    long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+                    while (successfulSends.get() < 32 && System.nanoTime() < deadline) {
+                        Thread.onSpinWait();
+                    }
+                    assertTrue(successfulSends.get() >= 32, "Producers should reach the active stream");
+                    boolean producersActive = activeProducers.get() > 0;
+                    emitter.complete();
+                    return producersActive;
+                }, producerExecutor);
+
+                assertTrue(allProducersReady.await(5, TimeUnit.SECONDS));
+                startProducers.countDown();
+                CompletableFuture.allOf(producers).get(10, TimeUnit.SECONDS);
+                boolean completedWhileProducersActive = completion.get(10, TimeUnit.SECONDS);
+                readerFuture.get(10, TimeUnit.SECONDS);
+                assertTrue(completedWhileProducersActive,
+                        "Completion should begin while producers are still active");
+                assertTrue(rejectedSends.get() > 0,
+                        "Producers still running when completion begins should have sends rejected");
+                assertThrows(IllegalStateException.class, () -> emitter.send("after completion"));
+                assertEquals(acceptedEvents, deliveredEvents,
+                        "Every accepted event should be delivered once before the active stream closes");
+                assertTrue(emitter.isClosed(), "The active stream should release the emitter after completion");
+            }
+        } finally {
+            producerExecutor.shutdownNow();
+            readerExecutor.shutdownNow();
         }
     }
 
