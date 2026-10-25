@@ -211,7 +211,13 @@ public class EmbeddedJettyServer implements EmbeddedServer {
         logger.info(">>> {} shutting down ...", NAME);
         try {
             if (server != null) {
-                server.stop();
+                try {
+                    server.stop();
+                } finally {
+                    if (server.getScheduler().isStarted()) {
+                        server.getScheduler().stop();
+                    }
+                }
             }
         } catch (Exception e) {
             logger.error("stop failed", e);

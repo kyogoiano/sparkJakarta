@@ -56,7 +56,8 @@ public final class Service extends Routable {
     public static final int SPARK_DEFAULT_PORT = 4567;
     static final String DEFAULT_ACCEPT_TYPE = "*/*";
 
-    boolean initialized = false;
+    volatile boolean initialized = false;
+    private volatile boolean initializationAttempted = false;
 
     private int port = SPARK_DEFAULT_PORT;
     private String ipAddress = "0.0.0.0";
@@ -575,7 +576,7 @@ public final class Service extends Routable {
      * If it's already initialized will return immediately
      */
     public void awaitInitialization() {
-        if (!initialized) {
+        if (!initializationAttempted) {
     	        throw new IllegalStateException("Server has not been properly initialized");
         }
 
@@ -613,9 +614,9 @@ public final class Service extends Routable {
      * Stops the Spark server and clears all routes.
      */
     public synchronized void stop() {
-    	if (!initialized) {
-    		return;
-    	}
+        if (!initializationAttempted) {
+            return;
+        }
         initiateStop();
     }
 
@@ -648,6 +649,7 @@ public final class Service extends Routable {
             sslStores = null;
             useHttp2 = false;
             initialized = false;
+            initializationAttempted = false;
             stopLatch.countDown();
         });
         stopThread.start();
@@ -714,8 +716,14 @@ public final class Service extends Routable {
         if (!initialized) {
 
             initializeRouteMatcher();
+            if (initializationAttempted) {
+                initLatch = new CountDownLatch(1);
+            }
+            initializationAttempted = true;
+            initialized = true;
 
             if (!isRunningFromServlet()) {
+                CountDownLatch initializationLatch = initLatch;
                 new Thread(() -> {
                   try {
                     EmbeddedServers.initialize();
@@ -745,19 +753,33 @@ public final class Service extends Routable {
                             minThreads,
                             threadIdleTimeoutMillis);
                   } catch (Exception e) {
-                    initExceptionHandler.accept(e);
+                    if (server != null) {
+                        try {
+                            server.extinguish();
+                        } catch (RuntimeException cleanupFailure) {
+                            e.addSuppressed(cleanupFailure);
+                        }
+                    }
+                    initialized = false;
+                    try {
+                        initExceptionHandler.accept(e);
+                    } finally {
+                        initializationLatch.countDown();
+                    }
+                    return;
                   }
                     try {
-                        initLatch.countDown();
-                        LOG.info("counted down latch, current count {}", initLatch.getCount());
-                        server.join();
+                        initializationLatch.countDown();
+                        LOG.info("counted down latch, current count {}", initializationLatch.getCount());
+                        if (server != null) {
+                            server.join();
+                        }
                     } catch (InterruptedException e) {
                         LOG.error("server interrupted", e);
                         Thread.currentThread().interrupt();
                     }
                 }).start();
             }
-            initialized = true;
         }
     }
 
