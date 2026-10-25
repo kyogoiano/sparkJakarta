@@ -42,14 +42,16 @@ public class Http2PerformanceTest {
     record BenchmarkResult(
             String scenario,
             String protocol,
-            boolean virtualThreads,
             int totalRequests,
             double totalTimeMs,
             double throughputReqPerSec,
             double avgLatencyMs,
             double p50LatencyMs,
             double p95LatencyMs,
-            double p99LatencyMs
+            double p99LatencyMs,
+            long peakHeapIncreaseBytes,
+            long peakNativeCommittedIncreaseBytes,
+            long peakResidentSetIncreaseBytes
     ) {}
 
     @Test
@@ -70,11 +72,12 @@ public class Http2PerformanceTest {
 
         StringBuilder report = new StringBuilder("\n");
         report.append("========================================================================================================================\n");
-        report.append(String.format("%-42s | %-8s | %-10s | %-12s | %-9s | %-9s | %-9s | %-9s%n",
-                "Scenario", "Protocol", "Total (ms)", "Req/sec", "Avg (ms)", "p50 (ms)", "p95 (ms)", "p99 (ms)"));
+        report.append(String.format("%-42s | %-8s | %-10s | %-12s | %-9s | %-9s | %-9s | %-9s | %-10s | %-15s | %-12s%n",
+                "Scenario", "Protocol", "Total (ms)", "Req/sec", "Avg (ms)", "p50 (ms)", "p95 (ms)", "p99 (ms)",
+                "Heap +MiB", "NMT native +MiB", "RSS +MiB"));
         report.append("------------------------------------------------------------------------------------------------------------------------\n");
         for (BenchmarkResult r : results) {
-            report.append(String.format("%-42s | %-8s | %10.2f | %12.2f | %9.2f | %9.2f | %9.2f | %9.2f%n",
+            report.append(String.format("%-42s | %-8s | %10.2f | %12.2f | %9.2f | %9.2f | %9.2f | %9.2f | %10.2f | %15.2f | %12s%n",
                     r.scenario(),
                     r.protocol(),
                     r.totalTimeMs(),
@@ -82,9 +85,20 @@ public class Http2PerformanceTest {
                     r.avgLatencyMs(),
                     r.p50LatencyMs(),
                     r.p95LatencyMs(),
-                    r.p99LatencyMs()));
+                    r.p99LatencyMs(),
+                    r.peakHeapIncreaseBytes() / (1024.0 * 1024.0),
+                    r.peakNativeCommittedIncreaseBytes() / (1024.0 * 1024.0),
+                    r.peakResidentSetIncreaseBytes() < 0
+                            ? "N/A"
+                            : String.format("%.2f",
+                                    r.peakResidentSetIncreaseBytes() / (1024.0 * 1024.0))));
             assertEquals(BENCHMARK_REQUESTS, r.totalRequests());
             assertTrue(r.throughputReqPerSec() > 0, "Throughput must be positive for " + r.scenario());
+            assertTrue(r.peakHeapIncreaseBytes() >= 0, "Heap increase must not be negative for " + r.scenario());
+            assertTrue(r.peakNativeCommittedIncreaseBytes() >= 0,
+                    "Native memory increase must not be negative for " + r.scenario());
+            assertTrue(r.peakResidentSetIncreaseBytes() >= -1,
+                    "RSS increase must be available or marked unsupported for " + r.scenario());
         }
         report.append("========================================================================================================================\n");
         LOG.info(report.toString());
@@ -136,7 +150,8 @@ public class Http2PerformanceTest {
                 String expectedProtocol = useHttp2 ? "HTTP/2.0" : "HTTP/1.1";
                 AtomicInteger counter = new AtomicInteger(0);
 
-                try (final ExecutorService executor = Executors.newFixedThreadPool(CONCURRENCY)) {
+                try (final ExecutorService executor = Executors.newFixedThreadPool(CONCURRENCY);
+                     PerformanceMemorySampler memorySampler = new PerformanceMemorySampler()) {
                     long startWallNanos = System.nanoTime();
 
                     CompletableFuture.allOf(IntStream.range(0, CONCURRENCY).mapToObj(w -> CompletableFuture.runAsync(() -> {
@@ -171,21 +186,23 @@ public class Http2PerformanceTest {
                     double totalTimeMs = totalWallNanos / 1_000_000.0;
                     double throughput = (BENCHMARK_REQUESTS * 1000.0) / totalTimeMs;
                     double avgMs = Arrays.stream(latenciesNanos).average().orElse(0.0) / 1_000_000.0;
-                    double p50Ms = latenciesNanos[(int) (BENCHMARK_REQUESTS * 0.50)] / 1_000_000.0;
-                    double p95Ms = latenciesNanos[(int) (BENCHMARK_REQUESTS * 0.95)] / 1_000_000.0;
-                    double p99Ms = latenciesNanos[(int) (BENCHMARK_REQUESTS * 0.99)] / 1_000_000.0;
+                    double p50Ms = percentileMs(latenciesNanos, 0.50);
+                    double p95Ms = percentileMs(latenciesNanos, 0.95);
+                    double p99Ms = percentileMs(latenciesNanos, 0.99);
 
                     return new BenchmarkResult(
                             scenarioName,
                             expectedProtocol,
-                            useVirtualThreads,
                             BENCHMARK_REQUESTS,
                             totalTimeMs,
                             throughput,
                             avgMs,
                             p50Ms,
                             p95Ms,
-                            p99Ms
+                            p99Ms,
+                            memorySampler.peakHeapIncreaseBytes(),
+                            memorySampler.peakNativeCommittedIncreaseBytes(),
+                            memorySampler.peakResidentSetIncreaseBytes()
                     );
                 }
             }
@@ -195,7 +212,12 @@ public class Http2PerformanceTest {
         }
     }
 
-    private HttpClient createJettyClient(boolean useHttp2) {
+    private double percentileMs(long[] sortedLatencies, double percentile) {
+        int index = Math.max(0, (int) Math.ceil(percentile * sortedLatencies.length) - 1);
+        return sortedLatencies[index] / 1_000_000.0;
+    }
+
+    static HttpClient createJettyClient(boolean useHttp2) {
         SslContextFactory.Client sslClient = new SslContextFactory.Client(true);
         ClientConnector clientConnector = new ClientConnector();
         clientConnector.setSslContextFactory(sslClient);
