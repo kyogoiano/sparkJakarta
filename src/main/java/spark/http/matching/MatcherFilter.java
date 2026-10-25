@@ -26,6 +26,7 @@ import spark.ExceptionMapper;
 import spark.HaltException;
 import spark.RequestResponseFactory;
 import spark.Response;
+import spark.SseEmitter;
 import spark.embeddedserver.jetty.HttpRequestWrapper;
 import spark.route.HttpMethod;
 import spark.serialization.SerializerChain;
@@ -182,6 +183,24 @@ public class MatcherFilter implements Filter {
                         responseWrapper,
                         exceptionMapper,
                         generalException);
+            }
+        }
+
+        Object sseAttribute = httpRequest.getAttribute(SseEmitter.class.getName());
+        if (sseAttribute instanceof SseEmitter emitter) {
+            httpRequest.removeAttribute(SseEmitter.class.getName());
+            if (body.get() == emitter) {
+                try {
+                    emitter.start();
+                } catch (IOException | RuntimeException failure) {
+                    emitter.abort();
+                    LOG.error("Could not start SSE response", failure);
+                    if (!httpResponse.isCommitted()) {
+                        httpResponse.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                    }
+                }
+            } else {
+                emitter.abort();
             }
         }
 

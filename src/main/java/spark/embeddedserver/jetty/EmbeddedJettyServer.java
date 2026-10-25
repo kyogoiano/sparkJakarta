@@ -157,12 +157,14 @@ public class EmbeddedJettyServer implements EmbeddedServer {
 
         // Handle API routes
         ServletHandler servletHandler = new ServletHandler();
-        servletHandler.addServletWithMapping(new ServletHolder(new HttpServlet() {
+        ServletHolder sparkServlet = new ServletHolder(new HttpServlet() {
             @Override
             protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
                 handler.doHandle(req, resp);
             }
-        }), "/*");
+        });
+        sparkServlet.setAsyncSupported(true);
+        servletHandler.addServletWithMapping(sparkServlet, "/*");
 
         ServletContextHandler servletContextHandler = new ServletContextHandler("/", handler, null, servletHandler, null);
 

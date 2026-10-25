@@ -1277,6 +1277,28 @@ public class Spark {
     }
 
     /**
+     * Maps an HTTP GET route to a Server-Sent Events stream.
+     *
+     * @param path the route path
+     * @param route the handler for each SSE connection
+     */
+    public static void sse(String path, SseRoute route) {
+        getInstance().sse(path, route);
+    }
+
+    /**
+     * Maps an HTTP GET route to an SSE stream with per-connection buffer limits.
+     *
+     * @param path the route path
+     * @param maxBufferedEvents maximum number of queued events per connection
+     * @param maxBufferedBytes maximum encoded event bytes queued per connection
+     * @param route the handler for each SSE connection
+     */
+    public static void sse(String path, int maxBufferedEvents, int maxBufferedBytes, SseRoute route) {
+        getInstance().sse(path, maxBufferedEvents, maxBufferedBytes, route);
+    }
+
+    /**
      * Registers a Jakarta WebSocket endpoint annotated with {@code @ServerEndpoint}.
      *
      * @param endpointClass the annotated endpoint class

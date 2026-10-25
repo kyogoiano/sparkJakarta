@@ -21,6 +21,7 @@ import java.io.OutputStream;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import spark.SseEmitter;
 import spark.utils.GzipUtils;
 import spark.serialization.SerializerChain;
 
@@ -58,6 +59,10 @@ final class Body {
     public void serializeTo(HttpServletResponse httpResponse,
                             SerializerChain serializerChain,
                             HttpServletRequest httpRequest) throws IOException {
+
+        if (content instanceof SseEmitter) {
+            return;
+        }
 
         if (!httpResponse.isCommitted()) {
             if (httpResponse.getContentType() == null) {

@@ -19,6 +19,8 @@ package spark;
 import spark.route.HttpMethod;
 import spark.utils.SparkUtils;
 
+import java.util.Objects;
+
 /**
  * Routable abstract class. Lets extending classes inherit default routable functionality.
  */
@@ -59,6 +61,49 @@ abstract class Routable {
      */
     public void get(String path, Route route) {
         addRoute(HttpMethod.get, createRouteImpl(path, route));
+    }
+
+    /**
+     * Maps an HTTP GET route to a Server-Sent Events stream.
+     * The event queue is bounded; {@link SseEmitter#send(SseEvent)} rejects events when full.
+     *
+     * @param path the route path
+     * @param route the handler for each SSE connection
+     */
+    public void sse(String path, SseRoute route) {
+        sse(path, SseEmitter.DEFAULT_MAX_BUFFERED_EVENTS, SseEmitter.DEFAULT_MAX_BUFFERED_BYTES, route);
+    }
+
+    /**
+     * Maps an HTTP GET route to a Server-Sent Events stream with per-connection buffer limits.
+     *
+     * @param path the route path
+     * @param maxBufferedEvents maximum number of queued events per connection
+     * @param maxBufferedBytes maximum encoded event bytes queued per connection
+     * @param route the handler for each SSE connection
+     */
+    public void sse(String path, int maxBufferedEvents, int maxBufferedBytes, SseRoute route) {
+        Objects.requireNonNull(path, "SSE path cannot be null");
+        Objects.requireNonNull(route, "SSE route cannot be null");
+        if (maxBufferedEvents < 1) {
+            throw new IllegalArgumentException("Maximum buffered SSE events must be positive");
+        }
+        if (maxBufferedBytes < 1) {
+            throw new IllegalArgumentException("Maximum buffered SSE bytes must be positive");
+        }
+        addRoute(HttpMethod.get, RouteImpl.create(path, (request, response) -> {
+            SseEmitter emitter = new SseEmitter(
+                    request.raw(), response.raw(), maxBufferedEvents, maxBufferedBytes);
+            request.raw().setAttribute(SseEmitter.REQUEST_ATTRIBUTE, emitter);
+            try {
+                route.handle(request, response, emitter);
+                return emitter;
+            } catch (Exception | Error failure) {
+                emitter.abort();
+                request.raw().removeAttribute(SseEmitter.REQUEST_ATTRIBUTE);
+                throw failure;
+            }
+        }));
     }
 
     /**
