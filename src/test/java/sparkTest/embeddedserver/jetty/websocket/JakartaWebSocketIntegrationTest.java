@@ -20,9 +20,12 @@ import org.junit.jupiter.api.Test;
 import spark.Service;
 
 import java.io.ByteArrayOutputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.net.URI;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -30,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -58,6 +62,7 @@ class JakartaWebSocketIntegrationTest {
         service.webSocketEndpoint(
                 ServerEndpointConfig.Builder.create(ProgrammaticEchoEndpoint.class, "/programmatic").build());
         service.webSocket("/jetty-native", JettyNativeEchoEndpoint.class);
+        service.get("/ordinary", (request, response) -> "ordinary HTTP response");
         service.init();
         service.awaitInitialization();
     }
@@ -132,23 +137,38 @@ class JakartaWebSocketIntegrationTest {
     }
 
     @Test
-    void jettyNativeAndJakartaEndpointsRoundTripOnTheSameService() throws Exception {
+    void allEndpointTypesAndOrdinaryHttpRouteWorkOnTheSameService() throws Exception {
         var container = ContainerProvider.getWebSocketContainer();
         JakartaEchoClient jettyNativeClient = new JakartaEchoClient();
         JakartaEchoClient jakartaClient = new JakartaEchoClient();
+        JakartaEchoClient configuredClient = new JakartaEchoClient();
         Session jettyNativeSession = null;
         Session jakartaSession = null;
+        Session configuredSession = null;
 
         try {
             jettyNativeSession = container.connectToServer(
                     jettyNativeClient, endpointUri("/jetty-native"));
             jakartaSession = container.connectToServer(jakartaClient, endpointUri("/annotated"));
+            configuredSession = container.connectToServer(configuredClient, endpointUri("/programmatic"));
 
             jettyNativeSession.getBasicRemote().sendText("native round trip");
             jakartaSession.getBasicRemote().sendText("jakarta round trip");
+            configuredSession.getBasicRemote().sendText("configured round trip");
 
             assertEquals("native round trip", jettyNativeClient.awaitMessage());
             assertTrue(jakartaClient.awaitMessage().endsWith(":jakarta round trip"));
+            assertEquals("programmatic:6000:configured round trip", configuredClient.awaitMessage());
+            assertTrue(asyncSendCompletion.await(5, TimeUnit.SECONDS),
+                    "Configured Jakarta endpoint should complete its asynchronous response");
+            assertNull(asyncSendFailure.get(), "Configured Jakarta endpoint should send without failure");
+
+            HttpResponse<String> ordinaryResponse = HttpClient.newHttpClient().send(
+                    HttpRequest.newBuilder(httpUri("/ordinary")).GET().build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertEquals(200, ordinaryResponse.statusCode());
+            assertEquals("ordinary HTTP response", ordinaryResponse.body());
+
             assertThrows(DeploymentException.class, () -> container.connectToServer(
                     new JakartaEchoClient(), endpointUri("/unregistered")));
         } finally {
@@ -158,11 +178,51 @@ class JakartaWebSocketIntegrationTest {
             if (jakartaSession != null && jakartaSession.isOpen()) {
                 jakartaSession.close();
             }
+            if (configuredSession != null && configuredSession.isOpen()) {
+                configuredSession.close();
+            }
+        }
+    }
+
+    @Test
+    void duplicateEndpointRegistrationFailsBeforeServerInitialization() {
+        Service duplicateService = Service.ignite();
+        duplicateService.webSocketEndpoint(AnnotatedEchoEndpoint.class);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> duplicateService.webSocketEndpoint(
+                        ServerEndpointConfig.Builder.create(ProgrammaticEchoEndpoint.class, "/annotated").build()));
+
+        assertEquals("A WebSocket endpoint is already registered at path: /annotated", exception.getMessage());
+        assertFalse(duplicateService.isInitialized(), "Duplicate registration must fail before server startup");
+    }
+
+    @Test
+    void invalidJakartaEndpointProducesVisibleStartupFailure() {
+        Service invalidService = Service.ignite();
+        AtomicReference<Exception> startupFailure = new AtomicReference<>();
+        invalidService.ipAddress("127.0.0.1");
+        invalidService.port(0);
+        invalidService.initExceptionHandler(startupFailure::set);
+        invalidService.webSocketEndpoint(InvalidAnnotatedEndpoint.class);
+
+        try {
+            invalidService.init();
+            invalidService.awaitInitialization();
+
+            assertNotNull(startupFailure.get(), "Invalid endpoint deployment failure should be reported");
+        } finally {
+            invalidService.stop();
+            invalidService.awaitStop();
         }
     }
 
     private URI endpointUri(String path) {
         return URI.create("ws://127.0.0.1:" + service.port() + path);
+    }
+
+    private URI httpUri(String path) {
+        return URI.create("http://127.0.0.1:" + service.port() + path);
     }
 
     @ServerEndpoint("/annotated")
@@ -227,6 +287,13 @@ class JakartaWebSocketIntegrationTest {
         @Override
         public void onClose(Session session, CloseReason closeReason) {
             closeLatch.countDown();
+        }
+    }
+
+    @ServerEndpoint("/invalid")
+    public static class InvalidAnnotatedEndpoint {
+        @OnMessage
+        public void onMessage(java.util.Map<String, Object> unsupportedMessageType) {
         }
     }
 
