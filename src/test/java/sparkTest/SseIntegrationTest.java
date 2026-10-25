@@ -16,7 +16,18 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,6 +43,9 @@ class SseIntegrationTest {
     private final AtomicReference<IllegalStateException> oversizedFailure = new AtomicReference<>();
     private final AtomicReference<IllegalStateException> customEventLimitFailure = new AtomicReference<>();
     private final AtomicReference<IllegalStateException> customByteLimitFailure = new AtomicReference<>();
+    private final List<SseEmitter> idleEmitters = new CopyOnWriteArrayList<>();
+    private final CountDownLatch concurrentRouteReady = new CountDownLatch(1);
+    private final CountDownLatch concurrentRouteRelease = new CountDownLatch(1);
     private Service service;
 
     @BeforeEach
@@ -70,6 +84,22 @@ class SseIntegrationTest {
             emitterRef.set(emitter);
             emitter.send("initial");
         });
+        service.sse("/disconnect", (request, response, emitter) -> {
+            emitterRef.set(emitter);
+            emitter.send("initial");
+        });
+        service.sse("/idle", (request, response, emitter) -> idleEmitters.add(emitter));
+        service.sse("/concurrent", 64, 512, (request, response, emitter) -> {
+            emitterRef.set(emitter);
+            concurrentRouteReady.countDown();
+            if (!concurrentRouteRelease.await(5, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Timed out waiting to start the concurrent SSE stream");
+            }
+        });
+        service.sse("/throws", (request, response, emitter) -> {
+            emitterRef.set(emitter);
+            throw new IllegalArgumentException("failure before SSE response startup");
+        });
         service.sse("/large", (request, response, emitter) -> {
             emitterRef.set(emitter);
             emitter.send("x".repeat(300_000));
@@ -96,6 +126,9 @@ class SseIntegrationTest {
             }
             emitter.complete();
         });
+        service.before("/events", (request, response) -> response.header("X-SSE-Before", "ran"));
+        service.after("/events", (request, response) -> response.header("X-SSE-After", "ran"));
+        service.afterAfter("/events", (request, response) -> response.header("X-SSE-After-After", "ran"));
         service.get("/normal", (request, response) -> "ordinary response");
         service.awaitInitialization();
     }
@@ -112,6 +145,9 @@ class SseIntegrationTest {
         assertEquals(200, response.statusCode());
         assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("text/event-stream"));
         assertEquals("no-cache", response.headers().firstValue("Cache-Control").orElseThrow());
+        assertEquals("ran", response.headers().firstValue("X-SSE-Before").orElseThrow());
+        assertEquals("ran", response.headers().firstValue("X-SSE-After").orElseThrow());
+        assertEquals("ran", response.headers().firstValue("X-SSE-After-After").orElseThrow());
 
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
@@ -160,6 +196,158 @@ class SseIntegrationTest {
             assertNull(reader.readLine());
         }
         assertTrue(emitterRef.get().isClosed());
+    }
+
+    @Test
+    @Timeout(value = 15, unit = TimeUnit.SECONDS)
+    void closesEmitterAndRejectsSendsAfterClientDisconnects() throws Exception {
+        HttpResponse<java.io.InputStream> response = request("/disconnect");
+        assertEquals(200, response.statusCode());
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(response.body(), StandardCharsets.UTF_8));
+        assertEquals("data:initial", reader.readLine());
+        assertEquals("", reader.readLine());
+        reader.close();
+
+        SseEmitter emitter = emitterRef.get();
+        String payload = "x".repeat(16_000);
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(8);
+        while (!emitter.isClosed() && System.nanoTime() < deadline) {
+            try {
+                emitter.send(payload);
+            } catch (IllegalStateException failure) {
+                if (!emitter.isClosed()) {
+                    Thread.sleep(10);
+                }
+            }
+            if (!emitter.isClosed()) {
+                Thread.sleep(10);
+            }
+        }
+
+        assertTrue(emitter.isClosed(), "A failed write after disconnect must close the emitter");
+        assertThrows(IllegalStateException.class, () -> emitter.send("after disconnect"));
+    }
+
+    @Test
+    @Timeout(value = 35, unit = TimeUnit.SECONDS)
+    void sharedHeartbeatSchedulerServesManyIdleConnectionsAndCompletionReleasesThem() throws Exception {
+        int connectionCount = 32;
+        HttpClient client = HttpClient.newHttpClient();
+        List<BufferedReader> readers = new ArrayList<>();
+
+        try {
+            for (int i = 0; i < connectionCount; i++) {
+                HttpResponse<java.io.InputStream> response = client.send(
+                        HttpRequest.newBuilder(URI.create(
+                                        "http://127.0.0.1:" + service.port() + "/idle"))
+                                .header("Accept", "text/event-stream")
+                                .GET()
+                                .build(),
+                        HttpResponse.BodyHandlers.ofInputStream());
+                assertEquals(200, response.statusCode());
+                readers.add(new BufferedReader(
+                        new InputStreamReader(response.body(), StandardCharsets.UTF_8)));
+            }
+
+            assertEquals(connectionCount, idleEmitters.size());
+            for (BufferedReader reader : readers) {
+                assertEquals(":", reader.readLine(), "Each idle connection should receive a heartbeat");
+                assertEquals("", reader.readLine());
+            }
+
+            idleEmitters.forEach(SseEmitter::complete);
+            for (BufferedReader reader : readers) {
+                assertNull(reader.readLine(), "Completed idle streams should close cleanly");
+            }
+            assertTrue(idleEmitters.stream().allMatch(SseEmitter::isClosed));
+        } finally {
+            for (BufferedReader reader : readers) {
+                reader.close();
+            }
+        }
+    }
+
+    @Test
+    @Timeout(value = 15, unit = TimeUnit.SECONDS)
+    void concurrentProducersAndCompletionRespectQueueLimitsAndDeliverAcceptedEventsOnce() throws Exception {
+        ExecutorService requestExecutor = Executors.newSingleThreadExecutor();
+        ExecutorService producerExecutor = Executors.newFixedThreadPool(9);
+        Set<String> acceptedEvents = ConcurrentHashMap.newKeySet();
+        AtomicLong acceptedBytes = new AtomicLong();
+        Future<HttpResponse<java.io.InputStream>> responseFuture = requestExecutor.submit(() -> request("/concurrent"));
+
+        try {
+            assertTrue(concurrentRouteReady.await(5, TimeUnit.SECONDS), "SSE route should create its emitter");
+            SseEmitter emitter = emitterRef.get();
+            CountDownLatch startProducers = new CountDownLatch(1);
+            CountDownLatch firstAcceptedEvent = new CountDownLatch(1);
+            CompletableFuture<?>[] producers = new CompletableFuture<?>[8];
+            for (int producer = 0; producer < producers.length; producer++) {
+                int producerId = producer;
+                producers[producer] = CompletableFuture.runAsync(() -> {
+                    await(startProducers);
+                    for (int sequence = 0; sequence < 100; sequence++) {
+                        String event = producerId + "-" + sequence + "-" + "x".repeat(24);
+                        try {
+                            emitter.send(event);
+                            acceptedEvents.add(event);
+                            acceptedBytes.addAndGet(("data:" + event + "\n\n").getBytes(StandardCharsets.UTF_8).length);
+                            firstAcceptedEvent.countDown();
+                        } catch (IllegalStateException expectedWhenBoundedBufferOrCompletionWins) {
+                            // The pre-start queue is intentionally smaller than the producer workload.
+                        }
+                    }
+                }, producerExecutor);
+            }
+            CompletableFuture<Void> completion = CompletableFuture.runAsync(() -> {
+                await(startProducers);
+                await(firstAcceptedEvent);
+                emitter.complete();
+            }, producerExecutor);
+
+            startProducers.countDown();
+            CompletableFuture.allOf(producers).get(5, TimeUnit.SECONDS);
+            completion.get(5, TimeUnit.SECONDS);
+            assertTrue(acceptedEvents.size() > 0, "Concurrent producers should enqueue some events");
+            assertTrue(acceptedEvents.size() <= 64, "The event-count queue limit must hold under contention");
+            assertTrue(acceptedBytes.get() <= 512, "The encoded-byte queue limit must hold under contention");
+            assertThrows(IllegalStateException.class, () -> emitter.send("after completion"));
+
+            concurrentRouteRelease.countDown();
+            HttpResponse<java.io.InputStream> response = responseFuture.get(5, TimeUnit.SECONDS);
+            Set<String> receivedEvents = ConcurrentHashMap.newKeySet();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(response.body(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith("data:")) {
+                        assertTrue(receivedEvents.add(line.substring("data:".length())),
+                                "An accepted event must not be delivered more than once");
+                    }
+                }
+            }
+            assertEquals(acceptedEvents, receivedEvents,
+                    "Every event accepted before completion should be delivered absent a transport failure");
+            assertTrue(emitter.isClosed());
+        } finally {
+            concurrentRouteRelease.countDown();
+            requestExecutor.shutdownNow();
+            producerExecutor.shutdownNow();
+        }
+    }
+
+    @Test
+    void routeFailureBeforeStreamingStartsProducesAnOrdinaryErrorResponse() throws Exception {
+        HttpResponse<String> response = HttpClient.newHttpClient().send(
+                HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + service.port() + "/throws"))
+                        .GET()
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+
+        assertEquals(500, response.statusCode());
+        assertTrue(emitterRef.get().isClosed(), "The emitter should be released when route processing fails");
+        assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("text/html"));
     }
 
     @Test
@@ -220,5 +408,16 @@ class SseIntegrationTest {
                         .GET()
                         .build(),
                 HttpResponse.BodyHandlers.ofInputStream());
+    }
+
+    private void await(CountDownLatch latch) {
+        try {
+            if (!latch.await(5, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Timed out waiting for concurrent SSE test start");
+            }
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(interrupted);
+        }
     }
 }

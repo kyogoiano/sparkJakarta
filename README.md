@@ -68,7 +68,7 @@ service.sse("/events", (request, response, emitter) -> {
 });
 ```
 
-`emitter.send(String)` sends a text data event. `SseEvent` supports text data, event names, IDs, and retry intervals. The emitter buffers up to 256 events and 1 MiB per connection; `send` throws `IllegalStateException` when the buffer is full, so producers can apply their own retry or drop policy. `complete()` sends queued events before closing the stream. A comment heartbeat is sent every 15 seconds to keep idle connections alive and detect disconnected clients; async write failures close the emitter and discard pending events.
+`emitter.send(String)` sends a text data event. `SseEvent` supports text data, event names, IDs, and retry intervals. The default limits are 256 queued events and 1 MiB of encoded queued event data per connection. These limits bound the emitter's pending queue, not all memory associated with a connection; they exclude caller-owned event strings, servlet/container and socket buffers, and data already handed to the output stream. A single event larger than the byte limit is rejected. The emitter checks character length before encoding, then enforces the actual UTF-8 byte limit, so non-ASCII events may require temporary encoding memory before rejection. `send` throws `IllegalStateException` when an event is too large, the buffer is full, or completion/disconnection has begun, so producers can apply their own retry or drop policy. `complete()` sends queued events before closing the stream. A comment heartbeat is sent every 15 seconds to keep idle connections alive and detect disconnected clients; async write failures close the emitter and discard pending events.
 
 Use the overload with `maxBufferedEvents` and `maxBufferedBytes` to tune limits for a route:
 
