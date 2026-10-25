@@ -41,10 +41,12 @@ public class WebSocketServletContextHandlerFactory {
 
     /**
      * Creates a new WebSocket servlet context handler.
+     * The server parameter is retained for compatibility; this method does not install the
+     * returned context as a server handler. The caller is responsible for handler installation.
      *
      * @param webSocketHandlers          Map of WebSocket handlers
      * @param webSocketIdleTimeoutMillis WebSocket idle timeout in milliseconds
-     * @param server                     Jetty server instance
+     * @param server                     Jetty server instance, retained for compatibility and not modified
      * @return a configured ServletContextHandler
      */
     public static ServletContextHandler create(final Map<String, WebSocketHandlerWrapper<?>> webSocketHandlers,
