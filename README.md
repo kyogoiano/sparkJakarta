@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
 [![CI](https://github.com/sparkjava-community/spark/actions/workflows/ci.yml/badge.svg)](https://github.com/sparkjava-community/spark/actions/workflows/ci.yml)
 [![Jakarta EE](https://img.shields.io/badge/Jakarta%20EE-11-orange)](https://jakarta.ee/specifications/platform/11/)
-[![Jetty](https://img.shields.io/badge/Jetty-12.1.14-blue)](https://eclipse.dev/jetty/)
+[![Jetty](https://img.shields.io/badge/Jetty-12.1.15-blue)](https://eclipse.dev/jetty/)
 [![Java](https://img.shields.io/badge/Java-21%2B-red)](https://adoptium.net/)
 
 > A tiny web framework for Java — community-maintained fork modernized for Jakarta EE 11, Jetty 12.1, and Java 21+
@@ -15,7 +15,7 @@
 ### What's New in This Version?
 
 - ✅ **Jakarta EE 11 Migration** - Migrated from `javax.servlet` to `jakarta.servlet` (Jakarta Servlet 6.1 & Jakarta WebSocket 2.2)
-- ✅ **Eclipse Jetty 12.1 (`ee11`)** - Upgraded embedded server to Jetty `12.1.14` (`jetty-ee11-webapp`, `jetty-ee11-websocket`) and SLF4J `2.0.20`
+- ✅ **Eclipse Jetty 12.1 (`ee11`)** - Upgraded embedded server to Jetty `12.1.x` (`jetty-ee11-webapp`, `jetty-ee11-websocket`) and SLF4J `2.0.20`
 - ✅ **Standard Jakarta WebSocket Endpoints** - Supports `@ServerEndpoint` classes and programmatic Jakarta `Endpoint` configurations alongside the existing Jetty-native handlers
 - ✅ **Server-Sent Events** - Provides bounded text-event streams over asynchronous HTTP responses on the existing server
 - ✅ **Java 21+ / JDK 25 Baseline & Virtual Threads** - Requires JDK 21 or newer (tested on JDK 21 and JDK 25) and supports Virtual Threads out of the box via `useVirtualThreads()`

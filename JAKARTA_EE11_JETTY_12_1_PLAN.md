@@ -7,7 +7,7 @@ This document outlines the step-by-step plan to migrate **sparkJakarta** from **
 ## 1. Goals & Constraints
 
 - **Target Platform**: Jakarta EE 11 (Jakarta Servlet 6.1, Jakarta WebSocket 2.2)
-- **Target Embedded Server**: Eclipse Jetty `12.1.14` (`ee11` environment)
+- **Target Embedded Server**: Eclipse Jetty `12.1.x` (`ee11` environment)
 - **Minimum JDK**: JDK 21 (`sourceCompatibility = JavaVersion.VERSION_21`, `targetCompatibility = JavaVersion.VERSION_21`)
 - **Build System**: Gradle
 
@@ -18,7 +18,7 @@ This document outlines the step-by-step plan to migrate **sparkJakarta** from **
 Update [build.gradle](build.gradle):
 
 1. **Jetty Version**:
-   - Update `ext.jettyVersion` from `'12.0.40'` to `'12.1.14'`.
+   - Update `ext.jettyVersion` from `'12.0.40'` to `'12.1.x'`.
 2. **Jakarta EE 11 / Jetty `ee11` Artifacts**:
    - Replace `org.eclipse.jetty.ee10:jetty-ee10-webapp:$jettyVersion` with `org.eclipse.jetty.ee11:jetty-ee11-webapp:$jettyVersion` (transitively provides `jakarta.servlet:jakarta.servlet-api:6.1.0`).
    - Replace `org.eclipse.jetty.ee10.websocket:jetty-ee10-websocket-jetty-server:$jettyVersion` with `org.eclipse.jetty.ee11.websocket:jetty-ee11-websocket-jetty-server:$jettyVersion`.
@@ -117,5 +117,5 @@ Replace `org.eclipse.jetty.ee10.*` packages with `org.eclipse.jetty.ee11.*` and 
 
 ## 7. Documentation & Verification
 
-1. Update [README.md](README.md) badges, feature list, and examples for Jakarta EE 11, Jetty `12.1.14` (`ee11`), Virtual Threads, HTTP/2, and `SameSite` cookie attributes.
+1. Update [README.md](README.md) badges, feature list, and examples for Jakarta EE 11, Jetty `12.1.15` (`ee11`), Virtual Threads, HTTP/2, and `SameSite` cookie attributes.
 2. Run full Gradle build and test suite (`gradle clean test --rerun-tasks`) on JDK 21+ / JDK 25 and verify 100% of active tests pass.
